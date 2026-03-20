@@ -20,7 +20,7 @@
 ## Быстрый старт (веб)
 
 ```bash
-git clone <URL-репозитория>
+git clone https://github.com/anyalink99/mafia-host-app.github.io
 cd mafia-host-app
 npm install
 npx serve .
