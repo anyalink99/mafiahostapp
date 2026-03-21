@@ -3,3 +3,4 @@ www/
 android/
 ios/
 .DS_Store
+_cursor_*.py
