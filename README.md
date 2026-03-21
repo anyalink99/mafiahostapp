@@ -1,5 +1,7 @@
 # Мафия — Ведущий
 
+**Онлайн:** [https://anyalink99.github.io/mafia-host-app.github.io/](https://anyalink99.github.io/mafia-host-app.github.io/)
+
 Веб-приложение для ведущего классической «Мафии» на 10 игроков: раздача и показ ролей, таймер обсуждения, фолы и очередь голосования, фоновая музыка по режимам, сохранение состояния в браузере. Можно установить как **PWA** или собрать **Android** через [Capacitor](https://capacitorjs.com) 8.
 
 ## Возможности
@@ -20,8 +22,8 @@
 ## Быстрый старт (веб)
 
 ```bash
-git clone https://github.com/anyalink99/mafia-host-app.github.io
-cd mafia-host-app
+git clone https://github.com/anyalink99/mafia-host-app.github.io.git
+cd mafia-host-app.github.io
 npm install
 npx serve .
 ```
@@ -39,7 +41,7 @@ npx serve .
 ## Структура репозитория
 
 ```
-mafia-host-app/
+mafia-host-app.github.io/
 ├── index.html
 ├── manifest.webmanifest
 ├── service-worker.js
