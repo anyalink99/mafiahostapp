@@ -1,8 +1,6 @@
 (function (app) {
-  /** База 200ms / 1.7 ≈ 118ms — синхронно с .modal-overlay в styles.css */
   var MODAL_MS = 118;
 
-  /** Плавное открытие/закрытие модалок (класс .modal-overlay + data-open на корне). */
   function blurFocusInside(el) {
     var ae = document.activeElement;
     if (ae && el.contains(ae) && typeof ae.blur === 'function') ae.blur();
@@ -11,7 +9,6 @@
   app.modalSetOpen = function (el, open) {
     if (!el) return;
     if (open) {
-      /* Сбрасываем отложенное закрытие: иначе timeout/transitionend от прошлого hide закрывают уже открытую модалку */
       el._modalGen = (el._modalGen || 0) + 1;
       if (el._modalTransEnd) {
         el.removeEventListener('transitionend', el._modalTransEnd);
@@ -24,7 +21,6 @@
       el.classList.remove('hidden');
       el.setAttribute('aria-hidden', 'false');
       void el.offsetWidth;
-      /* data-open сразу после reflow: иначе hide до rAF попадает в ветку «без data-open» и мгновенно ставит hidden */
       el.setAttribute('data-open', '');
     } else {
       if (!el.hasAttribute('data-open') && el.classList.contains('hidden')) return;
@@ -71,7 +67,6 @@
     document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
     const el = document.getElementById(screenId);
     if (el) el.classList.add('active');
-    /* Иначе фокус остаётся на «Голосование»/«Переголосование» (скрытый game-screen) — Chrome ломает aria-hidden и возможны ложные активации */
     if (screenId === 'vote-screen') {
       var gs = document.getElementById('game-screen');
       var ae = document.activeElement;

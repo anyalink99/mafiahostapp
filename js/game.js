@@ -326,7 +326,6 @@
     return Math.max(0, session.poolTotal - used);
   };
 
-  /** Все остальные кандидаты уже ввели число — остаётся только остаток пула (одно допустимое значение). */
   app.isLastVoteSlotToFill = function (session, index) {
     for (var j = 0; j < session.votes.length; j++) {
       if (j === index) continue;
@@ -616,7 +615,7 @@
   };
 
   var TIMER_BTN_BASE =
-    'px-5 py-3 font-semibold rounded uppercase text-sm tracking-wider cursor-pointer transition-[background-color,border-color,box-shadow,transform,color] duration-[118ms] ease-out';
+    'px-3 py-2 sm:px-5 sm:py-3 font-semibold rounded uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition-[background-color,border-color,box-shadow,transform,color] duration-[118ms] ease-out';
   function applyTimerButtonState(running) {
     var btn = document.getElementById('start-btn');
     if (!btn) return;

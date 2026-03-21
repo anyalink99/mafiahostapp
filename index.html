@@ -41,21 +41,18 @@
       <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.39a2 2 0 0 0 1.98-1.67l1.2-7A2 2 0 0 0 21.76 9H14z" />
       <path d="M2 9h4v12H2z" />
     </symbol>
-    <!-- Удалён: Feather user-x (MIT) -->
     <symbol id="icon-elim-disqual" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
       <circle cx="8.5" cy="7" r="4" />
       <line x1="18" y1="8" x2="23" y2="13" />
       <line x1="23" y1="8" x2="18" y2="13" />
     </symbol>
-    <!-- Казнён: верёвка + петля — масштаб ↑ к user-x (чуть меньше пистолета) -->
     <symbol id="icon-elim-hang" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <g transform="translate(12 12) scale(1.18) translate(-12 -12)">
         <path d="M12 2v8.5" />
         <ellipse cx="12" cy="15.5" rx="4" ry="5.5" />
       </g>
     </symbol>
-    <!-- Убит: пистолет — чуть крупнее виселицы, ближе к визуальному весу user-x -->
     <symbol id="icon-elim-shot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <g transform="translate(12 14.25) scale(1.32) translate(-12 -14.25)">
         <g transform="translate(0 -3.25)">
@@ -65,7 +62,6 @@
         </g>
       </g>
     </symbol>
-    <!-- Выставлен на голосование -->
     <symbol id="icon-nominated" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M6 22V4" />
       <path d="M6 6h12v5H6z" />
@@ -125,10 +121,7 @@
 
 <div id="setup-screen" class="screen flex flex-col p-4 sm:p-6">
     <div class="flex items-center justify-between flex-shrink-0 py-2">
-        <div class="flex items-center gap-3">
-            <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider flex items-center gap-2 cursor-pointer">← Меню</button>
-            <button type="button" data-goto="game-screen" data-init="game" class="px-3 py-1 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 text-xs sm:text-sm uppercase tracking-wider rounded cursor-pointer">Игровой стол</button>
-        </div>
+        <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider flex items-center gap-2 cursor-pointer">← Меню</button>
         <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Просмотр ролей</span>
     </div>
     <div id="card-container" class="cards-grid w-full max-w-md mx-auto overflow-hidden mt-2"></div>
@@ -145,25 +138,20 @@
 </div>
 
 <div id="game-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6">
-    <div class="flex items-center justify-between flex-shrink-0 py-2">
-        <div class="flex items-center gap-3">
-            <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
-            <button type="button" data-goto="setup-screen" class="px-3 py-1 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 text-xs sm:text-sm uppercase tracking-wider rounded cursor-pointer">Просмотр ролей</button>
-        </div>
-        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Игровой стол</span>
-    </div>
-
-    <div class="bg-mafia-coal border border-mafia-border rounded-lg p-3 sm:p-4 flex-shrink-0 text-center">
-        <div class="flex items-center justify-center gap-3 sm:gap-5 flex-wrap">
-            <div id="timer" class="font-display font-bold text-3xl sm:text-4xl md:text-5xl text-mafia-gold tabular-nums leading-none transition-colors duration-[88ms] ease-out">60</div>
-            <button type="button" id="btn-music" data-action="toggle-music" aria-label="Музыка" aria-pressed="false" class="shrink-0 w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-lg border-2 bg-mafia-card border-mafia-border text-mafia-cream hover:border-mafia-gold/50 transition-colors cursor-pointer" title="Музыка">
-                <svg class="w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-            </button>
-        </div>
-        <div class="flex gap-3 justify-center mt-2 flex-wrap">
-            <button type="button" id="start-btn" data-action="toggle-timer" aria-pressed="false" class="px-5 py-3 bg-green-800 hover:bg-green-700 border border-green-600 text-white font-semibold rounded uppercase text-sm tracking-wider cursor-pointer transition-[background-color,border-color,box-shadow,transform,color] duration-[118ms] ease-out">Старт</button>
-            <button type="button" data-action="reset-timer" data-seconds="60" class="px-4 py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-sm cursor-pointer">60 с</button>
-            <button type="button" data-action="reset-timer" data-seconds="30" class="px-4 py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-sm cursor-pointer">30 с</button>
+    <div class="relative bg-mafia-coal border border-mafia-border rounded-lg p-3 sm:p-4 flex-shrink-0 min-w-0">
+        <button type="button" data-goto="menu-screen" class="absolute left-3 top-3 sm:left-4 sm:top-4 z-10 text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer text-left leading-none">← Меню</button>
+        <button type="button" id="btn-music" data-action="toggle-music" aria-label="Музыка" aria-pressed="false" class="absolute right-2.5 top-2.5 sm:right-3 sm:top-3 z-10 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-lg border-2 bg-mafia-card border-mafia-border text-mafia-cream hover:border-mafia-gold/50 transition-colors cursor-pointer" title="Музыка">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </button>
+        <div class="flex justify-center w-full min-w-0 pt-11 sm:pt-14">
+            <div class="timer-control-frame inline-flex flex-row flex-nowrap items-center justify-center gap-3 sm:gap-4 max-w-full min-w-0 overflow-x-auto rounded-lg border border-mafia-border/60 bg-mafia-black/25 px-3 py-2 sm:px-5 sm:py-3">
+                <div id="timer" class="font-display font-bold text-mafia-gold tabular-nums leading-none transition-colors duration-[88ms] ease-out shrink-0">60</div>
+                <div class="flex gap-2 sm:gap-3 items-center shrink-0">
+                    <button type="button" id="start-btn" data-action="toggle-timer" aria-pressed="false" class="px-3 py-2 sm:px-5 sm:py-3 bg-green-800 hover:bg-green-700 border border-green-600 text-white font-semibold rounded uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition-[background-color,border-color,box-shadow,transform,color] duration-[118ms] ease-out">Старт</button>
+                    <button type="button" data-action="reset-timer" data-seconds="60" class="px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-xs sm:text-sm cursor-pointer">60 с</button>
+                    <button type="button" data-action="reset-timer" data-seconds="30" class="px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-xs sm:text-sm cursor-pointer">30 с</button>
+                </div>
+            </div>
         </div>
     </div>
 

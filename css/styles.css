@@ -23,7 +23,6 @@ body {
   height: 100dvh;
   overflow: hidden;
   opacity: 0;
-  /* База 200ms, ускорение в 1.7× → ~118ms */
   transition: opacity 0.118s ease-out;
 }
 
@@ -37,7 +36,6 @@ body {
   opacity: 1;
 }
 
-/* Модалки: fade бэкдропа + лёгкий scale/сдвиг панели */
 .modal-overlay {
   opacity: 0;
   transition: opacity 0.118s ease-out;
@@ -135,12 +133,10 @@ body {
   align-items: stretch;
 }
 
-/* Игровой стол: одна строка — статус, №, «Ф: N» */
 .player-slot__row {
   align-items: center;
 }
 
-/* Крупный номер (serif + leading-none) визуально ниже центра — чуть опускаем плашку «Ф:» */
 .player-slot__foul-pill {
   transform: translateY(0.1875rem);
 }
@@ -165,12 +161,10 @@ body {
   display: block;
 }
 
-/* Игровой стол: стабильные размеры при медленном Tailwind CDN / другом порядке загрузки */
 #game-screen #timer {
   line-height: 1;
   font-weight: 700;
-  /* нижняя граница до применения syncTimerFont (см. game.js) */
-  font-size: clamp(2.25rem, 10vmin, 3.75rem);
+  font-size: 2.25rem;
 }
 
 #game-screen #voting-order.voting-order-queue {

@@ -140,7 +140,6 @@
           var cix = t.getAttribute('data-candidate-index');
           if (cix !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cix, 10));
         } else if (action === 'vote-count-pick') {
-          /* Второй синтетический click часто попадает в кнопку числа (0…) и закрывает модалку через applyVoteCountPick */
           if (app._voteModalOpenedAt && Date.now() - app._voteModalOpenedAt < 550) return;
           var vv = t.getAttribute('data-value');
           if (vv !== null && app.applyVoteCountPick) app.applyVoteCountPick(parseInt(vv, 10));
@@ -148,7 +147,6 @@
           var rv = t.getAttribute('data-value');
           if (rv !== null && app.applyRaiseAllPick) app.applyRaiseAllPick(parseInt(rv, 10));
         } else if (action === 'vote-count-cancel') {
-          /* Второй синтетический click часто попадает в «Отмена» или бэкдроп под тем же углом — блокируем всё cancel сразу после открытия */
           if (app._voteModalOpenedAt && Date.now() - app._voteModalOpenedAt < 550) return;
           if (app.hideVoteCountModal) app.hideVoteCountModal();
         } else if (action === 'player-slot-open') {

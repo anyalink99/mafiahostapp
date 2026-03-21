@@ -19,25 +19,18 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.gameLog = [];
 
-  /** Ключ — id игрока (строка). Значение: 'don' | 'sheriff' | '' при неполной раздаче */
   app.playerRoleOverrides = {};
 
-  /** null | 'mafia' | 'peaceful' */
   app.winningTeam = null;
 
-  /** Ключ — id игрока (строка), значение — число бонусных очков */
   app.bonusPointsByPlayerId = {};
 
-  /** Ключ — id игрока (строка). Значение: 'peaceful' | 'mafia' | 'don' | 'sheriff' — ручная правка на экране итогов */
   app.summaryRoleByPlayerId = {};
 
-  /** Ключ — id игрока (строка), примечание к доп. баллам */
   app.bonusNoteByPlayerId = {};
 
-  /** Ключ — id игрока (строка), текст «лучший ход» */
   app.bestMoveByPlayerId = {};
 
-  /** Имя ведущего на экране подведения итогов */
   app.summaryHostName = '';
 
   app.saveState = function () {

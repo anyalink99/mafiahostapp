@@ -1,4 +1,3 @@
-/** Меняйте суффикс при релизе, чтобы сбросить старый precache (опционально — см. fetch ниже). */
 var CACHE_NAME = 'mafia-host-static-v2';
 var ASSETS = [
   './',
@@ -50,7 +49,6 @@ function isSameOrigin(url) {
   }
 }
 
-/** Обновления UI/логики: сначала сеть, иначе офлайн-кэш. Иначе пользователь видит старый index.html/JS/CSS после деплоя. */
 function shouldNetworkFirst(req) {
   if (!isSameOrigin(req.url)) return false;
   if (req.mode === 'navigate') return true;
