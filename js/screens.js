@@ -59,11 +59,22 @@
     }
   };
 
+  app.hideAuthorLinksModal = function () {
+    var m = document.getElementById('modal-author-links');
+    if (m) app.modalSetOpen(m, false);
+  };
+
+  app.showAuthorLinksModal = function () {
+    var m = document.getElementById('modal-author-links');
+    if (m) app.modalSetOpen(m, true);
+  };
+
   app.showScreen = function (screenId) {
     if (screenId !== 'vote-screen' && app.hideVoteCountModal) app.hideVoteCountModal();
     if (screenId !== 'game-screen' && app.hidePlayerActionsModal) app.hidePlayerActionsModal();
     if (screenId !== 'summary-screen' && app.hideSummaryPlayerModal) app.hideSummaryPlayerModal();
     if (screenId !== 'summary-screen' && app.hideSummaryLogModal) app.hideSummaryLogModal();
+    if (screenId !== 'menu-screen' && app.hideAuthorLinksModal) app.hideAuthorLinksModal();
     document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
     const el = document.getElementById(screenId);
     if (el) el.classList.add('active');

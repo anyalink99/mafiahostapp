@@ -110,8 +110,12 @@
         else if (action === 'music-pick-slot') {
           const slot = t.getAttribute('data-slot');
           if (slot) app.musicStartSlot(slot);
-        } else if (action === 'music-empty-cancel') app.hideMusicEmptyModal();
-        else if (action === 'music-add-slot') {
+        }         else if (action === 'music-empty-cancel') app.hideMusicEmptyModal();
+        else if (action === 'author-links-open') {
+          if (app.showAuthorLinksModal) app.showAuthorLinksModal();
+        } else if (action === 'author-links-close') {
+          if (app.hideAuthorLinksModal) app.hideAuthorLinksModal();
+        } else if (action === 'music-add-slot') {
           const slot = t.getAttribute('data-slot');
           const inp = document.getElementById(slot === '2' ? 'music-files-slot-2' : 'music-files-slot-1');
           if (inp) inp.click();

@@ -69,11 +69,11 @@
   </defs>
 </svg>
 
-<div id="menu-screen" class="screen active flex flex-col items-center justify-center p-6 sm:p-8">
+<div id="menu-screen" class="screen active flex flex-col items-center p-6 sm:p-8">
     <div class="absolute inset-0 z-0 bg-gradient-to-b from-mafia-blood/20 via-mafia-black to-mafia-black" style="pointer-events: none;" aria-hidden="true"></div>
     <div class="relative z-10 text-center animate-fade-in flex flex-col items-center justify-center flex-1 min-h-0 w-full">
         <h1 class="font-display font-bold text-4xl min-[400px]:text-5xl sm:text-6xl md:text-7xl text-mafia-gold tracking-widest drop-shadow-lg leading-tight">МАФИЯ</h1>
-        <p class="font-display text-mafia-goldLight/80 text-base sm:text-xl mt-2 tracking-widest uppercase">Ночной клуб</p>
+        <p class="font-display text-mafia-goldLight/80 text-base sm:text-xl mt-2 tracking-widest uppercase">Ведущий</p>
         <div class="mt-10 sm:mt-14 flex flex-col gap-4 max-w-sm w-full mx-auto flex-shrink-0">
             <button type="button" id="btn-setup" data-goto="setup-screen" class="w-full py-4 px-8 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold text-lg tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] rounded-sm shadow-lg cursor-pointer">
                 Раздать роли
@@ -92,6 +92,9 @@
             </button>
         </div>
     </div>
+    <p class="relative z-10 flex-shrink-0 w-full max-w-sm mx-auto text-center text-xs sm:text-sm text-mafia-cream/45">
+        От идеи до кода: <button type="button" data-action="author-links-open" class="text-mafia-gold/80 hover:text-mafia-gold underline underline-offset-2 decoration-mafia-gold/40 font-medium cursor-pointer bg-transparent border-0 p-0 font-inherit">Датч</button>
+    </p>
 </div>
 
 <div id="settings-screen" class="screen flex flex-col min-h-0 p-4 sm:p-6 overflow-auto">
@@ -323,6 +326,40 @@
             <input type="file" id="music-files-empty" class="hidden" accept="audio/*" multiple>
         </label>
         <button type="button" data-action="music-empty-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+    </div>
+</div>
+
+<div id="modal-author-links" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-author-links-title">
+    <div class="absolute inset-0" data-action="author-links-close" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <h2 id="modal-author-links-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-4">Датч</h2>
+        <ul class="flex flex-col gap-2 text-sm">
+            <li>
+                <a href="https://mafiauniverse.org/Player/13896" target="_blank" rel="noopener noreferrer" class="relative flex w-full items-center justify-center py-3 px-3 rounded border border-mafia-border bg-mafia-card hover:border-mafia-gold/45 text-mafia-cream transition-colors">
+                    <span class="absolute left-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center overflow-hidden rounded" aria-hidden="true">
+                        <img src="icons/mafiauniverse.png" alt="" class="h-full w-full object-cover" width="24" height="24">
+                    </span>
+                    <span class="min-w-0 text-center">MafiaUniverse</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://github.com/anyalink99" target="_blank" rel="noopener noreferrer" class="relative flex w-full items-center justify-center py-3 px-3 rounded border border-mafia-border bg-mafia-card hover:border-mafia-gold/45 text-mafia-cream transition-colors">
+                    <span class="absolute left-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-white" aria-hidden="true">
+                        <img src="icons/github.svg" alt="" class="h-[22px] w-[22px]" width="22" height="22">
+                    </span>
+                    <span class="min-w-0 text-center">GitHub</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://t.me/niotid" target="_blank" rel="noopener noreferrer" class="relative flex w-full items-center justify-center py-3 px-3 rounded border border-mafia-border bg-mafia-card hover:border-mafia-gold/45 text-mafia-cream transition-colors">
+                    <span class="absolute left-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center" aria-hidden="true">
+                        <img src="icons/telegram.svg" alt="" class="h-full w-full" width="24" height="24">
+                    </span>
+                    <span class="min-w-0 text-center">Telegram</span>
+                </a>
+            </li>
+        </ul>
+        <button type="button" data-action="author-links-close" class="w-full mt-4 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Закрыть</button>
     </div>
 </div>
 
