@@ -133,7 +133,8 @@ body {
   align-items: stretch;
 }
 
-.player-cell {
+/* Только игровой стол: жесты; на экране итогов тот же класс .player-cell без .player-slot — скролл не блокировать */
+.player-cell.player-slot {
   touch-action: none;
 }
 

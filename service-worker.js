@@ -1,4 +1,6 @@
-var CACHE_NAME = 'mafia-host-static-v3';
+// При каждом коммите увеличивайте суффикс CACHE_NAME (v4 → v5 …),
+// иначе клиенты могут долго получать старую статику из кэша.
+var CACHE_NAME = 'mafia-host-static-v4';
 var ASSETS = [
   './',
   './index.html',

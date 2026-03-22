@@ -21,6 +21,13 @@
     } catch (e) {}
     var url = new URL('service-worker.js', window.location.href);
     navigator.serviceWorker.register(url.href, { scope: './' }).catch(function () {});
+
+    var reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (reloading) return;
+      reloading = true;
+      window.location.reload();
+    });
   };
 
   function init() {
