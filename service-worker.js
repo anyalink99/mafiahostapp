@@ -1,4 +1,4 @@
-var CACHE_NAME = 'mafia-host-static-v2';
+var CACHE_NAME = 'mafia-host-static-v3';
 var ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ var ASSETS = [
   './js/screens.js',
   './js/cards.js',
   './js/game.js',
+  './js/summary.js',
   './js/events.js',
   './js/main.js',
   './js/tailwind.config.js',
@@ -57,8 +58,49 @@ function shouldNetworkFirst(req) {
   return false;
 }
 
+function isCacheableRemoteAsset(req) {
+  if (req.method !== 'GET') return false;
+  try {
+    var h = new URL(req.url).hostname;
+    return (
+      h === 'cdn.tailwindcss.com' ||
+      h === 'fonts.googleapis.com' ||
+      h === 'fonts.gstatic.com'
+    );
+  } catch (err) {
+    return false;
+  }
+}
+
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+
+  if (isCacheableRemoteAsset(e.request)) {
+    e.respondWith(
+      fetch(e.request)
+        .then(function (response) {
+          if (
+            response &&
+            response.ok &&
+            (response.type === 'basic' || response.type === 'cors')
+          ) {
+            var copy = response.clone();
+            caches.open(CACHE_NAME).then(function (cache) {
+              cache.put(e.request, copy);
+            });
+          }
+          return response;
+        })
+        .catch(function () {
+          return caches.match(e.request);
+        })
+    );
+    return;
+  }
+
+  if (!isSameOrigin(e.request.url)) {
+    return;
+  }
 
   if (shouldNetworkFirst(e.request)) {
     e.respondWith(
@@ -86,7 +128,11 @@ self.addEventListener('fetch', function (e) {
     caches.match(e.request).then(function (cached) {
       if (cached) return cached;
       return fetch(e.request).catch(function () {
-        return caches.match('./index.html');
+        return caches.match(e.request).then(function (again) {
+          if (again) return again;
+          if (e.request.mode === 'navigate') return caches.match('./index.html');
+          return Response.error();
+        });
       });
     })
   );
