@@ -280,7 +280,8 @@
         if (!gs || !gs.classList.contains('active')) return;
         var pid = pidFromEl(e.target);
         if (pid === null) return;
-        var t = e.touches[0];
+        var t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
         g.active = true;
         g.pid = pid;
         g.touchId = t.identifier;
@@ -293,8 +294,8 @@
           if (!g.active || g.fired) return;
           g.fired = true;
           var inQ = app.votingOrder.indexOf(capturedPid) !== -1;
-          if (inQ) app.removeFromVote(capturedPid);
-          else app.addToVote(capturedPid);
+          if (inQ) app.removeFromVote(capturedPid, { skipRender: true });
+          else app.addToVote(capturedPid, { skipRender: true });
           if (navigator.vibrate) navigator.vibrate(40);
         }, LONG_PRESS_MS);
       }, { passive: true });
@@ -313,7 +314,12 @@
       document.body.addEventListener('touchend', function (e) {
         if (!g.active) return;
         var t = findTouch(e.changedTouches, g.touchId);
-        if (!t) return;
+        if (!t) {
+          var wasFired = g.fired;
+          reset();
+          if (wasFired && app.renderPlayers) app.renderPlayers();
+          return;
+        }
         if (g.timer) { clearTimeout(g.timer); g.timer = null; }
         var pid = g.pid;
         var fired = g.fired;
@@ -322,6 +328,7 @@
         reset();
         if (fired) {
           app._lastGestureTs = Date.now();
+          if (app.renderPlayers) app.renderPlayers();
           e.preventDefault();
           return;
         }
@@ -335,7 +342,11 @@
         }
       }, { passive: false });
 
-      document.body.addEventListener('touchcancel', function () { reset(); }, { passive: true });
+      document.body.addEventListener('touchcancel', function () {
+        var wasFired = g.fired;
+        reset();
+        if (wasFired && app.renderPlayers) app.renderPlayers();
+      }, { passive: true });
     })();
 
     function bindMusicFileInputs() {

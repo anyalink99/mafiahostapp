@@ -257,7 +257,8 @@
     app.saveState();
   };
 
-  app.addToVote = function (id) {
+  app.addToVote = function (id, opts) {
+    opts = opts || {};
     var pl = app.players.find(function (x) {
       return x.id === id;
     });
@@ -269,17 +270,18 @@
     if (app.votingOrder.indexOf(id) === -1) {
       app.votingOrder.push(id);
       app.updateVotingUI();
-      app.renderPlayers();
+      if (!opts.skipRender) app.renderPlayers();
       app.saveState();
     }
   };
 
-  app.removeFromVote = function (id) {
+  app.removeFromVote = function (id, opts) {
+    opts = opts || {};
     var vix = app.votingOrder.indexOf(id);
     if (vix === -1) return;
     app.votingOrder.splice(vix, 1);
     app.updateVotingUI();
-    app.renderPlayers();
+    if (!opts.skipRender) app.renderPlayers();
     var voteScr = document.getElementById('vote-screen');
     if (voteScr && voteScr.classList.contains('active') && app.renderVoteScreen) {
       app.renderVoteScreen();
