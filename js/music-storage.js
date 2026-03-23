@@ -247,11 +247,13 @@ window.MafiaApp = window.MafiaApp || {};
   var DEFAULT_BUNDLED_TRACKS = [
     { slotKey: '1', path: 'audio/track1.mp3', offsetSec: 0, displayName: 'Трек по умолчанию' },
     { slotKey: '2', path: 'audio/track2.mp3', offsetSec: 0, displayName: 'Трек по умолчанию' },
+    { slotKey: '2', path: 'audio/track3.mp3', offsetSec: 0, displayName: 'Трек по умолчанию', enabled: false },
   ];
 
   var BUNDLED_PATH_LABELS = {
     'audio/track1.mp3': 'Трек по умолчанию',
     'audio/track2.mp3': 'Трек по умолчанию',
+    'audio/track3.mp3': 'Трек по умолчанию',
   };
 
   function migrateBundledDisplayNames(meta) {
@@ -288,14 +290,14 @@ window.MafiaApp = window.MafiaApp || {};
       }
       if (!has) {
         var bn = def.path.replace(/^.*\//, '') || def.path;
-        list.push(
-          normalizeItem({
-            name: def.displayName || bn,
-            offsetSec: def.offsetSec,
-            volumeMul: 1,
-            source: { type: 'bundled', path: def.path },
-          })
-        );
+        var row = {
+          name: def.displayName || bn,
+          offsetSec: def.offsetSec,
+          volumeMul: 1,
+          source: { type: 'bundled', path: def.path },
+        };
+        if (def.enabled === false) row.enabled = false;
+        list.push(normalizeItem(row));
         changed = true;
       }
     }

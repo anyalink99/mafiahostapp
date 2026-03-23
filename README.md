@@ -79,7 +79,7 @@ mafia-host-app.github.io/
 ├── service-worker.js
 ├── capacitor.config.json
 ├── package.json
-├── audio/                 встроенные треки (track1.mp3, track2.mp3)
+├── audio/                 встроенные треки (track1–3.mp3), голосовые таймера (you-have-10-seconds.mp3, …)
 ├── icons/                 icon.png (исходник) + сгенерированные PNG
 ├── css/styles.css
 ├── js/
