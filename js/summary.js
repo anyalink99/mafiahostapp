@@ -86,6 +86,13 @@
     return null;
   };
 
+  /** Колонка ПУ в экспорте: лучший ход — три номера, если тройка заполнена; иначе пусто. */
+  app.formatBestMovePuForExport = function (stored) {
+    if (!app.isBestMoveTripleComplete(stored)) return '';
+    var tr = app.parseBestMoveTriple(stored);
+    return tr[0] + ', ' + tr[1] + ', ' + tr[2];
+  };
+
   function parseBonusFloat(raw) {
     if (raw === undefined || raw === null || raw === '') return 0;
     var v = parseFloat(String(raw).replace(',', '.'));

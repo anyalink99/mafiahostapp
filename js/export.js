@@ -45,8 +45,16 @@
     if (last.type === 'vote_no_elimination') return 'оставили';
     if (last.type === 'vote_hang') {
       var ids = last.eliminatedIds || [];
-      if (ids.length === 1) return 'казнен ' + ids[0];
-      if (ids.length > 1) return 'казнены ' + ids.join(', ');
+      if (ids.length === 1) return 'казнен №' + ids[0];
+      if (ids.length > 1)
+        return (
+          'казнены ' +
+          ids
+            .map(function (id) {
+              return '№' + id;
+            })
+            .join(', ')
+        );
     }
     return 'оставили';
   }
@@ -71,7 +79,7 @@
       var ev = round.events[0];
       var pid = ev.playerId;
       var pool = typeof ev.votePoolTotal === 'number' ? ev.votePoolTotal : '';
-      return '#' + roundNum + ': №' + pid + '-' + pool + '; казнен ' + pid;
+      return '#' + roundNum + ': №' + pid + '-' + pool + '; казнен №' + pid;
     }
     var cluster = round.events;
     var segs = voteClusterSegments(cluster);
@@ -111,10 +119,8 @@
       if (nick) parts.push(nick);
       var bk = String(sid);
       var bm = app.bestMoveByPlayerId && app.bestMoveByPlayerId[bk];
-      if (app.isBestMoveTripleComplete && app.isBestMoveTripleComplete(bm)) {
-        var tr = app.parseBestMoveTriple(bm);
-        parts.push('ПУ: ' + tr[0] + ', ' + tr[1] + ', ' + tr[2]);
-      }
+      var puLine = app.formatBestMovePuForExport ? app.formatBestMovePuForExport(bm) : '';
+      if (puLine) parts.push('ПУ: ' + puLine);
       var bonusRaw = app.bonusPointsByPlayerId && app.bonusPointsByPlayerId[bk];
       var bnum = parseBonusFloat(bonusRaw);
       if (bnum !== 0) {
@@ -174,16 +180,112 @@
     return { plus: '', minus: app.formatBonusForDisplay(Math.abs(v)) };
   }
 
+  /** A–G: таблица игроков; H: подписи голосования; I–R: до 10 ячеек данных. */
+  var STAT_COLS = 7;
+  var VOTE_SLOT_COLS = 10;
+  var CSV_ROW_COLS = STAT_COLS + 1 + VOTE_SLOT_COLS;
+
+  function padStatRow(cells7) {
+    var row = cells7.slice();
+    while (row.length < CSV_ROW_COLS) row.push('');
+    return row.map(csvEscape);
+  }
+
+  /** A–G пусто; H — подпись; I–R — числа голосования. */
+  function makeVoteRow(labelH, slotValues) {
+    var row = [];
+    while (row.length < STAT_COLS) row.push('');
+    row.push(labelH);
+    var slots = slotValues || [];
+    for (var i = 0; i < VOTE_SLOT_COLS; i++) {
+      var v = i < slots.length ? slots[i] : '';
+      row.push(v !== undefined && v !== null && v !== '' ? String(v) : '');
+    }
+    return row.map(csvEscape);
+  }
+
+  /** Только номера казнённых через запятую; если никого — «—». В CSV — колонка K. */
+  function clusterExecutedIdsComma(cluster) {
+    var last = cluster[cluster.length - 1];
+    if (!last) return '—';
+    if (last.type === 'vote_no_elimination') return '—';
+    if (last.type === 'vote_hang') {
+      var ids = last.eliminatedIds || [];
+      if (!ids.length) return '—';
+      return ids.join(', ');
+    }
+    return '—';
+  }
+
+  /** Технический тег (колонка L) для кластера голосования. */
+  function clusterEliminationTag(cluster) {
+    var last = cluster[cluster.length - 1];
+    if (!last) return 'no_elimination';
+    if (last.type === 'vote_no_elimination') return 'no_elimination';
+    if (last.type === 'vote_hang') {
+      var ids = last.eliminatedIds || [];
+      if (!ids.length) return 'no_elimination';
+      if (ids.length === 1) return 'vote_hanged';
+      return 'vote_hanged_multiple';
+    }
+    return 'no_elimination';
+  }
+
+  /** A–G пусто; H «Казнены»; I–J пусто; K — номера; L — tag (snake_case). */
+  function makeKaznenyRow(idsCommaOrDash, tagEn) {
+    var row = [];
+    while (row.length < STAT_COLS) row.push('');
+    row.push('Казнены');
+    row.push('');
+    row.push('');
+    var val =
+      idsCommaOrDash != null && String(idsCommaOrDash).trim() !== ''
+        ? String(idsCommaOrDash).trim()
+        : '—';
+    row.push(val);
+    row.push(tagEn != null && String(tagEn).trim() !== '' ? String(tagEn).trim() : '');
+    while (row.length < CSV_ROW_COLS) row.push('');
+    return row.map(csvEscape);
+  }
+
+  function emptyPaddedRow() {
+    return padStatRow(['', '', '', '', '', '', '']);
+  }
+
+  function slotsFromIds(ids) {
+    var out = [];
+    if (!ids || !ids.length) return out;
+    for (var i = 0; i < Math.min(ids.length, VOTE_SLOT_COLS); i++) out.push(ids[i]);
+    return out;
+  }
+
+  function slotsFromVotes(candidateIds, votes) {
+    var out = [];
+    if (!candidateIds || !candidateIds.length) return out;
+    for (var i = 0; i < Math.min(candidateIds.length, VOTE_SLOT_COLS); i++) {
+      out.push(votes && votes[i] != null ? votes[i] : '');
+    }
+    return out;
+  }
+
+  function bonusRawForPlayer(bk) {
+    var m = app.bonusPointsByPlayerId;
+    if (!m || typeof m !== 'object') return undefined;
+    if (Object.prototype.hasOwnProperty.call(m, bk)) return m[bk];
+    if (Object.prototype.hasOwnProperty.call(m, Number(bk))) return m[Number(bk)];
+    return undefined;
+  }
+
   function buildCsv() {
     var rows = [];
     var host = app.summaryHostName != null ? String(app.summaryHostName).trim() : '';
-    rows.push([csvEscape('Ведущий'), csvEscape(host || '—')]);
+    rows.push(padStatRow(['Ведущий', host || '—', '', '', '', '', '']));
     var winCell = '—';
     if (app.winningTeam === 'mafia') winCell = 'Мафия';
     else if (app.winningTeam === 'peaceful') winCell = 'Мирные';
-    rows.push([csvEscape('Победа'), csvEscape(winCell)]);
-    rows.push([]);
-    rows.push(['#', 'Игрок', 'Роль', 'ПУ', '+', '-', '∑'].map(csvEscape));
+    rows.push(padStatRow(['Победа', winCell, '', '', '', '', '']));
+    rows.push(emptyPaddedRow());
+    rows.push(padStatRow(['#', 'Игрок', 'Роль', 'ПУ', 'Доп +', 'Доп −', '∑']));
 
     var n = app.players.length;
     for (var p = 0; p < n; p++) {
@@ -194,65 +296,71 @@
       var code = app.getEffectiveSummaryRoleCode(sid, p);
       var roleRu = roleLabelRu(code);
       var bm = app.bestMoveByPlayerId && app.bestMoveByPlayerId[bk];
-      var pu = '';
-      if (app.isBestMoveTripleComplete && app.isBestMoveTripleComplete(bm)) {
-        var tr = app.parseBestMoveTriple(bm);
-        pu = tr[0] + ', ' + tr[1] + ', ' + tr[2];
-      }
-      var braw = app.bonusPointsByPlayerId && app.bonusPointsByPlayerId[bk];
+      var pu = app.formatBestMovePuForExport ? app.formatBestMovePuForExport(bm) : '';
+      var braw = bonusRawForPlayer(bk);
       var split = splitBonusForCsv(braw);
       var bonusVal = parseBonusFloat(braw);
-      var sum = bonusVal + (didPlayerWin(sid, p) ? 1 : 0);
+      var sum = (didPlayerWin(sid, p) ? 1 : 0) + bonusVal;
+      sum = Math.round(sum * 10) / 10;
       var sumStr = app.formatBonusForDisplay(String(sum));
-      rows.push([
-        csvEscape(String(sid)),
-        csvEscape(nick || '—'),
-        csvEscape(roleRu),
-        csvEscape(pu),
-        csvEscape(split.plus),
-        csvEscape(split.minus),
-        csvEscape(sumStr),
-      ]);
+      rows.push(
+        padStatRow([
+          String(sid),
+          nick || '—',
+          roleRu,
+          pu,
+          split.plus,
+          split.minus,
+          sumStr,
+        ])
+      );
     }
 
-    rows.push([]);
     var rounds = app.inferRoundsForExport(app.gameLog);
+    var firstVoteTargetLine = 15;
+    var linesBeforeVoteBlock = 4 + n;
+    var padBeforeVotes = Math.max(0, firstVoteTargetLine - linesBeforeVoteBlock - 1);
+    for (var pe = 0; pe < padBeforeVotes; pe++) {
+      rows.push(emptyPaddedRow());
+    }
+
     for (var r = 0; r < rounds.length; r++) {
       var rn = r + 1;
       var round = rounds[r];
-      rows.push([csvEscape('Голосование #' + rn)]);
       if (round.kind === 'skip') {
-        rows.push([csvEscape('—')]);
-        rows.push([csvEscape('—')]);
-        rows.push([csvEscape('—')]);
-        rows.push([csvEscape(buildVoteBlockLine(round, rn))]);
+        rows.push(makeVoteRow('Голосование #' + rn, []));
+        rows.push(makeVoteRow('Выставленные игроки', ['—']));
+        rows.push(makeVoteRow('Голоса за игроков', ['—']));
+        rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
+        rows.push(makeKaznenyRow('—', 'vote_skipped'));
         continue;
       }
       if (round.kind === 'single') {
         var sev = round.events[0];
         var spid = sev.playerId;
         var pool = typeof sev.votePoolTotal === 'number' ? sev.votePoolTotal : '';
-        rows.push([csvEscape(String(spid))]);
-        rows.push([csvEscape(String(pool))]);
-        rows.push([csvEscape('')]);
-        rows.push([
-          csvEscape('казнен ' + spid + '; Единственный выставленный: yes'),
-        ]);
+        rows.push(makeVoteRow('Голосование #' + rn, []));
+        rows.push(makeVoteRow('Выставленные игроки', [spid]));
+        rows.push(makeVoteRow('Голоса за игроков', [pool]));
+        rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
+        rows.push(makeKaznenyRow(String(spid), 'sole_nominee_hanged'));
         continue;
       }
       var cluster = round.events;
       if (cluster.length === 1 && cluster[0].type === 'vote_no_elimination') {
         var neOnly = cluster[0];
-        rows.push([csvEscape('—')]);
-        rows.push([
-          csvEscape(
-            typeof neOnly.votesCast === 'number' && typeof neOnly.poolTotal === 'number'
-              ? neOnly.votesCast + '/' + neOnly.poolTotal
-              : '—'
-          ),
-        ]);
-        rows.push([csvEscape('')]);
-        rows.push([csvEscape('оставили')]);
+        rows.push(makeVoteRow('Голосование #' + rn, []));
+        rows.push(makeVoteRow('Выставленные игроки', ['—']));
+        if (
+          typeof neOnly.votesCast === 'number' &&
+          typeof neOnly.poolTotal === 'number'
+        ) {
+          rows.push(makeVoteRow('Голоса за игроков', [neOnly.votesCast, neOnly.poolTotal]));
+        } else {
+          rows.push(makeVoteRow('Голоса за игроков', ['—']));
+        }
+        rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
+        rows.push(makeKaznenyRow('—', 'no_elimination'));
         continue;
       }
       var firstTie = null;
@@ -265,37 +373,40 @@
         }
         if (cluster[i].type === 'vote_hang') lastHang = cluster[i];
       }
-      var nom = firstTie
-        ? (firstTie.candidateIds || []).join(', ')
+      var nomIds = firstTie
+        ? firstTie.candidateIds || []
         : lastHang
-          ? (lastHang.candidateIds || []).join(', ')
-          : '';
-      rows.push([csvEscape(nom || '—')]);
+          ? lastHang.candidateIds || []
+          : [];
 
-      var v1 = firstTie
-        ? formatCompactVotes(firstTie.candidateIds, firstTie.votes)
-        : lastHang
-          ? formatCompactVotes(lastHang.candidateIds, lastHang.votes)
-          : '';
-      rows.push([csvEscape(v1 || '—')]);
+      var v1Source = firstTie || lastHang;
+      var slots1 = v1Source
+        ? slotsFromVotes(v1Source.candidateIds, v1Source.votes)
+        : [];
 
-      var v2 = '';
+      var slots4 = [];
       if (secondTie) {
-        v2 = formatCompactVotes(secondTie.candidateIds, secondTie.votes);
+        slots4 = slotsFromVotes(secondTie.candidateIds, secondTie.votes);
       } else if (firstTie && lastHang && firstTie !== lastHang && !lastHang.viaRaiseAll) {
-        v2 = formatCompactVotes(lastHang.candidateIds, lastHang.votes);
+        slots4 = slotsFromVotes(lastHang.candidateIds, lastHang.votes);
       } else if (cluster.length && cluster[cluster.length - 1].type === 'vote_no_elimination') {
         var ne = cluster[cluster.length - 1];
         if (firstTie && !lastHang) {
-          v2 =
-            typeof ne.votesCast === 'number' && typeof ne.poolTotal === 'number'
-              ? ne.votesCast + '/' + ne.poolTotal
-              : '';
+          if (typeof ne.votesCast === 'number' && typeof ne.poolTotal === 'number') {
+            slots4 = [ne.votesCast, ne.poolTotal];
+          }
         }
       }
-      rows.push([csvEscape(v2)]);
+      if (!slots4.length) slots4 = ['—'];
 
-      rows.push([csvEscape(voteClusterOutcome(cluster))]);
+      rows.push(makeVoteRow('Голосование #' + rn, []));
+      var nomSlots = slotsFromIds(nomIds);
+      rows.push(makeVoteRow('Выставленные игроки', nomSlots.length ? nomSlots : ['—']));
+      rows.push(makeVoteRow('Голоса за игроков', slots1.length ? slots1 : ['—']));
+      rows.push(makeVoteRow('Голоса за игроков на переголосовании', slots4));
+      rows.push(
+        makeKaznenyRow(clusterExecutedIdsComma(cluster), clusterEliminationTag(cluster))
+      );
     }
 
     return rows.map(function (row) {
