@@ -24,7 +24,6 @@ var ASSETS = [
   './audio/mafia-leaves.mp3',
   './audio/track1.mp3',
   './audio/track2.mp3',
-  './audio/track3.mp3',
 ];
 
 self.addEventListener('install', function (e) {

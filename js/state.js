@@ -18,6 +18,13 @@ window.MafiaApp = window.MafiaApp || {};
   app.timerVoiceEnabled = false;
   app.timerVoiceDuckEnabled = true;
   app.timerVoiceDuckMul = 0.38;
+  // Back-compat: старый единый слайдер громкости озвучки.
+  app.timerVoiceVolume = 0.92;
+  // Новые настройки: раздельная громкость (без музыки / с музыкой) и скорость озвучки.
+  app.voiceVolumeNoMusic = 0.92;
+  app.voiceVolumeWithMusic = 0.92;
+  app.voiceRate = 1.0;
+  app.nightActionsWaitSec = 10;
   app.canCloseRole = false;
 
   app.gameLog = [];

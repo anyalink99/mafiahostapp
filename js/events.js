@@ -106,6 +106,13 @@
         e.preventDefault();
         if (action === 'toggle-timer') app.toggleTimer();
         else if (action === 'toggle-music') app.musicToggleMainButton();
+        else if (action === 'timer-voice-modal-open') {
+          if (app.showTimerVoiceModal) app.showTimerVoiceModal();
+        } else if (action === 'timer-voice-modal-close') {
+          if (app.hideTimerVoiceModal) app.hideTimerVoiceModal();
+        } else if (action === 'night-actions-run') {
+          if (app.runNightActions) app.runNightActions();
+        }
         else if (action === 'music-pick-cancel') app.hideMusicSlotModal();
         else if (action === 'music-pick-slot') {
           const slot = t.getAttribute('data-slot');
@@ -432,6 +439,50 @@
         if (lab) lab.textContent = Math.round(v * 100) + '%';
         return;
       }
+      if (el && el.id === 'setting-voice-vol-no-music') {
+        var v0 = parseFloat(el.value);
+        if (isNaN(v0)) return;
+        if (v0 < 0) v0 = 0;
+        if (v0 > 1) v0 = 1;
+        app.voiceVolumeNoMusic = v0;
+        if (app.saveVoiceVolumePrefs) app.saveVoiceVolumePrefs();
+        var l0 = document.getElementById('setting-voice-vol-no-music-label');
+        if (l0) l0.textContent = Math.round(v0 * 100) + '%';
+        return;
+      }
+      if (el && el.id === 'setting-voice-vol-with-music') {
+        var v1 = parseFloat(el.value);
+        if (isNaN(v1)) return;
+        if (v1 < 0) v1 = 0;
+        if (v1 > 1) v1 = 1;
+        app.voiceVolumeWithMusic = v1;
+        if (app.saveVoiceVolumePrefs) app.saveVoiceVolumePrefs();
+        var l1 = document.getElementById('setting-voice-vol-with-music-label');
+        if (l1) l1.textContent = Math.round(v1 * 100) + '%';
+        return;
+      }
+      if (el && el.id === 'setting-voice-rate') {
+        var rr = parseFloat(el.value);
+        if (isNaN(rr)) return;
+        if (rr < 1) rr = 1;
+        if (rr > 2) rr = 2;
+        app.voiceRate = rr;
+        if (app.saveVoiceRatePref) app.saveVoiceRatePref();
+        var rl = document.getElementById('setting-voice-rate-label');
+        if (rl) rl.textContent = rr.toFixed(2).replace(/\.00$/, '') + 'x';
+        return;
+      }
+      if (el && el.id === 'setting-night-wait') {
+        var nw = parseInt(el.value, 10);
+        if (isNaN(nw)) return;
+        if (nw < 0) nw = 0;
+        if (nw > 20) nw = 20;
+        app.nightActionsWaitSec = nw;
+        if (app.saveNightActionsWaitPref) app.saveNightActionsWaitPref();
+        var nlab = document.getElementById('setting-night-wait-label');
+        if (nlab) nlab.textContent = String(nw);
+        return;
+      }
       if (!el || !el.getAttribute || el.getAttribute('data-music-field') !== 'volume') return;
       app.applyMusicFieldChange(el);
     });
@@ -442,6 +493,7 @@
         app.timerVoiceEnabled = !!el.checked;
         if (app.saveTimerVoicePref) app.saveTimerVoicePref();
         if (app.syncTimerVoiceDuckControls) app.syncTimerVoiceDuckControls();
+        if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
         return;
       }
       if (el.id === 'setting-timer-voice-duck') {

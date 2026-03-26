@@ -247,13 +247,11 @@ window.MafiaApp = window.MafiaApp || {};
   var DEFAULT_BUNDLED_TRACKS = [
     { slotKey: '1', path: 'audio/track1.mp3', offsetSec: 0, displayName: 'Трек по умолчанию' },
     { slotKey: '2', path: 'audio/track2.mp3', offsetSec: 0, displayName: 'Трек по умолчанию' },
-    { slotKey: '2', path: 'audio/track3.mp3', offsetSec: 0, displayName: 'Трек по умолчанию', enabled: false },
   ];
 
   var BUNDLED_PATH_LABELS = {
     'audio/track1.mp3': 'Трек по умолчанию',
     'audio/track2.mp3': 'Трек по умолчанию',
-    'audio/track3.mp3': 'Трек по умолчанию',
   };
 
   function migrateBundledDisplayNames(meta) {
@@ -268,6 +266,21 @@ window.MafiaApp = window.MafiaApp || {};
             item.name = label;
             changed = true;
           }
+        }
+      }
+    });
+    return changed;
+  }
+
+  function removeBundledTrackPath(meta, path) {
+    var changed = false;
+    ['1', '2'].forEach(function (key) {
+      var list = meta.slots[key];
+      for (var i = list.length - 1; i >= 0; i--) {
+        var item = list[i];
+        if (item && item.source && item.source.type === 'bundled' && item.source.path === path) {
+          list.splice(i, 1);
+          changed = true;
         }
       }
     });
@@ -302,6 +315,8 @@ window.MafiaApp = window.MafiaApp || {};
       }
     }
     if (migrateBundledDisplayNames(meta)) changed = true;
+    // Track 3 был удалён из проекта: убираем из метаданных, если был раньше засидирован.
+    if (removeBundledTrackPath(meta, 'audio/track3.mp3')) changed = true;
     if (changed) app.saveMusicMeta(meta);
   };
 

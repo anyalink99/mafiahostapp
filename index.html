@@ -120,7 +120,7 @@
             <div id="music-list-slot-2"></div>
         </section>
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
-            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Таймер</h2>
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Озвучка</h2>
             <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
                 <input type="checkbox" id="setting-timer-voice" class="mafia-checkbox">
                 <span>Озвучка таймера</span>
@@ -137,7 +137,33 @@
                     </div>
                     <input type="range" id="setting-timer-voice-duck-mul" min="0.05" max="1" step="0.01" value="0.38" class="mt-2 w-full accent-mafia-gold">
                 </div>
+                <div class="pl-0 sm:pl-7">
+                    <div class="flex items-baseline justify-between gap-2 text-xs text-mafia-cream/60 uppercase tracking-wider">
+                        <span>Громкость (без музыки)</span>
+                        <span id="setting-voice-vol-no-music-label" class="text-mafia-gold/90 tabular-nums normal-case tracking-normal">92%</span>
+                    </div>
+                    <input type="range" id="setting-voice-vol-no-music" min="0" max="1" step="0.01" value="0.92" class="mt-2 w-full accent-mafia-gold">
+                </div>
+                <div class="pl-0 sm:pl-7">
+                    <div class="flex items-baseline justify-between gap-2 text-xs text-mafia-cream/60 uppercase tracking-wider">
+                        <span>Громкость (с музыкой)</span>
+                        <span id="setting-voice-vol-with-music-label" class="text-mafia-gold/90 tabular-nums normal-case tracking-normal">92%</span>
+                    </div>
+                    <input type="range" id="setting-voice-vol-with-music" min="0" max="1" step="0.01" value="0.92" class="mt-2 w-full accent-mafia-gold">
+                </div>
+                <div class="pl-0 sm:pl-7">
+                    <div class="flex items-baseline justify-between gap-2 text-xs text-mafia-cream/60 uppercase tracking-wider">
+                        <span>Скорость озвучки</span>
+                        <span id="setting-voice-rate-label" class="text-mafia-gold/90 tabular-nums normal-case tracking-normal">1x</span>
+                    </div>
+                    <input type="range" id="setting-voice-rate" min="1" max="2" step="0.01" value="1" class="mt-2 w-full accent-mafia-gold">
+                </div>
             </div>
+            <div class="flex items-baseline justify-between gap-2 text-xs text-mafia-cream/60 uppercase tracking-wider">
+                <span>Время на фазу (ночные действия)</span>
+                <span class="text-mafia-gold/90 tabular-nums normal-case tracking-normal"><span id="setting-night-wait-label">10</span> с</span>
+            </div>
+            <input type="range" id="setting-night-wait" min="0" max="20" step="1" value="10" class="mt-2 w-full accent-mafia-gold">
         </section>
     </div>
 </div>
@@ -163,6 +189,11 @@
 <div id="game-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6">
     <div class="relative bg-mafia-coal border border-mafia-border rounded-lg p-3 sm:p-4 flex-shrink-0 min-w-0">
         <button type="button" data-goto="menu-screen" class="absolute left-3 top-3 sm:left-4 sm:top-4 z-10 text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer text-left leading-none">← Меню</button>
+        <button type="button" id="btn-timer-voice" data-action="timer-voice-modal-open" aria-label="Озвучка / Ночные действия" aria-pressed="false" class="absolute right-14 top-2.5 sm:right-[4.1rem] sm:top-3 z-10 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-lg border-2 bg-mafia-card border-mafia-border text-mafia-cream hover:border-mafia-gold/50 transition-colors cursor-pointer" title="Озвучка / Ночные действия">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46"/>
+            </svg>
+        </button>
         <button type="button" id="btn-music" data-action="toggle-music" aria-label="Музыка" aria-pressed="false" class="absolute right-2.5 top-2.5 sm:right-3 sm:top-3 z-10 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-lg border-2 bg-mafia-card border-mafia-border text-mafia-cream hover:border-mafia-gold/50 transition-colors cursor-pointer" title="Музыка">
             <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
         </button>
@@ -356,6 +387,15 @@
     </div>
 </div>
 
+<div id="modal-timer-voice" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-timer-voice-title">
+    <div class="absolute inset-0" data-action="timer-voice-modal-close" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <h2 id="modal-timer-voice-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-4">Озвучка</h2>
+        <button type="button" id="btn-night-actions" data-action="night-actions-run" aria-label="Ночные действия" aria-pressed="false" class="w-full py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream font-semibold uppercase tracking-wider rounded cursor-pointer transition-colors">Ночные действия</button>
+        <button type="button" data-action="timer-voice-modal-close" class="w-full mt-3 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Закрыть</button>
+    </div>
+</div>
+
 <div id="modal-author-links" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-author-links-title">
     <div class="absolute inset-0" data-action="author-links-close" aria-hidden="true"></div>
     <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-6 max-w-sm w-full shadow-xl">
@@ -392,6 +432,7 @@
 
 <audio id="bg-music" preload="none" playsinline></audio>
 <audio id="timer-voice" preload="auto" playsinline></audio>
+<audio id="sfx-voice" preload="auto" playsinline></audio>
 <audio id="music-preview" preload="none" playsinline></audio>
 
 <script src="js/state.js"></script>

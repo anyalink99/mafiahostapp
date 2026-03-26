@@ -99,6 +99,7 @@
     if (screenId === 'settings-screen') {
       if (app.renderMusicSettings) app.renderMusicSettings();
       if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
+      if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
     }
     if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
   };
