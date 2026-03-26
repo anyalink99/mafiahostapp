@@ -22,6 +22,12 @@ var ASSETS = [
   './audio/thank-you-stop.mp3',
   './audio/mafia-10-seconds.mp3',
   './audio/mafia-leaves.mp3',
+  './audio/mafia shoots with a number.mp3',
+  './audio/mafia leaves.mp3',
+  './audio/don wakes.mp3',
+  './audio/don leaves.mp3',
+  './audio/sheriff wakes.mp3',
+  './audio/sheriff leaves.mp3',
   './audio/track1.mp3',
   './audio/track2.mp3',
 ];
