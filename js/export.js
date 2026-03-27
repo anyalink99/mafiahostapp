@@ -1,6 +1,7 @@
 (function (app) {
   var parseBonusFloat = app.parseBonusFloat;
   var roleLabelRu = app.roleLabelRu;
+  var DASH = '—';
 
   function formatCompactVotes(candidateIds, votes) {
     if (!candidateIds || !candidateIds.length) return '';
@@ -96,7 +97,7 @@
   function buildHeaderText() {
     var lines = [];
     var host = app.summaryHostName != null ? String(app.summaryHostName).trim() : '';
-    lines.push('Ведущий: ' + (host || '—'));
+    lines.push('Ведущий: ' + (host || DASH));
 
     var n = app.players.length;
     for (var p = 0; p < n; p++) {
@@ -119,7 +120,7 @@
       if (note != null && String(note).trim()) {
         parts.push(String(note).trim());
       }
-      var rest = parts.length ? parts.join(', ') : '—';
+      var rest = parts.length ? parts.join(', ') : DASH;
       lines.push('Игрок ' + sid + ': ' + rest);
     }
 
@@ -133,11 +134,11 @@
       else if (code === 'don') donNum = String(pid);
       else if (code === 'sheriff') sheriffNum = String(pid);
     }
-    lines.push('Мафия: ' + (mafiaNums.length ? mafiaNums.join(', ') : '—'));
-    lines.push('Дон: ' + (donNum || '—'));
-    lines.push('Шериф: ' + (sheriffNum || '—'));
+    lines.push('Мафия: ' + (mafiaNums.length ? mafiaNums.join(', ') : DASH));
+    lines.push('Дон: ' + (donNum || DASH));
+    lines.push('Шериф: ' + (sheriffNum || DASH));
 
-    var winLine = '—';
+    var winLine = DASH;
     if (app.winningTeam === 'mafia') winLine = 'мафия';
     else if (app.winningTeam === 'peaceful') winLine = 'мирные';
     lines.push('Победа: ' + winLine);
@@ -193,14 +194,14 @@
 
   function clusterExecutedIdsComma(cluster) {
     var last = cluster[cluster.length - 1];
-    if (!last) return '—';
-    if (last.type === 'vote_no_elimination') return '—';
+    if (!last) return DASH;
+    if (last.type === 'vote_no_elimination') return DASH;
     if (last.type === 'vote_hang') {
       var ids = last.eliminatedIds || [];
-      if (!ids.length) return '—';
+      if (!ids.length) return DASH;
       return ids.join(', ');
     }
-    return '—';
+    return DASH;
   }
 
   function clusterEliminationTag(cluster) {
@@ -225,7 +226,7 @@
     var val =
       idsCommaOrDash != null && String(idsCommaOrDash).trim() !== ''
         ? String(idsCommaOrDash).trim()
-        : '—';
+        : DASH;
     row.push(val);
     row.push(tagEn != null && String(tagEn).trim() !== '' ? String(tagEn).trim() : '');
     while (row.length < CSV_ROW_COLS) row.push('');
@@ -263,8 +264,8 @@
   function buildCsv() {
     var rows = [];
     var host = app.summaryHostName != null ? String(app.summaryHostName).trim() : '';
-    rows.push(padStatRow(['Ведущий', host || '—', '', '', '', '', '']));
-    var winCell = '—';
+    rows.push(padStatRow(['Ведущий', host || DASH, '', '', '', '', '']));
+    var winCell = DASH;
     if (app.winningTeam === 'mafia') winCell = 'Мафия';
     else if (app.winningTeam === 'peaceful') winCell = 'Мирные';
     rows.push(padStatRow(['Победа', winCell, '', '', '', '', '']));
@@ -290,7 +291,7 @@
       rows.push(
         padStatRow([
           String(sid),
-          nick || '—',
+          nick || DASH,
           roleRu,
           pu,
           split.plus,
@@ -313,10 +314,10 @@
       var round = rounds[r];
       if (round.kind === 'skip') {
         rows.push(makeVoteRow('Голосование #' + rn, []));
-        rows.push(makeVoteRow('Выставленные игроки', ['—']));
-        rows.push(makeVoteRow('Голоса за игроков', ['—']));
-        rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
-        rows.push(makeEliminatedRow('—', 'vote_skipped'));
+        rows.push(makeVoteRow('Выставленные игроки', [DASH]));
+        rows.push(makeVoteRow('Голоса за игроков', [DASH]));
+        rows.push(makeVoteRow('Голоса за игроков на переголосовании', [DASH]));
+        rows.push(makeEliminatedRow(DASH, 'vote_skipped'));
         continue;
       }
       if (round.kind === 'single') {

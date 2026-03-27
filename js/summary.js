@@ -2,6 +2,12 @@
   var SUMMARY_SYNTHETIC_FIRST_DAY_DEFAULT =
     '#1 - никто не был выставлен или был выставлен один игрок, голосование пропущено';
   var escapeHtml = app.escapeHtml;
+  var SUMMARY_ROLE_ICON_BY_CODE = {
+    don: 'icon-don',
+    sheriff: 'icon-sheriff',
+    mafia: 'icon-mafia',
+    peaceful: 'icon-like',
+  };
 
   app.rolesFromDealForSeats = function () {
     if (!app.revealedIndices || app.revealedIndices.length !== app.players.length) return null;
@@ -270,10 +276,7 @@
   };
 
   function summaryRoleCodeToIconId(code) {
-    if (code === 'don') return 'icon-don';
-    if (code === 'sheriff') return 'icon-sheriff';
-    if (code === 'mafia') return 'icon-mafia';
-    return 'icon-like';
+    return SUMMARY_ROLE_ICON_BY_CODE[code] || SUMMARY_ROLE_ICON_BY_CODE.peaceful;
   }
 
   function summaryRoleIconWrapClass(code) {
@@ -484,10 +487,13 @@
   function isDaytimeVoteEvent(e) {
     if (!e) return false;
     var tt = e.type;
-    if (tt === 'vote_tie' || tt === 'vote_hang' || tt === 'vote_no_elimination' || tt === 'vote_raise_all') {
-      return true;
-    }
-    return tt === 'elimination' && e.outsideVoteSingleNominee;
+    return (
+      tt === 'vote_tie' ||
+      tt === 'vote_hang' ||
+      tt === 'vote_no_elimination' ||
+      tt === 'vote_raise_all' ||
+      (tt === 'elimination' && e.outsideVoteSingleNominee)
+    );
   }
 
   function isNightKill(e) {

@@ -19,9 +19,13 @@
   }
 
   function setMusicButtonPlaying(playing) {
-    var btn = document.getElementById('btn-music');
+    setToggleButtonState('btn-music', playing);
+  }
+
+  function setToggleButtonState(buttonId, active) {
+    var btn = document.getElementById(buttonId);
     if (!btn) return;
-    if (playing) {
+    if (active) {
       btn.setAttribute('aria-pressed', 'true');
       btn.classList.remove('bg-mafia-card', 'border-mafia-border', 'text-mafia-cream');
       btn.classList.add('bg-mafia-blood/40', 'border-mafia-gold/60', 'text-mafia-gold');
@@ -62,6 +66,17 @@
     if (v < 0) v = 0;
     if (v > 1) v = 1;
     a.volume = v;
+  }
+
+  function seekAudioToItemOffset(a, item) {
+    var dur = a.duration;
+    var off = typeof item.offsetSec === 'number' ? item.offsetSec : 0;
+    if (typeof dur === 'number' && !isNaN(dur) && dur > 0) {
+      if (off >= dur - 0.05) off = Math.max(0, dur - 0.05);
+      a.currentTime = off;
+    } else {
+      a.currentTime = off;
+    }
   }
 
   var previewPlayingKey = null;
@@ -139,14 +154,7 @@
         settled = true;
         a.removeEventListener('loadedmetadata', onReady);
         a.removeEventListener('canplay', onReady);
-        var dur = a.duration;
-        var off = typeof item.offsetSec === 'number' ? item.offsetSec : 0;
-        if (typeof dur === 'number' && !isNaN(dur) && dur > 0) {
-          if (off >= dur - 0.05) off = Math.max(0, dur - 0.05);
-          a.currentTime = off;
-        } else {
-          a.currentTime = off;
-        }
+        seekAudioToItemOffset(a, item);
         var p = a.play();
         if (p && typeof p.then === 'function') {
           p.catch(function () {
@@ -205,14 +213,7 @@
           a.removeEventListener('loadedmetadata', onReady);
           a.removeEventListener('canplay', onReady);
           if (fallbackTimer) clearTimeout(fallbackTimer);
-          var dur = a.duration;
-          var off = typeof item.offsetSec === 'number' ? item.offsetSec : 0;
-          if (typeof dur === 'number' && !isNaN(dur) && dur > 0) {
-            if (off >= dur - 0.05) off = Math.max(0, dur - 0.05);
-            a.currentTime = off;
-          } else {
-            a.currentTime = off;
-          }
+          seekAudioToItemOffset(a, item);
           var p = a.play();
           if (p && typeof p.then === 'function') {
             p.then(function () {

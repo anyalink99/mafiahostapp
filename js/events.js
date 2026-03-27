@@ -3,6 +3,113 @@
     var voteTilePtr = { tile: null, id: null };
     var ROLE_CLOSE_EDGE_GUARD_PX = 56;
     var roleCloseEdgeTouchBlockedAt = 0;
+    var uiHelpers = {
+      getIntAttr: function (el, name) {
+        if (!el || !el.getAttribute) return null;
+        var v = el.getAttribute(name);
+        if (v === null) return null;
+        var n = parseInt(v, 10);
+        return isNaN(n) ? null : n;
+      },
+      isScreenActive: function (screenId) {
+        var el = document.getElementById(screenId);
+        return !!(el && el.classList.contains('active'));
+      },
+      withModalPlayerId: function (cb) {
+        var modal = document.getElementById('modal-player-actions');
+        var pid = modal && modal.dataset.playerId ? parseInt(modal.dataset.playerId, 10) : NaN;
+        if (!isNaN(pid)) cb(pid);
+      }
+    };
+    var localActionHandlers = {
+      'toggle-timer': function () {
+        app.toggleTimer();
+      },
+      'toggle-music': function () {
+        app.toggleMusicPlayback();
+      },
+      'timer-voice-modal-open': function () {
+        if (app.showTimerVoiceModal) app.showTimerVoiceModal();
+      },
+      'timer-voice-modal-close': function () {
+        if (app.hideTimerVoiceModal) app.hideTimerVoiceModal();
+      },
+      'night-actions-run': function () {
+        if (app.runNightActions) app.runNightActions();
+      },
+      'author-links-open': function () {
+        if (app.showAuthorLinksModal) app.showAuthorLinksModal();
+      },
+      'author-links-close': function () {
+        if (app.hideAuthorLinksModal) app.hideAuthorLinksModal();
+      },
+      'reset-game-confirm-open': function () {
+        if (app.showResetGameConfirmModal) app.showResetGameConfirmModal();
+      },
+      'reset-game-confirm-cancel': function () {
+        if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
+      },
+      'reset-game-confirm-apply': function () {
+        if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
+        if (app.resetGameState) app.resetGameState();
+      },
+      'reset-game-confirm-apply-with-nicks': function () {
+        if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
+        if (app.resetGameState) app.resetGameState({ resetNicknames: true });
+      },
+      'reset-timer': function (el) {
+        var sec = uiHelpers.getIntAttr(el, 'data-seconds');
+        if (sec !== null) app.resetTimer(sec);
+      },
+      'shuffle-seating': function () {
+        if (app.shufflePlayerNicks) {
+          var changed = app.shufflePlayerNicks();
+          if (app.showToast) {
+            app.showToast(changed ? 'Игроки пересажены случайно' : 'Для пересадки нужно минимум 2 ника');
+          }
+        }
+      },
+      'export-copy-text': function () {
+        if (!uiHelpers.isScreenActive('summary-screen')) return;
+        if (app.copyGameExportToClipboard) app.copyGameExportToClipboard();
+      },
+      'export-download-csv': function () {
+        if (!uiHelpers.isScreenActive('summary-screen')) return;
+        if (app.downloadGameExportCsv) app.downloadGameExportCsv();
+      },
+      'summary-player-open': function (el) {
+        if (!uiHelpers.isScreenActive('summary-screen')) return;
+        var spid = uiHelpers.getIntAttr(el, 'data-player-id');
+        if (spid !== null && app.showSummaryPlayerModal) app.showSummaryPlayerModal(spid);
+      },
+      'summary-modal-save': function () {
+        if (app.applySummaryPlayerModal) app.applySummaryPlayerModal();
+      },
+      'summary-bonus-delta': function (el) {
+        if (!uiHelpers.isScreenActive('summary-screen')) return;
+        var dAttr = el.getAttribute('data-delta');
+        var d = dAttr !== null ? parseFloat(dAttr) : NaN;
+        if (!isNaN(d) && app.applySummaryBonusDelta) app.applySummaryBonusDelta(d);
+      },
+      'summary-log-open': function (el) {
+        if (!uiHelpers.isScreenActive('summary-screen')) return;
+        var lidx = el.getAttribute('data-summary-log-index');
+        var skipK = el.getAttribute('data-summary-skip-key');
+        var lidxNum = lidx !== null ? parseInt(lidx, 10) : NaN;
+        if ((skipK === null || skipK === '') && lidxNum === -1) skipK = 'lead';
+        if (skipK !== null && skipK !== '' && app.showSummaryLogModal) {
+          app.showSummaryLogModal(lidxNum, skipK);
+        } else if (lidx !== null && app.showSummaryLogModal) {
+          app.showSummaryLogModal(lidxNum, null);
+        }
+      },
+      'summary-modal-log-cancel': function () {
+        if (app.hideSummaryLogModal) app.hideSummaryLogModal();
+      },
+      'summary-modal-log-save': function () {
+        if (app.applySummaryLogModal) app.applySummaryLogModal();
+      }
+    };
 
     function isInsideRoleCloseSafeArea(x, y) {
       if (!isFinite(x) || !isFinite(y)) return true;
@@ -115,186 +222,9 @@
       if (t) {
         const action = t.getAttribute('data-action');
         e.preventDefault();
-        if (action === 'toggle-timer') app.toggleTimer();
-        else if (action === 'toggle-music') app.toggleMusicPlayback();
-        else if (action === 'timer-voice-modal-open') {
-          if (app.showTimerVoiceModal) app.showTimerVoiceModal();
-        } else if (action === 'timer-voice-modal-close') {
-          if (app.hideTimerVoiceModal) app.hideTimerVoiceModal();
-        } else if (action === 'night-actions-run') {
-          if (app.runNightActions) app.runNightActions();
-        }
-        else if (action === 'music-pick-cancel') app.hideMusicSlotModal();
-        else if (action === 'music-pick-slot') {
-          const slot = t.getAttribute('data-slot');
-          if (slot) app.musicStartSlot(slot);
-        }         else if (action === 'music-empty-cancel') app.hideMusicEmptyModal();
-        else if (action === 'author-links-open') {
-          if (app.showAuthorLinksModal) app.showAuthorLinksModal();
-        } else if (action === 'author-links-close') {
-          if (app.hideAuthorLinksModal) app.hideAuthorLinksModal();
-        } else if (action === 'reset-game-confirm-open') {
-          if (app.showResetGameConfirmModal) app.showResetGameConfirmModal();
-        } else if (action === 'reset-game-confirm-cancel') {
-          if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
-        } else if (action === 'reset-game-confirm-apply') {
-          if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
-          if (app.resetGameState) app.resetGameState();
-        } else if (action === 'reset-game-confirm-apply-with-nicks') {
-          if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
-          if (app.resetGameState) app.resetGameState({ resetNicknames: true });
-        } else if (action === 'music-add-slot') {
-          const slot = t.getAttribute('data-slot');
-          const inp = document.getElementById(slot === '2' ? 'music-files-slot-2' : 'music-files-slot-1');
-          if (inp) inp.click();
-        } else if (action === 'music-toggle-item-panel') {
-          const sid = t.getAttribute('data-slot');
-          const iid = t.getAttribute('data-item-id');
-          if (sid && iid && app.toggleMusicItemExpanded) app.toggleMusicItemExpanded(sid, iid);
-        } else if (action === 'music-preview') {
-          const sid = t.getAttribute('data-slot');
-          const iid = t.getAttribute('data-item-id');
-          if (sid && iid && app.musicPreviewToggle) app.musicPreviewToggle(sid, iid);
-        } else if (action === 'music-remove-item') {
-          const sid = t.getAttribute('data-slot');
-          const iid = t.getAttribute('data-item-id');
-          if (sid && iid) {
-            if (app.expandedMusicItemIdBySlot) {
-              if (app.expandedMusicItemIdBySlot['1'] === iid || app.expandedMusicItemIdBySlot['2'] === iid) {
-                app.expandedMusicItemIdBySlot['1'] = '';
-                app.expandedMusicItemIdBySlot['2'] = '';
-              }
-            }
-            app.musicRemoveItem(sid, iid).then(function () {
-              if (app.renderMusicSettings) app.renderMusicSettings();
-            });
-          }
-        } else if (action === 'reset-timer') {
-          const sec = t.getAttribute('data-seconds');
-          if (sec) app.resetTimer(parseInt(sec, 10));
-        } else if (action === 'shuffle-seating') {
-          if (app.shufflePlayerNicks) {
-            var changed = app.shufflePlayerNicks();
-            if (app.showToast) {
-              app.showToast(changed ? 'Игроки пересажены случайно' : 'Для пересадки нужно минимум 2 ника');
-            }
-          }
-        } else if (action === 'export-copy-text') {
-          var sumScrEx = document.getElementById('summary-screen');
-          if (!sumScrEx || !sumScrEx.classList.contains('active')) return;
-          if (app.copyGameExportToClipboard) app.copyGameExportToClipboard();
-        } else if (action === 'export-download-csv') {
-          var sumScrCsv = document.getElementById('summary-screen');
-          if (!sumScrCsv || !sumScrCsv.classList.contains('active')) return;
-          if (app.downloadGameExportCsv) app.downloadGameExportCsv();
-        } else if (action === 'vote-open-count') {
-          if (window.PointerEvent) return;
-          var cix = t.getAttribute('data-candidate-index');
-          if (cix !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cix, 10));
-        } else if (action === 'vote-count-pick') {
-          if (app._voteModalOpenedAt && Date.now() - app._voteModalOpenedAt < 550) return;
-          var vv = t.getAttribute('data-value');
-          if (vv !== null && app.applyVoteCountPick) app.applyVoteCountPick(parseInt(vv, 10));
-        } else if (action === 'raise-all-pick') {
-          var rv = t.getAttribute('data-value');
-          if (rv !== null && app.applyRaiseAllPick) app.applyRaiseAllPick(parseInt(rv, 10));
-        } else if (action === 'vote-count-cancel') {
-          if (app._voteModalOpenedAt && Date.now() - app._voteModalOpenedAt < 550) return;
-          if (app.hideVoteCountModal) app.hideVoteCountModal();
-        } else if (action === 'player-slot-open') {
-          if (app._lastGestureTs && Date.now() - app._lastGestureTs < 400) return;
-          const sid = t.getAttribute('data-player-id');
-          if (sid && app.showPlayerActionsModal) {
-            app.showPlayerActionsModal(parseInt(sid, 10));
-          }
-        } else if (action === 'player-modal-save') {
-          if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-        } else if (action === 'player-prepare-role-pick') {
-          if (app.pickPrepareModalRole) {
-            var rvp = t.getAttribute('data-role-code');
-            if (rvp) app.pickPrepareModalRole(rvp);
-          }
-        } else if (action === 'player-modal-foul') {
-          var modalF = document.getElementById('modal-player-actions');
-          var pidF = modalF && modalF.dataset.playerId ? parseInt(modalF.dataset.playerId, 10) : NaN;
-          if (!isNaN(pidF)) {
-            var plF = app.players.find(function (x) {
-              return x.id === pidF;
-            });
-            if (plF && !plF.eliminationReason) {
-              if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-              app.addFoul(pidF);
-            }
-          }
-        } else if (action === 'player-modal-vote') {
-          var modalV = document.getElementById('modal-player-actions');
-          var pidV = modalV && modalV.dataset.playerId ? parseInt(modalV.dataset.playerId, 10) : NaN;
-          if (!isNaN(pidV)) {
-            var plV = app.players.find(function (x) {
-              return x.id === pidV;
-            });
-            var inQV = app.nomineeQueue.indexOf(pidV) !== -1;
-            if (plV && !plV.eliminationReason) {
-              if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-              if (inQV) {
-                if (app.removePlayerFromNomineeQueue) app.removePlayerFromNomineeQueue(pidV);
-              } else {
-                app.addPlayerToNomineeQueue(pidV);
-              }
-            }
-          }
-        } else if (action === 'player-modal-revive') {
-          var modalR = document.getElementById('modal-player-actions');
-          var pidR = modalR && modalR.dataset.playerId ? parseInt(modalR.dataset.playerId, 10) : NaN;
-          if (!isNaN(pidR)) {
-            var plR = app.players.find(function (x) {
-              return x.id === pidR;
-            });
-            if (plR && plR.eliminationReason && app.setPlayerEliminationState) {
-              var reasonR = plR.eliminationReason;
-              if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-              app.setPlayerEliminationState(pidR, reasonR);
-            }
-          }
-        } else if (action === 'player-modal-elim') {
-          var modalE = document.getElementById('modal-player-actions');
-          var pidE = modalE && modalE.dataset.playerId ? parseInt(modalE.dataset.playerId, 10) : NaN;
-          var reasonE = t.getAttribute('data-elim');
-          if (reasonE === 'hang' && app.nomineeQueue && app.nomineeQueue.indexOf(pidE) === -1) return;
-          if (!isNaN(pidE) && reasonE && app.setPlayerEliminationState) {
-            if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-            app.setPlayerEliminationState(pidE, reasonE);
-          }
-        } else if (action === 'summary-player-open') {
-          var sumScr = document.getElementById('summary-screen');
-          if (!sumScr || !sumScr.classList.contains('active')) return;
-          var spid = t.getAttribute('data-player-id');
-          if (spid !== null && app.showSummaryPlayerModal) app.showSummaryPlayerModal(parseInt(spid, 10));
-        } else if (action === 'summary-modal-save') {
-          if (app.applySummaryPlayerModal) app.applySummaryPlayerModal();
-        } else if (action === 'summary-bonus-delta') {
-          var sumScrB = document.getElementById('summary-screen');
-          if (!sumScrB || !sumScrB.classList.contains('active')) return;
-          var dAttr = t.getAttribute('data-delta');
-          var d = dAttr !== null ? parseFloat(dAttr) : NaN;
-          if (!isNaN(d) && app.applySummaryBonusDelta) app.applySummaryBonusDelta(d);
-        } else if (action === 'summary-log-open') {
-          var sumScrL = document.getElementById('summary-screen');
-          if (!sumScrL || !sumScrL.classList.contains('active')) return;
-          var lidx = t.getAttribute('data-summary-log-index');
-          var skipK = t.getAttribute('data-summary-skip-key');
-          var lidxNum = lidx !== null ? parseInt(lidx, 10) : NaN;
-          if ((skipK === null || skipK === '') && lidxNum === -1) skipK = 'lead';
-          if (skipK !== null && skipK !== '' && app.showSummaryLogModal) {
-            app.showSummaryLogModal(lidxNum, skipK);
-          } else if (lidx !== null && app.showSummaryLogModal) {
-            app.showSummaryLogModal(lidxNum, null);
-          }
-        } else if (action === 'summary-modal-log-cancel') {
-          if (app.hideSummaryLogModal) app.hideSummaryLogModal();
-        } else if (action === 'summary-modal-log-save') {
-          if (app.applySummaryLogModal) app.applySummaryLogModal();
-        }
+        var delegatedHandler =
+          localActionHandlers[action] || (app.uiActionHandlers ? app.uiActionHandlers[action] : null);
+        if (delegatedHandler) delegatedHandler(t, e, uiHelpers);
         return;
       }
     });
