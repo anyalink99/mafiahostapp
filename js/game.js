@@ -7,6 +7,81 @@
       .replace(/"/g, '&quot;');
   }
 
+  function prepareRoleCodeToLabel(code) {
+    if (code === 'don') return 'Дон';
+    if (code === 'sheriff') return 'Шериф';
+    if (code === 'mafia') return 'Мафия';
+    return 'Мирный';
+  }
+
+  function prepareRoleCodeToIconId(code) {
+    if (code === 'don') return 'icon-don';
+    if (code === 'sheriff') return 'icon-sheriff';
+    if (code === 'mafia') return 'icon-mafia';
+    return 'icon-like';
+  }
+
+  function prepareRoleIconWrapClass(code) {
+    var isMafiaSide = code === 'mafia' || code === 'don';
+    if (isMafiaSide) {
+      return 'flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-border bg-mafia-black text-mafia-gold sm:h-9 sm:w-9';
+    }
+    return 'flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-gold/40 bg-mafia-blood text-mafia-gold sm:h-9 sm:w-9';
+  }
+
+  function renderPrepareModalRoleRadios(selectedCode) {
+    var row = document.getElementById('modal-player-prepare-role-icons');
+    if (!row) return;
+    row.innerHTML = '';
+    var opts = [
+      { value: 'peaceful', label: 'Мирный житель' },
+      { value: 'mafia', label: 'Мафия' },
+      { value: 'don', label: 'Дон' },
+      { value: 'sheriff', label: 'Шериф' },
+    ];
+    for (var i = 0; i < opts.length; i++) {
+      var o = opts[i];
+      var selected = o.value === selectedCode;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', selected ? 'true' : 'false');
+      b.setAttribute('aria-label', o.label);
+      b.setAttribute('data-action', 'player-prepare-role-pick');
+      b.setAttribute('data-role-code', o.value);
+      b.className =
+        'flex shrink-0 cursor-pointer items-center justify-center rounded-lg border p-1 outline-none transition-[border-color,background-color,box-shadow,transform] hover:border-mafia-gold/40 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:p-1.5 ' +
+        (selected
+          ? 'border-mafia-gold/65 bg-black/20 shadow-[inset_0_0_0_1px_rgba(212,175,55,0.35)]'
+          : 'border-mafia-border bg-mafia-coal/80');
+      var wrap = document.createElement('div');
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.className = prepareRoleIconWrapClass(o.value);
+      wrap.innerHTML =
+        '<svg class="h-[1.35rem] w-[1.35rem] pointer-events-none sm:h-6 sm:w-6" aria-hidden="true"><use href="#' +
+        prepareRoleCodeToIconId(o.value) +
+        '"/></svg>';
+      b.appendChild(wrap);
+      row.appendChild(b);
+    }
+  }
+
+  function getPrepareModalSelectedRoleCode() {
+    var row = document.getElementById('modal-player-prepare-role-icons');
+    if (!row) return null;
+    var picked = row.querySelector('[role="radio"][aria-checked="true"]');
+    return picked && picked.getAttribute('data-role-code') ? picked.getAttribute('data-role-code') : null;
+  }
+
+  app.pickPrepareModalRole = function (roleCode) {
+    if (roleCode !== 'peaceful' && roleCode !== 'mafia' && roleCode !== 'don' && roleCode !== 'sheriff') {
+      return;
+    }
+    var m = document.getElementById('modal-player-actions');
+    if (!m || m.getAttribute('data-mode') !== 'prepare') return;
+    renderPrepareModalRoleRadios(roleCode);
+  };
+
   app.getActivePlayerCount = function () {
     var c = 0;
     for (var ai = 0; ai < app.players.length; ai++) {
@@ -28,6 +103,19 @@
     });
     if (!pl) return;
     pl.nick = inp.value.slice(0, 32);
+    var mode = m.dataset.mode || '';
+    if (mode === 'prepare') {
+      var seatIndex = app.players.indexOf(pl);
+      var roleCode = getPrepareModalSelectedRoleCode();
+      if (roleCode) {
+        if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') {
+          app.summaryRoleByPlayerId = {};
+        }
+        app.summaryRoleByPlayerId[String(pid)] = roleCode;
+      } else if (app.summaryRoleByPlayerId && app.getEffectiveSummaryRoleCode) {
+        app.summaryRoleByPlayerId[String(pid)] = app.getEffectiveSummaryRoleCode(pid, seatIndex);
+      }
+    }
     app.saveState();
   };
 
@@ -38,7 +126,11 @@
     if (m) app.modalSetOpen(m, false);
     if (wasOpen) {
       var gs = document.getElementById('game-screen');
+      var ps = document.getElementById('prepare-screen');
       if (gs && gs.classList.contains('active') && app.renderPlayers) app.renderPlayers();
+      if (ps && ps.classList.contains('active') && app.renderPreparePlayers) {
+        app.renderPreparePlayers();
+      }
     }
   };
 
@@ -52,10 +144,26 @@
     var title = document.getElementById('modal-player-actions-title');
     var whenActive = document.getElementById('modal-player-actions-when-active');
     var whenOut = document.getElementById('modal-player-actions-when-out');
+    var gameScreen = document.getElementById('game-screen');
+    var prepareScreen = document.getElementById('prepare-screen');
+    var inGameScreen = !!(gameScreen && gameScreen.classList.contains('active'));
+    var inPrepareScreen = !!(prepareScreen && prepareScreen.classList.contains('active'));
+    var nickOnlyMode = inPrepareScreen && !inGameScreen;
     if (title) title.textContent = 'Игрок №' + id;
     var inQueue = app.votingOrder.indexOf(id) !== -1;
     var out = !!p.outReason;
+    m.dataset.mode = nickOnlyMode ? 'prepare' : 'game';
+    var prepRoleSection = document.getElementById('modal-player-prepare-role-section');
+    if (prepRoleSection) prepRoleSection.classList.toggle('hidden', !nickOnlyMode);
+    if (nickOnlyMode && app.getEffectiveSummaryRoleCode) {
+      var seatIndex = app.players.indexOf(p);
+      renderPrepareModalRoleRadios(app.getEffectiveSummaryRoleCode(id, seatIndex));
+    }
     if (whenActive && whenOut) {
+      if (nickOnlyMode) {
+        whenActive.classList.add('hidden');
+        whenOut.classList.add('hidden');
+      } else
       if (out) {
         whenActive.classList.add('hidden');
         whenOut.classList.remove('hidden');
@@ -64,7 +172,7 @@
         whenOut.classList.add('hidden');
       }
     }
-    if (!out) {
+    if (!out && !nickOnlyMode) {
       var foulBtn = m.querySelector('[data-action="player-modal-foul"]');
       var voteBtn = m.querySelector('[data-action="player-modal-vote"]');
       if (foulBtn) {
@@ -178,28 +286,107 @@
     app.saveState();
   };
 
-  app.renderPlayers = function () {
+  function playerSlotStatusHtml(p) {
+    var inVoteQueue = app.votingOrder.indexOf(p.id) !== -1;
+    if (p.outReason) {
+      return (
+        '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-blood/50 bg-mafia-blood/10 text-mafia-blood" aria-hidden="true"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-elim-' +
+        p.outReason +
+        '"/></svg></div>'
+      );
+    }
+    if (inVoteQueue) {
+      return (
+        '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-gold/70 bg-mafia-blood/15 text-mafia-gold" title="Выставлен" aria-label="Выставлен"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-nominated"/></svg></div>'
+      );
+    }
+    return (
+      '<div class="invisible flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-transparent" aria-hidden="true"></div>'
+    );
+  }
+
+  /** Обновляет только иконку «выставлен» у слота, не пересоздавая кнопку (важно для long-press во время касания). */
+  app.patchPlayerSlotVoteIndicator = function (id) {
     var list = document.getElementById('players-list');
     if (!list) return;
+    var btn = list.querySelector('[data-player-id="' + id + '"]');
+    if (!btn) return;
+    var p = app.players.find(function (x) {
+      return x.id === id;
+    });
+    if (!p) return;
+    var row = btn.querySelector('.player-slot__row');
+    if (!row || !row.children[0]) return;
+    row.children[0].innerHTML = playerSlotStatusHtml(p);
+  };
+
+  app.renderPlayers = function () {
+    return app.renderPlayersTo('players-list');
+  };
+
+  app.renderPreparePlayers = function () {
+    var list = document.getElementById('prepare-players-list');
+    if (!list) return false;
+    list.className =
+      'grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
+    list.innerHTML = '';
+    app.players.forEach(function (p, seatIndex) {
+      var nickTrim = p.nick != null ? String(p.nick).trim() : '';
+      var roleCode = app.getEffectiveSummaryRoleCode
+        ? app.getEffectiveSummaryRoleCode(p.id, seatIndex)
+        : 'peaceful';
+      var roleLabel = prepareRoleCodeToLabel(roleCode);
+      var iconId = prepareRoleCodeToIconId(roleCode);
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className =
+        'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5';
+      btn.setAttribute('data-action', 'player-slot-open');
+      btn.setAttribute('data-player-id', String(p.id));
+      btn.setAttribute(
+        'aria-label',
+        (nickTrim ? 'Игрок №' + p.id + ', псевдоним ' + nickTrim : 'Игрок №' + p.id) + ', роль ' + roleLabel
+      );
+
+      var nickRowClass =
+        'player-slot-nick mt-1 mb-1 min-h-[1.6rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
+        (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30');
+
+      btn.innerHTML =
+        '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-3 items-center gap-x-2">' +
+        '<div class="' +
+        prepareRoleIconWrapClass(roleCode) +
+        '" aria-hidden="true">' +
+        '<svg class="h-5 w-5 pointer-events-none sm:h-[1.35rem] sm:w-[1.35rem]" aria-hidden="true"><use href="#' +
+        iconId +
+        '"/></svg>' +
+        '</div>' +
+        '<span class="font-display text-2xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-3xl text-center">№' +
+        p.id +
+        '</span>' +
+        '<div class="invisible h-8 w-8 sm:h-9 sm:w-9" aria-hidden="true"></div>' +
+        '</div>' +
+        '<div class="' +
+        nickRowClass +
+        '" role="presentation">' +
+        (nickTrim ? escapeHtml(nickTrim) : 'Псевдоним') +
+        '</div>';
+
+      list.appendChild(btn);
+    });
+    return true;
+  };
+
+  app.renderPlayersTo = function (targetId) {
+    var list = document.getElementById(targetId || 'players-list');
+    if (!list) return false;
     list.className =
       'grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
     list.innerHTML = '';
     app.players.forEach(function (p) {
       var out = !!p.outReason;
-      var inVoteQueue = app.votingOrder.indexOf(p.id) !== -1;
-      var statusHtml;
-      if (p.outReason) {
-        statusHtml =
-          '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-blood/50 bg-mafia-blood/10 text-mafia-blood" aria-hidden="true"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-elim-' +
-          p.outReason +
-          '"/></svg></div>';
-      } else if (inVoteQueue) {
-        statusHtml =
-          '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-gold/70 bg-mafia-blood/15 text-mafia-gold" title="Выставлен" aria-label="Выставлен"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-nominated"/></svg></div>';
-      } else {
-        statusHtml =
-          '<div class="invisible flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-transparent" aria-hidden="true"></div>';
-      }
+      var statusHtml = playerSlotStatusHtml(p);
       var foulClass =
         'font-display text-sm font-semibold leading-none tabular-nums sm:text-base ' +
         (p.fouls >= 3 ? 'text-mafia-blood' : 'text-mafia-cream/95');
@@ -240,6 +427,34 @@
 
       list.appendChild(btn);
     });
+    return true;
+  };
+
+  app.shufflePlayerNicks = function () {
+    var nonEmptyNicks = app.players
+      .map(function (p) {
+        return p.nick != null ? String(p.nick).trim() : '';
+      })
+      .filter(function (nick) {
+        return nick !== '';
+      });
+    if (nonEmptyNicks.length < 2) return false;
+    for (var i = nonEmptyNicks.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = nonEmptyNicks[i];
+      nonEmptyNicks[i] = nonEmptyNicks[j];
+      nonEmptyNicks[j] = tmp;
+    }
+    var cursor = 0;
+    for (var pi = 0; pi < app.players.length; pi++) {
+      var hasNick = app.players[pi].nick != null && String(app.players[pi].nick).trim() !== '';
+      if (!hasNick) continue;
+      app.players[pi].nick = nonEmptyNicks[cursor++] || '';
+    }
+    app.renderPreparePlayers();
+    app.renderPlayers();
+    app.saveState();
+    return true;
   };
 
   app.addFoul = function (id) {
@@ -285,23 +500,25 @@
     var pl = app.players.find(function (x) {
       return x.id === id;
     });
-    if (pl && pl.outReason) return;
+    if (pl && pl.outReason) return false;
     var vs = app.voteSession;
     if (vs && vs.phase === 'counting' && vs.tieRevote && vs.candidateIds) {
-      if (vs.candidateIds.indexOf(id) === -1) return;
+      if (vs.candidateIds.indexOf(id) === -1) return false;
     }
     if (app.votingOrder.indexOf(id) === -1) {
       app.votingOrder.push(id);
       app.updateVotingUI();
       if (!opts.skipRender) app.renderPlayers();
       app.saveState();
+      return true;
     }
+    return false;
   };
 
   app.removeFromVote = function (id, opts) {
     opts = opts || {};
     var vix = app.votingOrder.indexOf(id);
-    if (vix === -1) return;
+    if (vix === -1) return false;
     app.votingOrder.splice(vix, 1);
     app.updateVotingUI();
     if (!opts.skipRender) app.renderPlayers();
@@ -310,6 +527,7 @@
       app.renderVoteScreen();
     }
     app.saveState();
+    return true;
   };
 
   app.updateVotingUI = function () {

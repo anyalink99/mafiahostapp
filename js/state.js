@@ -176,16 +176,18 @@ window.MafiaApp = window.MafiaApp || {};
     }
   };
 
-  app.fullReset = function () {
-    try {
-      localStorage.removeItem(app.STORAGE_KEY);
-    } catch (e) {}
+  app.fullReset = function (opts) {
+    opts = opts || {};
+    var keepNicks = !opts.clearNicks;
+    var prevNicks = app.players.map(function (p) {
+      return p && p.nick != null ? String(p.nick).slice(0, 32) : '';
+    });
     app.roles = ['Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Шериф', 'Мафия', 'Мафия', 'Дон'];
     app.players = Array.from({ length: 10 }, (_, i) => ({
       id: i + 1,
       fouls: 0,
       outReason: null,
-      nick: '',
+      nick: keepNicks ? prevNicks[i] || '' : '',
     }));
     app.votingOrder = [];
     app.voteSession = null;
@@ -203,6 +205,7 @@ window.MafiaApp = window.MafiaApp || {};
     app.summarySkipLineOverrides = {};
     if (app.timerInterval) clearInterval(app.timerInterval);
     app.timerInterval = null;
+    app.saveState();
     app.showScreen('menu-screen');
     app.updateResetButtonVisibility();
   };
@@ -216,11 +219,12 @@ window.MafiaApp = window.MafiaApp || {};
   };
 
   app.updateResetButtonVisibility = function () {
-    const btn = document.getElementById('btn-reset');
-    if (!btn) return;
-    const visible = app.hasSavedState();
-    btn.style.visibility = visible ? 'visible' : 'hidden';
-    btn.style.opacity = visible ? '1' : '0';
-    btn.style.pointerEvents = visible ? 'auto' : 'none';
+    var gameBtn = document.getElementById('btn-reset-game');
+    if (gameBtn) {
+      var gameVisible = app.hasSavedState();
+      gameBtn.style.visibility = gameVisible ? 'visible' : 'hidden';
+      gameBtn.style.opacity = gameVisible ? '1' : '0';
+      gameBtn.style.pointerEvents = gameVisible ? 'auto' : 'none';
+    }
   };
 })(window.MafiaApp);

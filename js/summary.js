@@ -979,7 +979,7 @@
 
         var topRow = document.createElement('div');
         topRow.className =
-          'player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1';
+          'player-slot__row grid w-full min-h-0 shrink-0 grid-cols-3 items-center gap-x-1';
 
         var iconWrap = document.createElement('div');
         iconWrap.setAttribute('aria-hidden', 'true');
@@ -1004,7 +1004,7 @@
 
         var numSpan = document.createElement('span');
         numSpan.className =
-          'font-display text-2xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-3xl';
+          'font-display text-2xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums text-center sm:text-3xl';
         numSpan.textContent = '№' + sid;
 
         var bonusInner = document.createElement('span');

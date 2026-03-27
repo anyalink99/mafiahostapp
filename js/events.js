@@ -73,13 +73,7 @@
     }
 
     document.body.addEventListener('click', function (e) {
-      let t = e.target.closest('[data-action="full-reset"]');
-      if (t) {
-        e.preventDefault();
-        app.fullReset();
-        return;
-      }
-      t = e.target.closest('[data-goto]');
+      let t = e.target.closest('[data-goto]');
       if (t) {
         e.preventDefault();
         const id = t.getAttribute('data-goto');
@@ -122,6 +116,16 @@
           if (app.showAuthorLinksModal) app.showAuthorLinksModal();
         } else if (action === 'author-links-close') {
           if (app.hideAuthorLinksModal) app.hideAuthorLinksModal();
+        } else if (action === 'reset-game-confirm-open') {
+          if (app.showResetGameConfirmModal) app.showResetGameConfirmModal();
+        } else if (action === 'reset-game-confirm-cancel') {
+          if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
+        } else if (action === 'reset-game-confirm-apply') {
+          if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
+          if (app.fullReset) app.fullReset();
+        } else if (action === 'reset-game-confirm-apply-with-nicks') {
+          if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
+          if (app.fullReset) app.fullReset({ clearNicks: true });
         } else if (action === 'music-add-slot') {
           const slot = t.getAttribute('data-slot');
           const inp = document.getElementById(slot === '2' ? 'music-files-slot-2' : 'music-files-slot-1');
@@ -151,6 +155,13 @@
         } else if (action === 'reset-timer') {
           const sec = t.getAttribute('data-seconds');
           if (sec) app.resetTimer(parseInt(sec, 10));
+        } else if (action === 'shuffle-seating') {
+          if (app.shufflePlayerNicks) {
+            var changed = app.shufflePlayerNicks();
+            if (app.showToast) {
+              app.showToast(changed ? 'Игроки пересажены случайно' : 'Для пересадки нужно минимум 2 ника');
+            }
+          }
         } else if (action === 'export-copy-text') {
           var sumScrEx = document.getElementById('summary-screen');
           if (!sumScrEx || !sumScrEx.classList.contains('active')) return;
@@ -181,6 +192,11 @@
           }
         } else if (action === 'player-modal-save') {
           if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+        } else if (action === 'player-prepare-role-pick') {
+          if (app.pickPrepareModalRole) {
+            var rvp = t.getAttribute('data-role-code');
+            if (rvp) app.pickPrepareModalRole(rvp);
+          }
         } else if (action === 'player-modal-foul') {
           var modalF = document.getElementById('modal-player-actions');
           var pidF = modalF && modalF.dataset.playerId ? parseInt(modalF.dataset.playerId, 10) : NaN;
@@ -325,10 +341,13 @@
         g.timer = setTimeout(function () {
           g.timer = null;
           if (!g.active || g.fired) return;
-          g.fired = true;
           var inQ = app.votingOrder.indexOf(capturedPid) !== -1;
-          if (inQ) app.removeFromVote(capturedPid, { skipRender: true });
-          else app.addToVote(capturedPid, { skipRender: true });
+          var changed = inQ
+            ? app.removeFromVote(capturedPid, { skipRender: true })
+            : app.addToVote(capturedPid, { skipRender: true });
+          if (!changed) return;
+          g.fired = true;
+          if (app.patchPlayerSlotVoteIndicator) app.patchPlayerSlotVoteIndicator(capturedPid);
           if (navigator.vibrate) navigator.vibrate(40);
         }, LONG_PRESS_MS);
       }, { passive: true });

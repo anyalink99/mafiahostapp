@@ -69,13 +69,29 @@
     if (m) app.modalSetOpen(m, true);
   };
 
+  app.hideResetGameConfirmModal = function () {
+    var m = document.getElementById('modal-reset-game-confirm');
+    if (m) app.modalSetOpen(m, false);
+  };
+
+  app.showResetGameConfirmModal = function () {
+    var m = document.getElementById('modal-reset-game-confirm');
+    if (m) app.modalSetOpen(m, true);
+  };
+
+
   app.showScreen = function (screenId) {
     if (screenId !== 'settings-screen' && app.stopMusicPreview) app.stopMusicPreview();
     if (screenId !== 'vote-screen' && app.hideVoteCountModal) app.hideVoteCountModal();
-    if (screenId !== 'game-screen' && app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+    if (screenId !== 'game-screen' && screenId !== 'prepare-screen' && app.hidePlayerActionsModal) {
+      app.hidePlayerActionsModal();
+    }
     if (screenId !== 'summary-screen' && app.hideSummaryPlayerModal) app.hideSummaryPlayerModal();
     if (screenId !== 'summary-screen' && app.hideSummaryLogModal) app.hideSummaryLogModal();
-    if (screenId !== 'menu-screen' && app.hideAuthorLinksModal) app.hideAuthorLinksModal();
+    if (screenId !== 'menu-screen') {
+      if (app.hideAuthorLinksModal) app.hideAuthorLinksModal();
+      if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
+    }
     document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
     const el = document.getElementById(screenId);
     if (el) el.classList.add('active');
@@ -93,6 +109,7 @@
       if (app.syncTimerAppearance) app.syncTimerAppearance();
       app.updateVotingUI();
     }
+    if (screenId === 'prepare-screen' && app.renderPreparePlayers) app.renderPreparePlayers();
     if (screenId === 'vote-screen' && app.prepareVoteScreen) app.prepareVoteScreen();
     if (screenId === 'vote-screen' && app.renderVoteScreen) app.renderVoteScreen();
     if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
