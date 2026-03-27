@@ -249,6 +249,18 @@ window.MafiaApp = window.MafiaApp || {};
     { slotKey: '2', path: 'audio/track2.mp3', offsetSec: 0, displayName: 'Трек по умолчанию' },
   ];
 
+  app.musicGetDefaultBundledTrackPaths = function () {
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < DEFAULT_BUNDLED_TRACKS.length; i++) {
+      var p = DEFAULT_BUNDLED_TRACKS[i] && DEFAULT_BUNDLED_TRACKS[i].path;
+      if (!p || seen[p]) continue;
+      seen[p] = true;
+      out.push(p);
+    }
+    return out;
+  };
+
   var BUNDLED_PATH_LABELS = {
     'audio/track1.mp3': 'Трек по умолчанию',
     'audio/track2.mp3': 'Трек по умолчанию',

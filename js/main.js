@@ -9,18 +9,20 @@
   };
 
   app.registerServiceWorker = function () {
-    if (!('serviceWorker' in navigator)) return;
-    if (location.protocol === 'file:') return;
+    if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+    if (location.protocol === 'file:') return Promise.resolve(null);
     try {
       if (
         window.Capacitor &&
         typeof window.Capacitor.isNativePlatform === 'function' &&
         window.Capacitor.isNativePlatform()
       )
-        return;
+        return Promise.resolve(null);
     } catch (e) {}
     var url = new URL('service-worker.js', window.location.href);
-    navigator.serviceWorker.register(url.href, { scope: './' }).catch(function () {});
+    var regPromise = navigator.serviceWorker.register(url.href, { scope: './' }).catch(function () {
+      return null;
+    });
 
     var reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', function () {
@@ -28,6 +30,41 @@
       reloading = true;
       window.location.reload();
     });
+    return regPromise;
+  };
+
+  app.prefetchDefaultTracks = function () {
+    if (location.protocol === 'file:') return;
+    var tracks = app.musicGetDefaultBundledTrackPaths ? app.musicGetDefaultBundledTrackPaths() : [];
+    if (!tracks.length) return;
+
+    function warmViaPageFetch() {
+      for (var i = 0; i < tracks.length; i++) {
+        try {
+          var abs = new URL(tracks[i], window.location.href).href;
+          fetch(abs, { credentials: 'same-origin' }).catch(function () {});
+        } catch (e) {}
+      }
+    }
+
+    if (!('serviceWorker' in navigator)) {
+      warmViaPageFetch();
+      return;
+    }
+
+    navigator.serviceWorker.ready
+      .then(function (reg) {
+        var target = reg && (reg.active || reg.waiting || reg.installing);
+        if (target) {
+          try {
+            target.postMessage({ type: 'prefetch-default-tracks', tracks: tracks.slice() });
+          } catch (e) {}
+        }
+      })
+      .catch(function () {})
+      .then(function () {
+        warmViaPageFetch();
+      });
   };
 
   function init() {
@@ -39,6 +76,7 @@
     app.bindClicks();
     if (app.updateResetButtonVisibility) app.updateResetButtonVisibility();
     app.registerServiceWorker();
+    if (app.prefetchDefaultTracks) app.prefetchDefaultTracks();
   }
 
   if (document.readyState === 'loading') {

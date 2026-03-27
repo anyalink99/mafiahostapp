@@ -1,6 +1,6 @@
 // При каждом коммите увеличивайте суффикс CACHE_NAME (v4 → v5 …),
 // иначе клиенты могут долго получать старую статику из кэша.
-var CACHE_NAME = 'mafia-host-static-v11';
+var CACHE_NAME = 'mafia-host-static-v12';
 var ASSETS = [
   './',
   './index.html',
@@ -53,6 +53,26 @@ self.addEventListener('activate', function (e) {
     }).then(function () {
       return self.clients.claim();
     })
+  );
+});
+
+self.addEventListener('message', function (e) {
+  var data = e && e.data ? e.data : null;
+  if (!data || data.type !== 'prefetch-default-tracks') return;
+  var tracks = Array.isArray(data.tracks) ? data.tracks : [];
+  if (!tracks.length) return;
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(function (cache) {
+      var reqs = [];
+      for (var i = 0; i < tracks.length; i++) {
+        try {
+          var abs = new URL(tracks[i], self.location.href).href;
+          reqs.push(new Request(abs, { credentials: 'same-origin' }));
+        } catch (err) {}
+      }
+      if (!reqs.length) return;
+      return cache.addAll(reqs);
+    }).catch(function () {})
   );
 });
 
