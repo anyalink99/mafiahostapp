@@ -327,7 +327,6 @@ window.MafiaApp = window.MafiaApp || {};
       }
     }
     if (migrateBundledDisplayNames(meta)) changed = true;
-    // Track 3 был удалён из проекта: убираем из метаданных, если был раньше засидирован.
     if (removeBundledTrackPath(meta, 'audio/track3.mp3')) changed = true;
     if (changed) app.saveMusicMeta(meta);
   };

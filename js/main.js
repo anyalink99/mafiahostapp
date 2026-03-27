@@ -73,7 +73,7 @@
     if (app.loadTimerVoicePref) app.loadTimerVoicePref();
     if (app.musicSeedDefaultBundledTracks) app.musicSeedDefaultBundledTracks();
     if (app.initMusic) app.initMusic();
-    app.bindClicks();
+    app.bindUiEvents();
     if (app.updateResetButtonVisibility) app.updateResetButtonVisibility();
     app.registerServiceWorker();
     if (app.prefetchDefaultTracks) app.prefetchDefaultTracks();

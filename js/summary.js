@@ -1,14 +1,7 @@
 (function (app) {
   var SUMMARY_SYNTHETIC_FIRST_DAY_DEFAULT =
     '#1 - никто не был выставлен или был выставлен один игрок, голосование пропущено';
-
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
+  var escapeHtml = app.escapeHtml;
 
   app.rolesFromDealForSeats = function () {
     if (!app.revealedIndices || app.revealedIndices.length !== app.players.length) return null;
@@ -86,19 +79,13 @@
     return null;
   };
 
-  /** Колонка ПУ в экспорте: лучший ход — три номера, если тройка заполнена; иначе пусто. */
-  app.formatBestMovePuForExport = function (stored) {
+  app.formatBestMoveForExport = function (stored) {
     if (!app.isBestMoveTripleComplete(stored)) return '';
     var tr = app.parseBestMoveTriple(stored);
     return tr[0] + ', ' + tr[1] + ', ' + tr[2];
   };
 
-  function parseBonusFloat(raw) {
-    if (raw === undefined || raw === null || raw === '') return 0;
-    var v = parseFloat(String(raw).replace(',', '.'));
-    if (isNaN(v)) return 0;
-    return Math.round(v * 10) / 10;
-  }
+  var parseBonusFloat = app.parseBonusFloat;
 
   app.formatBonusForDisplay = function (raw) {
     var v = parseBonusFloat(raw);
@@ -297,7 +284,6 @@
     return 'flex h-9 w-9 shrink-0 items-center justify-center rounded border border-mafia-gold/40 bg-mafia-blood text-mafia-gold sm:h-10 sm:w-10';
   }
 
-  /** Компактнее, чем summaryRoleIconWrapClass — для сетки «Подведение итогов». */
   function summaryRoleGridIconWrapClass(code) {
     var isMafiaSide = code === 'mafia' || code === 'don';
     if (isMafiaSide) {
@@ -519,11 +505,6 @@
     return min === Infinity ? 0 : min;
   }
 
-  /**
-   * Нужна ли строка «#1 — пропуск» перед дневными раундами: пустой/только ночь до первого дня,
-   * либо только убийства/дисквалы до первого дневного события в хронологии.
-   * Тогда #1 навсегда резервируется под пропуск, первое голосование — #2 и т.д.
-   */
   app.shouldPrependFirstDaySkip = function (log) {
     if (!Array.isArray(log)) return false;
     if (!app.daytimeRoundContentExists(log)) return true;

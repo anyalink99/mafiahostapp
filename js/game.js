@@ -1,11 +1,5 @@
 (function (app) {
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
+  var escapeHtml = app.escapeHtml;
 
   function prepareRoleCodeToLabel(code) {
     if (code === 'don') return 'Дон';
@@ -85,7 +79,7 @@
   app.getActivePlayerCount = function () {
     var c = 0;
     for (var ai = 0; ai < app.players.length; ai++) {
-      if (!app.players[ai].outReason) c++;
+      if (!app.players[ai].eliminationReason) c++;
     }
     return c;
   };
@@ -150,8 +144,8 @@
     var inPrepareScreen = !!(prepareScreen && prepareScreen.classList.contains('active'));
     var nickOnlyMode = inPrepareScreen && !inGameScreen;
     if (title) title.textContent = 'Игрок №' + id;
-    var inQueue = app.votingOrder.indexOf(id) !== -1;
-    var out = !!p.outReason;
+    var inQueue = app.nomineeQueue.indexOf(id) !== -1;
+    var out = !!p.eliminationReason;
     m.dataset.mode = nickOnlyMode ? 'prepare' : 'game';
     var prepRoleSection = document.getElementById('modal-player-prepare-role-section');
     if (prepRoleSection) prepRoleSection.classList.toggle('hidden', !nickOnlyMode);
@@ -211,7 +205,7 @@
         }
         elimBtn.disabled = false;
         elimBtn.removeAttribute('aria-disabled');
-        elimBtn.className = p.outReason === er ? elimOn : elimOff;
+        elimBtn.className = p.eliminationReason === er ? elimOn : elimOff;
         if (er === 'disqual') elimBtn.title = 'Удалён';
         else if (er === 'hang') elimBtn.title = 'Казнён';
         else if (er === 'shot') elimBtn.title = 'Убит';
@@ -246,13 +240,13 @@
     }
   };
 
-  app.togglePlayerElimination = function (id, reason) {
+  app.setPlayerEliminationState = function (id, reason) {
     var p = app.players.find(function (x) {
       return x.id === id;
     });
     if (!p) return;
-    if (p.outReason === reason) {
-      p.outReason = null;
+    if (p.eliminationReason === reason) {
+      p.eliminationReason = null;
       if (reason === 'disqual') {
         p.fouls = 0;
       }
@@ -260,21 +254,21 @@
     } else {
       var poolBefore = app.getActivePlayerCount();
       var singleNomineeHang =
-        reason === 'hang' && app.votingOrder.length === 1 && app.votingOrder[0] === id;
-      p.outReason = reason;
+        reason === 'hang' && app.nomineeQueue.length === 1 && app.nomineeQueue[0] === id;
+      p.eliminationReason = reason;
       var elimEntry = { type: 'elimination', ts: Date.now(), playerId: id, reason: reason };
       if (singleNomineeHang) {
         elimEntry.outsideVoteSingleNominee = true;
         elimEntry.votePoolTotal = poolBefore;
       }
       app.gameLog.push(elimEntry);
-      var vix = app.votingOrder.indexOf(id);
+      var vix = app.nomineeQueue.indexOf(id);
       if (vix !== -1) {
-        app.votingOrder.splice(vix, 1);
-        app.updateVotingUI();
+        app.nomineeQueue.splice(vix, 1);
+        app.refreshNomineeQueueUi();
       }
     }
-    var vs = app.voteSession;
+    var vs = app.activeVoteRound;
     if (vs && vs.phase === 'counting') {
       vs.poolTotal = app.getActivePlayerCount();
     }
@@ -287,11 +281,11 @@
   };
 
   function playerSlotStatusHtml(p) {
-    var inVoteQueue = app.votingOrder.indexOf(p.id) !== -1;
-    if (p.outReason) {
+    var inVoteQueue = app.nomineeQueue.indexOf(p.id) !== -1;
+    if (p.eliminationReason) {
       return (
         '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-blood/50 bg-mafia-blood/10 text-mafia-blood" aria-hidden="true"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-elim-' +
-        p.outReason +
+        p.eliminationReason +
         '"/></svg></div>'
       );
     }
@@ -305,7 +299,6 @@
     );
   }
 
-  /** Обновляет только иконку «выставлен» у слота, не пересоздавая кнопку (важно для long-press во время касания). */
   app.patchPlayerSlotVoteIndicator = function (id) {
     var list = document.getElementById('players-list');
     if (!list) return;
@@ -385,7 +378,7 @@
       'grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
     list.innerHTML = '';
     app.players.forEach(function (p) {
-      var out = !!p.outReason;
+      var out = !!p.eliminationReason;
       var statusHtml = playerSlotStatusHtml(p);
       var foulClass =
         'font-display text-sm font-semibold leading-none tabular-nums sm:text-base ' +
@@ -461,18 +454,18 @@
     const p = app.players.find(function (x) {
       return x.id === id;
     });
-    if (!p || p.outReason) return;
+    if (!p || p.eliminationReason) return;
     p.fouls++;
     if (p.fouls >= 4) {
       p.fouls = 4;
-      p.outReason = 'disqual';
+      p.eliminationReason = 'disqual';
       app.gameLog.push({ type: 'elimination', ts: Date.now(), playerId: id, reason: 'disqual' });
-      var vix = app.votingOrder.indexOf(id);
+      var vix = app.nomineeQueue.indexOf(id);
       if (vix !== -1) {
-        app.votingOrder.splice(vix, 1);
-        app.updateVotingUI();
+        app.nomineeQueue.splice(vix, 1);
+        app.refreshNomineeQueueUi();
       }
-      var vs = app.voteSession;
+      var vs = app.activeVoteRound;
       if (vs && vs.phase === 'counting') {
         vs.poolTotal = app.getActivePlayerCount();
       }
@@ -489,25 +482,25 @@
     var p = app.players.find(function (x) {
       return x.id === id;
     });
-    if (!p || p.outReason || p.fouls <= 0) return;
+    if (!p || p.eliminationReason || p.fouls <= 0) return;
     p.fouls--;
     app.renderPlayers();
     app.saveState();
   };
 
-  app.addToVote = function (id, opts) {
+  app.addPlayerToNomineeQueue = function (id, opts) {
     opts = opts || {};
     var pl = app.players.find(function (x) {
       return x.id === id;
     });
-    if (pl && pl.outReason) return false;
-    var vs = app.voteSession;
+    if (pl && pl.eliminationReason) return false;
+    var vs = app.activeVoteRound;
     if (vs && vs.phase === 'counting' && vs.tieRevote && vs.candidateIds) {
       if (vs.candidateIds.indexOf(id) === -1) return false;
     }
-    if (app.votingOrder.indexOf(id) === -1) {
-      app.votingOrder.push(id);
-      app.updateVotingUI();
+    if (app.nomineeQueue.indexOf(id) === -1) {
+      app.nomineeQueue.push(id);
+      app.refreshNomineeQueueUi();
       if (!opts.skipRender) app.renderPlayers();
       app.saveState();
       return true;
@@ -515,12 +508,12 @@
     return false;
   };
 
-  app.removeFromVote = function (id, opts) {
+  app.removePlayerFromNomineeQueue = function (id, opts) {
     opts = opts || {};
-    var vix = app.votingOrder.indexOf(id);
+    var vix = app.nomineeQueue.indexOf(id);
     if (vix === -1) return false;
-    app.votingOrder.splice(vix, 1);
-    app.updateVotingUI();
+    app.nomineeQueue.splice(vix, 1);
+    app.refreshNomineeQueueUi();
     if (!opts.skipRender) app.renderPlayers();
     var voteScr = document.getElementById('vote-screen');
     if (voteScr && voteScr.classList.contains('active') && app.renderVoteScreen) {
@@ -530,16 +523,16 @@
     return true;
   };
 
-  app.updateVotingUI = function () {
+  app.refreshNomineeQueueUi = function () {
     const el = document.getElementById('voting-order');
-    if (el) el.textContent = app.votingOrder.length ? app.votingOrder.join(' → ') : '—';
+    if (el) el.textContent = app.nomineeQueue.length ? app.nomineeQueue.join(' → ') : '—';
     const go = document.getElementById('btn-go-voting');
     if (go) {
-      const ok = app.votingOrder.length >= 2;
+      const ok = app.nomineeQueue.length >= 2;
       const revote =
-        app.voteSession &&
-        app.voteSession.phase === 'counting' &&
-        app.voteSession.tieRevote;
+        app.activeVoteRound &&
+        app.activeVoteRound.phase === 'counting' &&
+        app.activeVoteRound.tieRevote;
       go.textContent = revote ? 'Переголосование' : 'Голосование';
       go.disabled = !ok;
       if (ok) {
@@ -560,9 +553,9 @@
     return true;
   };
 
-  app.startVoteSessionFromQueue = function () {
-    var q = app.votingOrder;
-    app.voteSession = {
+  app.startVoteRoundFromNomineeQueue = function () {
+    var q = app.nomineeQueue;
+    app.activeVoteRound = {
       phase: 'counting',
       poolTotal: app.getActivePlayerCount(),
       candidateIds: q.slice(),
@@ -575,23 +568,23 @@
     app.saveState();
   };
 
-  app.prepareVoteScreen = function () {
-    var s0 = app.voteSession;
+  app.prepareVoteRoundScreen = function () {
+    var s0 = app.activeVoteRound;
     if (s0 && s0.phase === 'done' && s0.winnerId != null) {
       app.finalizeVoteHang([s0.winnerId]);
       return;
     }
     if (s0 && s0.phase === 'raiseAll') return;
-    if (app.votingOrder.length < 2) {
-      app.showScreen('game-screen');
+    if (app.nomineeQueue.length < 2) {
+      app.navigateToScreen('game-screen');
       return;
     }
-    var s = app.voteSession;
+    var s = app.activeVoteRound;
     if (s && s.phase === 'counting') {
       if (s.tieRevote) return;
-      if (app.arraysEqual(s.baseVotingOrder, app.votingOrder)) return;
+      if (app.arraysEqual(s.baseVotingOrder, app.nomineeQueue)) return;
     }
-    app.startVoteSessionFromQueue();
+    app.startVoteRoundFromNomineeQueue();
   };
 
   app.voteAvailableForIndex = function (session, index) {
@@ -613,7 +606,7 @@
   };
 
   app.finalizeVoteHang = function (ids, raiseAllPickedVotes) {
-    var vsSnap = app.voteSession;
+    var vsSnap = app.activeVoteRound;
     var cand =
       vsSnap && vsSnap.candidateIds
         ? vsSnap.candidateIds.slice()
@@ -637,18 +630,18 @@
       var p = app.players.find(function (x) {
         return x.id === ids[hi];
       });
-      if (p) p.outReason = 'hang';
+      if (p) p.eliminationReason = 'hang';
     }
-    app.votingOrder = [];
-    app.voteSession = null;
-    app.updateVotingUI();
+    app.nomineeQueue = [];
+    app.activeVoteRound = null;
+    app.refreshNomineeQueueUi();
     app.renderPlayers();
     app.saveState();
-    app.showScreen('game-screen');
+    app.navigateToScreen('game-screen');
   };
 
   app.applyRaiseAllPick = function (value) {
-    var s = app.voteSession;
+    var s = app.activeVoteRound;
     if (!s || s.phase !== 'raiseAll') return;
     var n = s.poolTotal;
     if (value < 0 || value > n) return;
@@ -663,16 +656,16 @@
         poolTotal: n,
         tiedIds: s.raiseCandidateIds.slice(),
       });
-      app.votingOrder = [];
-      app.voteSession = null;
-      app.updateVotingUI();
+      app.nomineeQueue = [];
+      app.activeVoteRound = null;
+      app.refreshNomineeQueueUi();
       app.saveState();
-      app.showScreen('game-screen');
+      app.navigateToScreen('game-screen');
     }
   };
 
   app.tryFinalizeVoteRound = function () {
-    var s = app.voteSession;
+    var s = app.activeVoteRound;
     if (!s || s.phase !== 'counting') return;
     for (var i = 0; i < s.votes.length; i++) {
       if (s.votes[i] === null || s.votes[i] === undefined) return;
@@ -701,9 +694,9 @@
         });
         s.tieRevote = true;
         s.baseVotingOrder = tied.slice();
-        app.votingOrder = tied.slice();
+        app.nomineeQueue = tied.slice();
         app.saveState();
-        app.showScreen('game-screen');
+        app.navigateToScreen('game-screen');
         app.resetTimer(30);
         return;
       }
@@ -713,7 +706,7 @@
         poolTotal: s.poolTotal,
         tiedIds: tied.slice(),
       });
-      app.voteSession = {
+      app.activeVoteRound = {
         phase: 'raiseAll',
         poolTotal: s.poolTotal,
         raiseCandidateIds: tied.slice(),
@@ -732,7 +725,7 @@
   };
 
   app.showVoteCountModal = function (candidateIndex) {
-    var s = app.voteSession;
+    var s = app.activeVoteRound;
     if (!s || s.phase !== 'counting') return;
     var rem = app.voteAvailableForIndex(s, candidateIndex);
     var lastSlot = app.isLastVoteSlotToFill(s, candidateIndex);
@@ -775,7 +768,7 @@
     if (!m) return;
     var vs = document.getElementById('vote-screen');
     if (!vs || !vs.classList.contains('active')) return;
-    var sess = app.voteSession;
+    var sess = app.activeVoteRound;
     if (!sess || sess.phase !== 'counting') return;
     app._voteModalOpenedAt = Date.now();
     app.modalSetOpen(m, true);
@@ -785,7 +778,7 @@
     var idx = app._voteModalIndex;
     app.hideVoteCountModal();
     if (idx === null || idx === undefined) return;
-    var s = app.voteSession;
+    var s = app.activeVoteRound;
     if (!s || s.phase !== 'counting') return;
     var rem = app.voteAvailableForIndex(s, idx);
     if (app.isLastVoteSlotToFill(s, idx)) {
@@ -806,10 +799,10 @@
     var hint = document.getElementById('vote-pool-hint');
     if (!wrap) return;
 
-    var s = app.voteSession;
+    var s = app.activeVoteRound;
     if (!s) {
       wrap.innerHTML = '';
-      app.updateVotingUI();
+      app.refreshNomineeQueueUi();
       return;
     }
 
@@ -838,7 +831,7 @@
         rb.textContent = String(r);
         wrap.appendChild(rb);
       }
-      app.updateVotingUI();
+      app.refreshNomineeQueueUi();
       return;
     }
 
@@ -876,7 +869,7 @@
       tile.appendChild(sub);
       wrap.appendChild(tile);
     }
-    app.updateVotingUI();
+    app.refreshNomineeQueueUi();
   };
 
   app.syncTimerAppearance = function () {
@@ -938,7 +931,6 @@
   }
 
   app.loadVoiceVolumePrefs = function () {
-    // Если новых ключей нет, используем старый timerVoiceVolume как общий дефолт.
     var fallback = hasNumber(app.timerVoiceVolume) ? clamp01(app.timerVoiceVolume) : 0.92;
     var gotAny = false;
 
@@ -1177,12 +1169,6 @@
     if ((app._voicePlayingCount || 0) === 0) setTimerVoiceButtonPlaying(false);
   }
 
-  function clamp01(x) {
-    if (x < 0) return 0;
-    if (x > 1) return 1;
-    return x;
-  }
-
   function isAnyMusicPlaying() {
     return !!(app.isMusicPlaying && app.isMusicPlaying());
   }
@@ -1238,7 +1224,6 @@
     a.onerror = onEndedOrError;
     voiceUiStart();
     a.src = timerVoiceUrl(filename);
-    // Некоторые браузеры сбрасывают playbackRate после смены src.
     a.playbackRate = getEffectiveVoiceRate();
     var p = a.play();
     if (p && typeof p.then === 'function') {
@@ -1321,7 +1306,6 @@
       };
       voiceUiStart();
       a.src = sfxUrl(filename);
-      // Некоторые браузеры сбрасывают playbackRate после смены src.
       a.playbackRate = getEffectiveVoiceRate();
       var p = a.play();
       if (p && typeof p.then === 'function') {
@@ -1361,11 +1345,6 @@
   }
 
   app.runNightActions = function () {
-    // mafia shoots with a number.mp3, 10 секунд, mafia leaves.mp3,
-    // don wakes.mp3, 10 секунд, don leaves.mp3,
-    // sheriff wakes.mp3, 10 секунд, sheriff leaves.mp3
-
-    // Toggle: повторное нажатие отменяет сценарий.
     if (app._nightActionsRunning) {
       app._nightActionsGen = (app._nightActionsGen || 0) + 1;
       app._nightActionsRunning = false;
@@ -1380,7 +1359,6 @@
     if (wait > 20) wait = 20;
     var waitMs = wait * 1000;
 
-    // Сериализуем запуск, чтобы не было параллельных проигрываний.
     app._nightActionsRunning = true;
     app._nightActionsGen = (app._nightActionsGen || 0) + 1;
     var gen = app._nightActionsGen;

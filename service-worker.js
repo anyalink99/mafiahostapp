@@ -1,5 +1,4 @@
-// При каждом коммите увеличивайте суффикс CACHE_NAME (v4 → v5 …),
-// иначе клиенты могут долго получать старую статику из кэша.
+// Bump the CACHE_NAME suffix on each release to force clients to refresh cached static assets.
 var CACHE_NAME = 'mafia-host-static-v12';
 var ASSETS = [
   './',
@@ -7,7 +6,8 @@ var ASSETS = [
   './manifest.webmanifest',
   './css/styles.css',
   './js/state.js',
-  './js/music-storage.js',
+  './js/shared-utils.js',
+  './js/music-store.js',
   './js/music.js',
   './js/screens.js',
   './js/cards.js',

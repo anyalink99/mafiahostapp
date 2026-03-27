@@ -1,17 +1,6 @@
 (function (app) {
-  function parseBonusFloat(raw) {
-    if (raw === undefined || raw === null || raw === '') return 0;
-    var v = parseFloat(String(raw).replace(',', '.'));
-    if (isNaN(v)) return 0;
-    return Math.round(v * 10) / 10;
-  }
-
-  function roleLabelRu(code) {
-    if (code === 'don') return 'Дон';
-    if (code === 'sheriff') return 'Шериф';
-    if (code === 'mafia') return 'Мафия';
-    return 'Мирный';
-  }
+  var parseBonusFloat = app.parseBonusFloat;
+  var roleLabelRu = app.roleLabelRu;
 
   function formatCompactVotes(candidateIds, votes) {
     if (!candidateIds || !candidateIds.length) return '';
@@ -119,7 +108,7 @@
       if (nick) parts.push(nick);
       var bk = String(sid);
       var bm = app.bestMoveByPlayerId && app.bestMoveByPlayerId[bk];
-      var puLine = app.formatBestMovePuForExport ? app.formatBestMovePuForExport(bm) : '';
+      var puLine = app.formatBestMoveForExport ? app.formatBestMoveForExport(bm) : '';
       if (puLine) parts.push('ПУ: ' + puLine);
       var bonusRaw = app.bonusPointsByPlayerId && app.bonusPointsByPlayerId[bk];
       var bnum = parseBonusFloat(bonusRaw);
@@ -180,7 +169,6 @@
     return { plus: '', minus: app.formatBonusForDisplay(Math.abs(v)) };
   }
 
-  /** A–G: таблица игроков; H: подписи голосования; I–R: до 10 ячеек данных. */
   var STAT_COLS = 7;
   var VOTE_SLOT_COLS = 10;
   var CSV_ROW_COLS = STAT_COLS + 1 + VOTE_SLOT_COLS;
@@ -191,7 +179,6 @@
     return row.map(csvEscape);
   }
 
-  /** A–G пусто; H — подпись; I–R — числа голосования. */
   function makeVoteRow(labelH, slotValues) {
     var row = [];
     while (row.length < STAT_COLS) row.push('');
@@ -204,7 +191,6 @@
     return row.map(csvEscape);
   }
 
-  /** Только номера казнённых через запятую; если никого — «—». В CSV — колонка K. */
   function clusterExecutedIdsComma(cluster) {
     var last = cluster[cluster.length - 1];
     if (!last) return '—';
@@ -217,7 +203,6 @@
     return '—';
   }
 
-  /** Технический тег (колонка L) для кластера голосования. */
   function clusterEliminationTag(cluster) {
     var last = cluster[cluster.length - 1];
     if (!last) return 'no_elimination';
@@ -231,8 +216,7 @@
     return 'no_elimination';
   }
 
-  /** A–G пусто; H «Казнены»; I–J пусто; K — номера; L — tag (snake_case). */
-  function makeKaznenyRow(idsCommaOrDash, tagEn) {
+  function makeEliminatedRow(idsCommaOrDash, tagEn) {
     var row = [];
     while (row.length < STAT_COLS) row.push('');
     row.push('Казнены');
@@ -296,7 +280,7 @@
       var code = app.getEffectiveSummaryRoleCode(sid, p);
       var roleRu = roleLabelRu(code);
       var bm = app.bestMoveByPlayerId && app.bestMoveByPlayerId[bk];
-      var pu = app.formatBestMovePuForExport ? app.formatBestMovePuForExport(bm) : '';
+      var pu = app.formatBestMoveForExport ? app.formatBestMoveForExport(bm) : '';
       var braw = bonusRawForPlayer(bk);
       var split = splitBonusForCsv(braw);
       var bonusVal = parseBonusFloat(braw);
@@ -332,7 +316,7 @@
         rows.push(makeVoteRow('Выставленные игроки', ['—']));
         rows.push(makeVoteRow('Голоса за игроков', ['—']));
         rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
-        rows.push(makeKaznenyRow('—', 'vote_skipped'));
+        rows.push(makeEliminatedRow('—', 'vote_skipped'));
         continue;
       }
       if (round.kind === 'single') {
@@ -343,7 +327,7 @@
         rows.push(makeVoteRow('Выставленные игроки', [spid]));
         rows.push(makeVoteRow('Голоса за игроков', [pool]));
         rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
-        rows.push(makeKaznenyRow(String(spid), 'sole_nominee_hanged'));
+        rows.push(makeEliminatedRow(String(spid), 'sole_nominee_hanged'));
         continue;
       }
       var cluster = round.events;
@@ -360,7 +344,7 @@
           rows.push(makeVoteRow('Голоса за игроков', ['—']));
         }
         rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
-        rows.push(makeKaznenyRow('—', 'no_elimination'));
+        rows.push(makeEliminatedRow('—', 'no_elimination'));
         continue;
       }
       var firstTie = null;
@@ -405,7 +389,7 @@
       rows.push(makeVoteRow('Голоса за игроков', slots1.length ? slots1 : ['—']));
       rows.push(makeVoteRow('Голоса за игроков на переголосовании', slots4));
       rows.push(
-        makeKaznenyRow(clusterExecutedIdsComma(cluster), clusterEliminationTag(cluster))
+        makeEliminatedRow(clusterExecutedIdsComma(cluster), clusterEliminationTag(cluster))
       );
     }
 

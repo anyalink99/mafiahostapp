@@ -80,7 +80,7 @@
   };
 
 
-  app.showScreen = function (screenId) {
+  app.navigateToScreen = function (screenId) {
     if (screenId !== 'settings-screen' && app.stopMusicPreview) app.stopMusicPreview();
     if (screenId !== 'vote-screen' && app.hideVoteCountModal) app.hideVoteCountModal();
     if (screenId !== 'game-screen' && screenId !== 'prepare-screen' && app.hidePlayerActionsModal) {
@@ -107,10 +107,10 @@
       const timerEl = document.getElementById('timer');
       if (timerEl) timerEl.textContent = app.timeLeft;
       if (app.syncTimerAppearance) app.syncTimerAppearance();
-      app.updateVotingUI();
+      app.refreshNomineeQueueUi();
     }
     if (screenId === 'prepare-screen' && app.renderPreparePlayers) app.renderPreparePlayers();
-    if (screenId === 'vote-screen' && app.prepareVoteScreen) app.prepareVoteScreen();
+    if (screenId === 'vote-screen' && app.prepareVoteRoundScreen) app.prepareVoteRoundScreen();
     if (screenId === 'vote-screen' && app.renderVoteScreen) app.renderVoteScreen();
     if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
     if (screenId === 'settings-screen') {
@@ -118,13 +118,12 @@
       if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
       if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
     }
-    if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
   };
 
   app.initGameFromMenu = function () {
     app.renderPlayers();
     app.resetTimer(app.timeLeft);
-    app.updateVotingUI();
+    app.refreshNomineeQueueUi();
   };
 
   app.getAvailableCount = function () {

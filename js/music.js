@@ -301,7 +301,7 @@
     showEl('modal-music-empty', false);
   };
 
-  app.musicToggleMainButton = function () {
+  app.toggleMusicPlayback = function () {
     if (app.isMusicPlaying()) {
       app.stopMusic();
       return;
@@ -330,18 +330,13 @@
     });
   };
 
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/"/g, '&quot;');
-  }
+  var escapeHtml = app.escapeHtml;
 
-  app.musicSettingsExpandedId = { '1': '', '2': '' };
+  app.expandedMusicItemIdBySlot = { '1': '', '2': '' };
 
   app.getMusicExpandedItemId = function (slot) {
     var k = String(slot) === '2' ? '2' : '1';
-    return app.musicSettingsExpandedId[k] || '';
+    return app.expandedMusicItemIdBySlot[k] || '';
   };
 
   var MUSIC_PANEL_MS = 260;
@@ -434,12 +429,12 @@
   app.toggleMusicItemExpanded = function (slot, itemId) {
     var k = String(slot) === '2' ? '2' : '1';
     var other = k === '2' ? '1' : '2';
-    var openHere = app.musicSettingsExpandedId[k];
-    var openOther = app.musicSettingsExpandedId[other];
+    var openHere = app.expandedMusicItemIdBySlot[k];
+    var openOther = app.expandedMusicItemIdBySlot[other];
 
     if (openHere === itemId) {
-      app.musicSettingsExpandedId['1'] = '';
-      app.musicSettingsExpandedId['2'] = '';
+      app.expandedMusicItemIdBySlot['1'] = '';
+      app.expandedMusicItemIdBySlot['2'] = '';
       app.collapseOpenMusicPanelThen(function () {
         if (app.stopMusicPreview) app.stopMusicPreview();
       });
@@ -448,9 +443,9 @@
 
     var oldId = openHere || openOther;
 
-    app.musicSettingsExpandedId['1'] = '';
-    app.musicSettingsExpandedId['2'] = '';
-    app.musicSettingsExpandedId[k] = itemId;
+    app.expandedMusicItemIdBySlot['1'] = '';
+    app.expandedMusicItemIdBySlot['2'] = '';
+    app.expandedMusicItemIdBySlot[k] = itemId;
 
     if (oldId && oldId !== itemId) {
       app.switchMusicExpandParallel(oldId, itemId);
@@ -462,11 +457,11 @@
 
   app.setMusicExpandedToItem = function (slot, itemId) {
     var k = String(slot) === '2' ? '2' : '1';
-    var oldId = app.musicSettingsExpandedId['1'] || app.musicSettingsExpandedId['2'];
+    var oldId = app.expandedMusicItemIdBySlot['1'] || app.expandedMusicItemIdBySlot['2'];
     var had = !!oldId;
-    app.musicSettingsExpandedId['1'] = '';
-    app.musicSettingsExpandedId['2'] = '';
-    app.musicSettingsExpandedId[k] = itemId || '';
+    app.expandedMusicItemIdBySlot['1'] = '';
+    app.expandedMusicItemIdBySlot['2'] = '';
+    app.expandedMusicItemIdBySlot[k] = itemId || '';
     if (had && itemId && oldId !== itemId) {
       app.switchMusicExpandParallel(oldId, itemId);
       return;

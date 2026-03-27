@@ -1,6 +1,21 @@
 (function (app) {
-  app.bindClicks = function () {
+  app.bindUiEvents = function () {
     var voteTilePtr = { tile: null, id: null };
+    var ROLE_CLOSE_EDGE_GUARD_PX = 56;
+    var roleCloseEdgeTouchBlockedAt = 0;
+
+    function isInsideRoleCloseSafeArea(x, y) {
+      if (!isFinite(x) || !isFinite(y)) return true;
+      var w = window.innerWidth || document.documentElement.clientWidth || 0;
+      var h = window.innerHeight || document.documentElement.clientHeight || 0;
+      if (!w || !h) return true;
+      return (
+        x >= ROLE_CLOSE_EDGE_GUARD_PX &&
+        x <= w - ROLE_CLOSE_EDGE_GUARD_PX &&
+        y >= ROLE_CLOSE_EDGE_GUARD_PX &&
+        y <= h - ROLE_CLOSE_EDGE_GUARD_PX
+      );
+    }
 
     function voteCandidateTileFromTarget(target) {
       return target && target.closest ? target.closest('[data-action="vote-open-count"]') : null;
@@ -78,11 +93,13 @@
         e.preventDefault();
         const id = t.getAttribute('data-goto');
         if (t.getAttribute('data-init') === 'game') app.initGameFromMenu();
-        app.showScreen(id);
+        app.navigateToScreen(id);
         return;
       }
       t = e.target.closest('[data-close="role"]');
       if (t && document.getElementById('role-screen').classList.contains('active')) {
+        if (Date.now() - roleCloseEdgeTouchBlockedAt < 700) return;
+        if (!isInsideRoleCloseSafeArea(e.clientX, e.clientY)) return;
         e.preventDefault();
         app.closeRole();
         return;
@@ -99,7 +116,7 @@
         const action = t.getAttribute('data-action');
         e.preventDefault();
         if (action === 'toggle-timer') app.toggleTimer();
-        else if (action === 'toggle-music') app.musicToggleMainButton();
+        else if (action === 'toggle-music') app.toggleMusicPlayback();
         else if (action === 'timer-voice-modal-open') {
           if (app.showTimerVoiceModal) app.showTimerVoiceModal();
         } else if (action === 'timer-voice-modal-close') {
@@ -122,10 +139,10 @@
           if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
         } else if (action === 'reset-game-confirm-apply') {
           if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
-          if (app.fullReset) app.fullReset();
+          if (app.resetGameState) app.resetGameState();
         } else if (action === 'reset-game-confirm-apply-with-nicks') {
           if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
-          if (app.fullReset) app.fullReset({ clearNicks: true });
+          if (app.resetGameState) app.resetGameState({ resetNicknames: true });
         } else if (action === 'music-add-slot') {
           const slot = t.getAttribute('data-slot');
           const inp = document.getElementById(slot === '2' ? 'music-files-slot-2' : 'music-files-slot-1');
@@ -142,10 +159,10 @@
           const sid = t.getAttribute('data-slot');
           const iid = t.getAttribute('data-item-id');
           if (sid && iid) {
-            if (app.musicSettingsExpandedId) {
-              if (app.musicSettingsExpandedId['1'] === iid || app.musicSettingsExpandedId['2'] === iid) {
-                app.musicSettingsExpandedId['1'] = '';
-                app.musicSettingsExpandedId['2'] = '';
+            if (app.expandedMusicItemIdBySlot) {
+              if (app.expandedMusicItemIdBySlot['1'] === iid || app.expandedMusicItemIdBySlot['2'] === iid) {
+                app.expandedMusicItemIdBySlot['1'] = '';
+                app.expandedMusicItemIdBySlot['2'] = '';
               }
             }
             app.musicRemoveItem(sid, iid).then(function () {
@@ -204,7 +221,7 @@
             var plF = app.players.find(function (x) {
               return x.id === pidF;
             });
-            if (plF && !plF.outReason) {
+            if (plF && !plF.eliminationReason) {
               if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
               app.addFoul(pidF);
             }
@@ -216,13 +233,13 @@
             var plV = app.players.find(function (x) {
               return x.id === pidV;
             });
-            var inQV = app.votingOrder.indexOf(pidV) !== -1;
-            if (plV && !plV.outReason) {
+            var inQV = app.nomineeQueue.indexOf(pidV) !== -1;
+            if (plV && !plV.eliminationReason) {
               if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
               if (inQV) {
-                if (app.removeFromVote) app.removeFromVote(pidV);
+                if (app.removePlayerFromNomineeQueue) app.removePlayerFromNomineeQueue(pidV);
               } else {
-                app.addToVote(pidV);
+                app.addPlayerToNomineeQueue(pidV);
               }
             }
           }
@@ -233,20 +250,20 @@
             var plR = app.players.find(function (x) {
               return x.id === pidR;
             });
-            if (plR && plR.outReason && app.togglePlayerElimination) {
-              var reasonR = plR.outReason;
+            if (plR && plR.eliminationReason && app.setPlayerEliminationState) {
+              var reasonR = plR.eliminationReason;
               if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-              app.togglePlayerElimination(pidR, reasonR);
+              app.setPlayerEliminationState(pidR, reasonR);
             }
           }
         } else if (action === 'player-modal-elim') {
           var modalE = document.getElementById('modal-player-actions');
           var pidE = modalE && modalE.dataset.playerId ? parseInt(modalE.dataset.playerId, 10) : NaN;
           var reasonE = t.getAttribute('data-elim');
-          if (reasonE === 'hang' && app.votingOrder && app.votingOrder.indexOf(pidE) === -1) return;
-          if (!isNaN(pidE) && reasonE && app.togglePlayerElimination) {
+          if (reasonE === 'hang' && app.nomineeQueue && app.nomineeQueue.indexOf(pidE) === -1) return;
+          if (!isNaN(pidE) && reasonE && app.setPlayerEliminationState) {
             if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-            app.togglePlayerElimination(pidE, reasonE);
+            app.setPlayerEliminationState(pidE, reasonE);
           }
         } else if (action === 'summary-player-open') {
           var sumScr = document.getElementById('summary-screen');
@@ -287,6 +304,12 @@
       function (e) {
         const t = e.target.closest('[data-close="role"]');
         if (t && document.getElementById('role-screen').classList.contains('active')) {
+          var touch = e.changedTouches && e.changedTouches[0];
+          if (touch && !isInsideRoleCloseSafeArea(touch.clientX, touch.clientY)) {
+            roleCloseEdgeTouchBlockedAt = Date.now();
+            e.preventDefault();
+            return;
+          }
           e.preventDefault();
           app.closeRole();
         }
@@ -341,10 +364,10 @@
         g.timer = setTimeout(function () {
           g.timer = null;
           if (!g.active || g.fired) return;
-          var inQ = app.votingOrder.indexOf(capturedPid) !== -1;
+          var inQ = app.nomineeQueue.indexOf(capturedPid) !== -1;
           var changed = inQ
-            ? app.removeFromVote(capturedPid, { skipRender: true })
-            : app.addToVote(capturedPid, { skipRender: true });
+            ? app.removePlayerFromNomineeQueue(capturedPid, { skipRender: true })
+            : app.addPlayerToNomineeQueue(capturedPid, { skipRender: true });
           if (!changed) return;
           g.fired = true;
           if (app.patchPlayerSlotVoteIndicator) app.patchPlayerSlotVoteIndicator(capturedPid);
@@ -407,10 +430,10 @@
         app.musicAddFilesToSlot(slot, inputEl.files).then(function (added) {
           var key = String(slot) === '2' ? '2' : '1';
           var other = key === '2' ? '1' : '2';
-          if (added && added.length && app.musicSettingsExpandedId) {
-            var hadOpen = app.musicSettingsExpandedId['1'] || app.musicSettingsExpandedId['2'];
-            app.musicSettingsExpandedId[other] = '';
-            app.musicSettingsExpandedId[key] = added[added.length - 1].id;
+          if (added && added.length && app.expandedMusicItemIdBySlot) {
+            var hadOpen = app.expandedMusicItemIdBySlot['1'] || app.expandedMusicItemIdBySlot['2'];
+            app.expandedMusicItemIdBySlot[other] = '';
+            app.expandedMusicItemIdBySlot[key] = added[added.length - 1].id;
             if (hadOpen && app.collapseOpenMusicPanelThen) {
               app.collapseOpenMusicPanelThen(function () {
                 if (app.renderMusicSettings) app.renderMusicSettings();

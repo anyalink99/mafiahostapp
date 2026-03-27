@@ -1,4 +1,3 @@
-/* Прокрутка сохраняется, полосы прокрутки не показываем */
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -144,7 +143,6 @@ body {
   align-items: stretch;
 }
 
-/* Только игровой стол: жесты; на экране итогов тот же класс .player-cell без .player-slot — скролл не блокировать */
 .player-cell.player-slot {
   touch-action: none;
 }
@@ -188,7 +186,6 @@ body {
   line-height: 1.45;
 }
 
-/* Настройки: чекбокс в стиле приложения (без «белого» системного) */
 input.mafia-checkbox {
   -webkit-appearance: none;
   appearance: none;
@@ -231,7 +228,6 @@ input.mafia-checkbox:active:not(:disabled) {
   transform: scale(0.94);
 }
 
-/* Высота панели трека задаётся в JS (max-height в px) — плавный сдвиг контента снизу */
 .music-item-settings-wrap {
   overflow: hidden;
 }

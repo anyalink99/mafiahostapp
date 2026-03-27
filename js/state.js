@@ -3,24 +3,46 @@ window.MafiaApp = window.MafiaApp || {};
 (function (app) {
   app.STORAGE_KEY = 'mafia_host_state';
 
+  function definePlayerModelAliases(player) {
+    if (!player || typeof player !== 'object') return player;
+    if (!Object.prototype.hasOwnProperty.call(player, 'eliminationReason')) player.eliminationReason = null;
+    return player;
+  }
+
+  function createPlayer(id, nick) {
+    return definePlayerModelAliases({
+      id: id,
+      fouls: 0,
+      eliminationReason: null,
+      nick: nick || '',
+    });
+  }
+
+  function ensurePlayersSchema(players) {
+    if (!Array.isArray(players)) return [];
+    for (var i = 0; i < players.length; i++) {
+      var player = players[i];
+      if (!player || typeof player !== 'object') {
+        players[i] = createPlayer(i + 1, '');
+        continue;
+      }
+      if (!Object.prototype.hasOwnProperty.call(player, 'nick')) player.nick = '';
+      definePlayerModelAliases(player);
+    }
+    return players;
+  }
+
   app.roles = ['Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Шериф', 'Мафия', 'Мафия', 'Дон'];
-  app.players = Array.from({ length: 10 }, (_, i) => ({
-    id: i + 1,
-    fouls: 0,
-    outReason: null,
-    nick: '',
-  }));
-  app.votingOrder = [];
-  app.voteSession = null;
+  app.players = ensurePlayersSchema(Array.from({ length: 10 }, function (_, i) { return createPlayer(i + 1, ''); }));
+  app.nomineeQueue = [];
+  app.activeVoteRound = null;
   app.revealedIndices = [];
   app.timerInterval = null;
   app.timeLeft = 60;
   app.timerVoiceEnabled = false;
   app.timerVoiceDuckEnabled = true;
   app.timerVoiceDuckMul = 0.38;
-  // Back-compat: старый единый слайдер громкости озвучки.
   app.timerVoiceVolume = 0.92;
-  // Новые настройки: раздельная громкость (без музыки / с музыкой) и скорость озвучки.
   app.voiceVolumeNoMusic = 0.92;
   app.voiceVolumeWithMusic = 0.92;
   app.voiceRate = 1.0;
@@ -43,10 +65,8 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.summaryHostName = '';
 
-  /** Ручная правка текста синтетической строки «пропуск дня 1» в «Ход игры»; null = стандартный текст. */
   app.summarySyntheticFirstDayLine = null;
 
-  /** Ручные правки текста синтетических строк «пропуск» между двумя ночными вылетами (ключ pair-<индекс>). */
   app.summarySkipLineOverrides = {};
 
   app.saveState = function () {
@@ -54,8 +74,8 @@ window.MafiaApp = window.MafiaApp || {};
       const payload = {
         roles: app.roles,
         players: app.players,
-        votingOrder: app.votingOrder,
-        voteSession: app.voteSession,
+        nomineeQueue: app.nomineeQueue,
+        activeVoteRound: app.activeVoteRound,
         revealedIndices: app.revealedIndices,
         timeLeft: app.timeLeft,
         gameLog: app.gameLog,
@@ -80,31 +100,20 @@ window.MafiaApp = window.MafiaApp || {};
       const data = JSON.parse(raw);
       if (data.roles && Array.isArray(data.roles)) app.roles = data.roles;
       if (data.players && Array.isArray(data.players)) {
-        app.players = data.players;
-        for (var pi = 0; pi < app.players.length; pi++) {
-          if (!Object.prototype.hasOwnProperty.call(app.players[pi], 'outReason')) {
-            app.players[pi].outReason = null;
-          }
-          if (app.players[pi].outReason === 'removed') {
-            app.players[pi].outReason = 'disqual';
-          }
-          if (!Object.prototype.hasOwnProperty.call(app.players[pi], 'nick')) {
-            app.players[pi].nick = '';
-          }
-        }
+        app.players = ensurePlayersSchema(data.players);
       }
-      if (data.votingOrder && Array.isArray(data.votingOrder)) {
-        app.votingOrder = data.votingOrder;
-        app.votingOrder = app.votingOrder.filter(function (vid) {
+      if (data.nomineeQueue && Array.isArray(data.nomineeQueue)) {
+        app.nomineeQueue = data.nomineeQueue;
+        app.nomineeQueue = app.nomineeQueue.filter(function (vid) {
           var pl = app.players.find(function (x) {
             return x.id === vid;
           });
-          return pl && !pl.outReason;
+          return pl && !pl.eliminationReason;
         });
       }
-      if (data.voteSession && typeof data.voteSession === 'object') {
-        app.voteSession = data.voteSession;
-        var vs = app.voteSession;
+      if (data.activeVoteRound && typeof data.activeVoteRound === 'object') {
+        app.activeVoteRound = data.activeVoteRound;
+        var vs = app.activeVoteRound;
         if (
           vs &&
           vs.phase === 'counting' &&
@@ -112,13 +121,12 @@ window.MafiaApp = window.MafiaApp || {};
           Array.isArray(vs.candidateIds) &&
           vs.candidateIds.length
         ) {
-          app.votingOrder = vs.candidateIds.slice();
+          app.nomineeQueue = vs.candidateIds.slice();
         }
       }
       if (data.revealedIndices && Array.isArray(data.revealedIndices)) app.revealedIndices = data.revealedIndices;
       if (typeof data.timeLeft === 'number') app.timeLeft = data.timeLeft;
       if (data.gameLog && Array.isArray(data.gameLog)) app.gameLog = data.gameLog;
-      else if (data.gameHistory && Array.isArray(data.gameHistory)) app.gameLog = data.gameHistory;
       else app.gameLog = [];
       app.gameLog = app.gameLog.filter(function (ev) {
         return ev && ev.type !== 'vote_round_skipped';
@@ -176,21 +184,20 @@ window.MafiaApp = window.MafiaApp || {};
     }
   };
 
-  app.fullReset = function (opts) {
+  app.resetGameState = function (opts) {
     opts = opts || {};
-    var keepNicks = !opts.clearNicks;
+    var keepNicks = !opts.resetNicknames;
     var prevNicks = app.players.map(function (p) {
       return p && p.nick != null ? String(p.nick).slice(0, 32) : '';
     });
     app.roles = ['Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Шериф', 'Мафия', 'Мафия', 'Дон'];
-    app.players = Array.from({ length: 10 }, (_, i) => ({
-      id: i + 1,
-      fouls: 0,
-      outReason: null,
-      nick: keepNicks ? prevNicks[i] || '' : '',
-    }));
-    app.votingOrder = [];
-    app.voteSession = null;
+    app.players = ensurePlayersSchema(
+      Array.from({ length: 10 }, function (_, i) {
+        return createPlayer(i + 1, keepNicks ? prevNicks[i] || '' : '');
+      })
+    );
+    app.nomineeQueue = [];
+    app.activeVoteRound = null;
     app.revealedIndices = [];
     app.timeLeft = 60;
     app.gameLog = [];
@@ -206,7 +213,7 @@ window.MafiaApp = window.MafiaApp || {};
     if (app.timerInterval) clearInterval(app.timerInterval);
     app.timerInterval = null;
     app.saveState();
-    app.showScreen('menu-screen');
+    app.navigateToScreen('menu-screen');
     app.updateResetButtonVisibility();
   };
 
@@ -218,10 +225,37 @@ window.MafiaApp = window.MafiaApp || {};
     }
   };
 
+  app.hasResettableState = function () {
+    if (app.timeLeft !== 60) return true;
+    if (app.revealedIndices && app.revealedIndices.length > 0) return true;
+    if (app.nomineeQueue && app.nomineeQueue.length > 0) return true;
+    if (app.activeVoteRound) return true;
+    if (app.gameLog && app.gameLog.length > 0) return true;
+    if (app.playerRoleOverrides && Object.keys(app.playerRoleOverrides).length > 0) return true;
+    if (app.winningTeam) return true;
+    if (app.bonusPointsByPlayerId && Object.keys(app.bonusPointsByPlayerId).length > 0) return true;
+    if (app.summaryRoleByPlayerId && Object.keys(app.summaryRoleByPlayerId).length > 0) return true;
+    if (app.bonusNoteByPlayerId && Object.keys(app.bonusNoteByPlayerId).length > 0) return true;
+    if (app.bestMoveByPlayerId && Object.keys(app.bestMoveByPlayerId).length > 0) return true;
+    if (app.summaryHostName && app.summaryHostName.trim() !== '') return true;
+    if (app.summarySyntheticFirstDayLine !== null) return true;
+    if (app.summarySkipLineOverrides && Object.keys(app.summarySkipLineOverrides).length > 0) return true;
+    if (Array.isArray(app.players)) {
+      for (var i = 0; i < app.players.length; i++) {
+        var p = app.players[i];
+        if (!p) continue;
+        if ((p.fouls || 0) > 0) return true;
+        if (p.eliminationReason) return true;
+        if (typeof p.nick === 'string' && p.nick.trim() !== '') return true;
+      }
+    }
+    return false;
+  };
+
   app.updateResetButtonVisibility = function () {
     var gameBtn = document.getElementById('btn-reset-game');
     if (gameBtn) {
-      var gameVisible = app.hasSavedState();
+      var gameVisible = app.hasSavedState() && app.hasResettableState();
       gameBtn.style.visibility = gameVisible ? 'visible' : 'hidden';
       gameBtn.style.opacity = gameVisible ? '1' : '0';
       gameBtn.style.pointerEvents = gameVisible ? 'auto' : 'none';

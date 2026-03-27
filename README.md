@@ -85,7 +85,7 @@ mafia-host-app.github.io/
 ├── js/
 │   ├── tailwind.config.js тема Tailwind для CDN
 │   ├── state.js           состояние игры → localStorage
-│   ├── music-storage.js   метаданные музыки + IndexedDB
+│   ├── music-store.js     метаданные музыки + IndexedDB
 │   ├── music.js
 │   ├── screens.js
 │   ├── cards.js
