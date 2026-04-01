@@ -945,12 +945,15 @@
         'grid h-full min-h-0 min-w-0 grid-flow-col grid-cols-2 gap-1.5 overflow-hidden';
       grid.style.gridTemplateRows = 'repeat(' + rowCount + ', minmax(0, 1fr))';
 
-      for (var p = 0; p < n; p++) {
-        var sid = app.players[p].id;
-        var pl = app.players[p];
+      var sumOrder = app.playerSeatIndicesForTwoColumnDisplay(n);
+      for (var si = 0; si < sumOrder.length; si++) {
+        var seatIndex = sumOrder[si];
+        var sid = app.players[seatIndex].id;
+        var pl = app.players[seatIndex];
         var nickTrim = pl.nick != null ? String(pl.nick).trim() : '';
         var bk = String(sid);
         var braw = app.bonusPointsByPlayerId[bk];
+        var bnum = parseBonusFloat(braw);
         var bonusText = app.formatBonusForDisplay(braw);
 
         var btn = document.createElement('button');
@@ -976,7 +979,7 @@
           iconWrap.innerHTML =
             '<span class="font-display text-lg font-bold leading-none text-mafia-gold/95 sm:text-xl">?</span>';
         } else {
-          var code = app.getEffectiveSummaryRoleCode(sid, p);
+          var code = app.getEffectiveSummaryRoleCode(sid, seatIndex);
           var iconId = summaryRoleCodeToIconId(code);
           iconWrap.className = summaryRoleGridIconWrapClass(code);
           iconWrap.innerHTML =
@@ -996,12 +999,13 @@
 
         var bonusInner = document.createElement('span');
         bonusInner.className =
-          'font-display text-xs font-semibold leading-none tabular-nums sm:text-sm text-mafia-cream/95';
-        bonusInner.textContent = 'Д: ' + bonusText;
+          'font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95';
+        bonusInner.textContent = 'д: ' + bonusText;
 
         var pillWrap = document.createElement('div');
         pillWrap.className =
-          'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border border-mafia-border/35 bg-black/25 px-1.5 py-0.5 sm:px-2 sm:py-1';
+          'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
+          (bnum > 2 ? 'border-mafia-blood/55 bg-mafia-blood' : 'border-mafia-border/35 bg-black/25');
         pillWrap.appendChild(bonusInner);
 
         var rightCol = document.createElement('div');

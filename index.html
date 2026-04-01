@@ -215,7 +215,9 @@
         </button>
         <div class="flex justify-center w-full min-w-0 pt-11 sm:pt-14">
             <div class="timer-control-frame inline-flex flex-row flex-nowrap items-center justify-center gap-3 sm:gap-4 max-w-full min-w-0 overflow-x-auto rounded-lg border border-mafia-border/60 bg-mafia-black/25 px-3 py-2 sm:px-5 sm:py-3">
-                <div id="timer" class="font-display font-bold text-mafia-gold tabular-nums leading-none transition-colors duration-[88ms] ease-out shrink-0">60</div>
+                <div id="timer-pill" class="timer-pill player-slot__foul-pill flex shrink-0 items-center justify-center rounded border border-mafia-border/35 bg-black/25 px-2 py-1 transition-[background-color,border-color] duration-[118ms] ease-out">
+                    <div id="timer" class="font-sans font-semibold tabular-nums leading-none text-mafia-cream/95 transition-colors duration-[88ms] ease-out">60</div>
+                </div>
                 <div class="flex gap-2 sm:gap-3 items-center shrink-0">
                     <button type="button" id="start-btn" data-action="toggle-timer" aria-pressed="false" class="px-3 py-2 sm:px-5 sm:py-3 bg-green-800 hover:bg-green-700 border border-green-600 text-white font-semibold rounded uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition-[background-color,border-color,box-shadow,transform,color] duration-[118ms] ease-out">Старт</button>
                     <button type="button" data-action="reset-timer" data-seconds="60" class="px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-xs sm:text-sm cursor-pointer">60 с</button>

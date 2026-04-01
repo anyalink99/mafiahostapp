@@ -1,10 +1,30 @@
 (function (app) {
+  function timerCueHapticAndShake(seconds) {
+    if (seconds !== 10 && seconds !== 0) return;
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(seconds === 0 ? [90, 45, 90] : 55);
+      } catch (_e) {}
+    }
+    var pill = document.getElementById('timer-pill');
+    if (!pill) return;
+    pill.classList.remove('timer-pill--shake');
+    void pill.offsetWidth;
+    pill.classList.add('timer-pill--shake');
+    window.setTimeout(function () {
+      pill.classList.remove('timer-pill--shake');
+    }, 420);
+  }
+
   app.syncTimerAppearance = function () {
-    const el = document.getElementById('timer');
-    if (!el) return;
-    const urgent = app.timeLeft <= 10;
-    el.classList.toggle('text-mafia-gold', !urgent);
-    el.classList.toggle('text-mafia-blood', urgent);
+    var pill = document.getElementById('timer-pill');
+    var urgent = app.timeLeft <= 10;
+    if (pill) {
+      pill.classList.toggle('border-mafia-blood/55', urgent);
+      pill.classList.toggle('bg-mafia-blood', urgent);
+      pill.classList.toggle('border-mafia-border/35', !urgent);
+      pill.classList.toggle('bg-black/25', !urgent);
+    }
   };
 
   var TIMER_BTN_BASE =
@@ -37,6 +57,7 @@
           const te = document.getElementById('timer');
           if (te) te.textContent = app.timeLeft;
           app.syncTimerAppearance();
+          timerCueHapticAndShake(app.timeLeft);
           if (app.timerVoiceEnabled && app.timeLeft === 10) {
             app.playTimerVoiceCue('10');
           }

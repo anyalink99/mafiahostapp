@@ -18,6 +18,17 @@
     shot: 'Убит',
   };
 
+  /** Seat indices for 2-column grid-flow-col: left col descending №, right col ascending (e.g. 10 players → 5…1 | 6…10). */
+  app.playerSeatIndicesForTwoColumnDisplay = function (playerCount) {
+    var n = playerCount;
+    if (n <= 0) return [];
+    var left = Math.ceil(n / 2);
+    var out = [];
+    for (var i = left - 1; i >= 0; i--) out.push(i);
+    for (var j = left; j < n; j++) out.push(j);
+    return out;
+  };
+
   function prepareRoleCodeToLabel(code) {
     return PREPARE_ROLE_LABELS[code] || PREPARE_ROLE_LABELS.peaceful;
   }
@@ -331,7 +342,10 @@
     list.className =
       'grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
     list.innerHTML = '';
-    app.players.forEach(function (p, seatIndex) {
+    var prepOrder = app.playerSeatIndicesForTwoColumnDisplay(app.players.length);
+    for (var pi = 0; pi < prepOrder.length; pi++) {
+      var seatIndex = prepOrder[pi];
+      var p = app.players[seatIndex];
       var nickTrim = p.nick != null ? String(p.nick).trim() : '';
       var roleCode = app.getEffectiveSummaryRoleCode
         ? app.getEffectiveSummaryRoleCode(p.id, seatIndex)
@@ -375,7 +389,7 @@
         '</div>';
 
       list.appendChild(btn);
-    });
+    }
     return true;
   };
 
@@ -385,13 +399,17 @@
     list.className =
       'grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
     list.innerHTML = '';
-    app.players.forEach(function (p) {
+    var playOrder = app.playerSeatIndicesForTwoColumnDisplay(app.players.length);
+    for (var qi = 0; qi < playOrder.length; qi++) {
+      var p = app.players[playOrder[qi]];
       var out = !!p.eliminationReason;
       var statusHtml = playerSlotStatusHtml(p);
       var foulClass =
-        'font-display text-sm font-semibold leading-none tabular-nums sm:text-base ' +
-        (p.fouls >= 3 ? 'text-mafia-blood' : 'text-mafia-cream/95');
-      var foulInner = '<span class="' + foulClass + '">Ф: ' + p.fouls + '</span>';
+        'font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95';
+      var foulInner = '<span class="' + foulClass + '">ф: ' + p.fouls + '</span>';
+      var foulPillClass =
+        'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
+        (p.fouls > 2 ? 'border-mafia-blood/55 bg-mafia-blood' : 'border-mafia-border/35 bg-black/25');
       var nickTrim = p.nick != null ? String(p.nick).trim() : '';
 
       var btn = document.createElement('button');
@@ -417,7 +435,9 @@
         p.id +
         '</span>' +
         '<div class="flex min-w-0 justify-end">' +
-        '<div class="player-slot__foul-pill flex shrink-0 items-center justify-center rounded border border-mafia-border/35 bg-black/25 px-2 py-1">' +
+        '<div class="' +
+        foulPillClass +
+        '">' +
         foulInner +
         '</div></div></div>' +
         '<div class="' +
@@ -427,7 +447,7 @@
         '</div>';
 
       list.appendChild(btn);
-    });
+    }
     return true;
   };
 
