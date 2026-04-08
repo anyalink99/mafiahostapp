@@ -12,7 +12,7 @@ window.MafiaApp = window.MafiaApp || {};
   }
 
   function defaultMeta() {
-    return { version: 1, slots: { '1': [], '2': [] } };
+    return { version: 1, slots: { '1': [], '2': [] }, spotify: { '1': null, '2': null } };
   }
 
   app.loadMusicMeta = function () {
@@ -24,6 +24,7 @@ window.MafiaApp = window.MafiaApp || {};
       if (!data.slots || typeof data.slots !== 'object') data.slots = defaultMeta().slots;
       if (!Array.isArray(data.slots['1'])) data.slots['1'] = [];
       if (!Array.isArray(data.slots['2'])) data.slots['2'] = [];
+      if (!data.spotify || typeof data.spotify !== 'object') data.spotify = { '1': null, '2': null };
       return data;
     } catch (e) {
       return defaultMeta();
@@ -110,6 +111,7 @@ window.MafiaApp = window.MafiaApp || {};
   };
 
   function normalizeItem(row) {
+    if (row && row.type === 'playlist') return normalizePlaylist(row);
     var offset = typeof row.offsetSec === 'number' && !isNaN(row.offsetSec) ? row.offsetSec : 0;
     var vol = typeof row.volumeMul === 'number' && !isNaN(row.volumeMul) ? row.volumeMul : 1;
     if (vol < 0.25) vol = 0.25;
@@ -123,6 +125,31 @@ window.MafiaApp = window.MafiaApp || {};
       source: row.source && row.source.type ? row.source : { type: 'idb', blobId: row.blobId },
     };
   }
+
+  function normalizePlaylist(row) {
+    var rawTracks = Array.isArray(row.tracks) ? row.tracks : [];
+    var tracks = [];
+    for (var i = 0; i < rawTracks.length; i++) {
+      var t = rawTracks[i];
+      if (!t || !t.blobId) continue;
+      tracks.push({
+        id: t.id || newId(),
+        name: String(t.name || 'Трек ' + (i + 1)),
+        blobId: t.blobId,
+      });
+    }
+    return {
+      id: row.id || newId(),
+      type: 'playlist',
+      name: String(row.name || 'Плейлист'),
+      enabled: row.enabled === false ? false : true,
+      tracks: tracks,
+    };
+  }
+
+  app.musicIsPlaylistItem = function (item) {
+    return !!(item && item.type === 'playlist');
+  };
 
   app.musicAddFilesToSlot = function (slot, fileList) {
     if (!fileList || !fileList.length) return Promise.resolve([]);
@@ -170,12 +197,159 @@ window.MafiaApp = window.MafiaApp || {};
     var item = list[idx];
     list.splice(idx, 1);
     app.saveMusicMeta(meta);
-    if (item.source && item.source.type === 'idb' && item.source.blobId) {
-      return app.musicDeleteBlob(item.source.blobId).catch(function () {}).then(function () {
-        return true;
-      });
+    var blobIds = [];
+    if (item.type === 'playlist' && Array.isArray(item.tracks)) {
+      for (var t = 0; t < item.tracks.length; t++) {
+        if (item.tracks[t] && item.tracks[t].blobId) blobIds.push(item.tracks[t].blobId);
+      }
+    } else if (item.source && item.source.type === 'idb' && item.source.blobId) {
+      blobIds.push(item.source.blobId);
     }
-    return Promise.resolve(true);
+    if (!blobIds.length) return Promise.resolve(true);
+    var chain = Promise.resolve();
+    blobIds.forEach(function (bid) {
+      chain = chain.then(function () {
+        return app.musicDeleteBlob(bid).catch(function () {});
+      });
+    });
+    return chain.then(function () {
+      return true;
+    });
+  };
+
+  function isAudioFileName(name) {
+    if (!name) return false;
+    if (name.charAt(name.length - 1) === '/') return false;
+    var bn = name.replace(/^.*\//, '');
+    if (!bn || bn.charAt(0) === '.') return false;
+    return /\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm)$/i.test(bn);
+  }
+
+  function audioMimeForName(name) {
+    var ext = (name.match(/\.([a-z0-9]+)$/i) || [, ''])[1].toLowerCase();
+    if (ext === 'mp3') return 'audio/mpeg';
+    if (ext === 'm4a' || ext === 'aac') return 'audio/mp4';
+    if (ext === 'ogg' || ext === 'oga') return 'audio/ogg';
+    if (ext === 'opus') return 'audio/ogg';
+    if (ext === 'wav') return 'audio/wav';
+    if (ext === 'flac') return 'audio/flac';
+    if (ext === 'webm') return 'audio/webm';
+    return 'audio/mpeg';
+  }
+
+  function decodeZipEntryName(rawBytes) {
+    if (!rawBytes) return '';
+    try {
+      if (typeof TextDecoder !== 'undefined') {
+        return new TextDecoder('utf-8', { fatal: false }).decode(rawBytes);
+      }
+    } catch (e) {}
+    var s = '';
+    for (var i = 0; i < rawBytes.length; i++) s += String.fromCharCode(rawBytes[i]);
+    return s;
+  }
+
+  app.musicAddZipToSlot = function (slot, zipFile) {
+    if (!zipFile) return Promise.reject(new Error('no file'));
+    if (typeof JSZip === 'undefined') {
+      return Promise.reject(new Error('JSZip not loaded'));
+    }
+    var key = String(slot) === '2' ? '2' : '1';
+    var playlistName = String(zipFile.name || 'Плейлист').replace(/\.zip$/i, '') || 'Плейлист';
+
+    return JSZip.loadAsync(zipFile, {
+      decodeFileName: function (bytes) {
+        return decodeZipEntryName(bytes);
+      },
+    }).then(function (zip) {
+      var entries = [];
+      zip.forEach(function (path, entry) {
+        if (entry.dir) return;
+        if (!isAudioFileName(path)) return;
+        entries.push({ path: path, entry: entry });
+      });
+      if (!entries.length) {
+        var err = new Error('no audio in zip');
+        err.code = 'no_audio';
+        throw err;
+      }
+      entries.sort(function (a, b) {
+        return a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      var tracks = [];
+      var chain = Promise.resolve();
+      entries.forEach(function (rec) {
+        chain = chain.then(function () {
+          return rec.entry.async('blob').then(function (blob) {
+            var bn = rec.path.replace(/^.*\//, '') || rec.path;
+            var displayName = bn.replace(/\.[a-z0-9]+$/i, '') || bn;
+            var mime = audioMimeForName(bn);
+            var typed = blob;
+            if (blob && blob.type !== mime) {
+              try {
+                typed = blob.slice(0, blob.size, mime);
+              } catch (e) {
+                typed = blob;
+              }
+            }
+            var blobId = newId();
+            return app.musicPutBlob(blobId, typed, mime).then(function () {
+              tracks.push({ id: newId(), name: displayName, blobId: blobId });
+            });
+          });
+        });
+      });
+
+      return chain.then(function () {
+        if (!tracks.length) {
+          var e2 = new Error('no audio in zip');
+          e2.code = 'no_audio';
+          throw e2;
+        }
+        var meta = app.loadMusicMeta();
+        var playlist = normalizePlaylist({
+          name: playlistName,
+          tracks: tracks,
+          enabled: true,
+        });
+        meta.slots[key].push(playlist);
+        app.saveMusicMeta(meta);
+        return playlist;
+      });
+    });
+  };
+
+  app.musicGetSlotPlayablePool = function (slot) {
+    var key = String(slot) === '2' ? '2' : '1';
+    var meta = app.loadMusicMeta();
+    var list = meta.slots[key] || [];
+    var pool = [];
+    for (var i = 0; i < list.length; i++) {
+      var it = list[i];
+      if (!it) continue;
+      if (it.type === 'playlist') {
+        if (it.enabled === false) continue;
+        var tracks = Array.isArray(it.tracks) ? it.tracks : [];
+        for (var j = 0; j < tracks.length; j++) {
+          var tr = tracks[j];
+          if (!tr || !tr.blobId) continue;
+          pool.push({
+            id: it.id + ':' + tr.id,
+            name: tr.name || it.name,
+            offsetSec: 0,
+            volumeMul: 1,
+            enabled: true,
+            source: { type: 'idb', blobId: tr.blobId },
+            playlistId: it.id,
+          });
+        }
+      } else {
+        if (it.enabled === false) continue;
+        pool.push(it);
+      }
+    }
+    return pool;
   };
 
   app.musicUpdateItem = function (slot, itemId, patch) {

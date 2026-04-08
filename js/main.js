@@ -68,8 +68,10 @@
   };
 
   function init() {
+    if (app.spotifyHandleCallback) app.spotifyHandleCallback();
     app.attachWebManifest();
     app.loadState();
+    if (app.spotifyLoadClientId) app.spotifyLoadClientId();
     if (app.loadTimerVoicePref) app.loadTimerVoicePref();
     if (app.musicSeedDefaultBundledTracks) app.musicSeedDefaultBundledTracks();
     if (app.initMusic) app.initMusic();

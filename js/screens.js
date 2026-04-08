@@ -114,6 +114,7 @@
     if (screenId === 'vote-screen' && app.renderVoteScreen) app.renderVoteScreen();
     if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
     if (screenId === 'settings-screen') {
+      if (app.renderSpotifyGlobalSettings) app.renderSpotifyGlobalSettings();
       if (app.renderMusicSettings) app.renderMusicSettings();
       if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
       if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();

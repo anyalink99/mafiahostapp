@@ -107,17 +107,27 @@
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Раздача карт</h2>
             <div class="flex flex-wrap gap-2 mb-3">
                 <button type="button" data-action="music-add-slot" data-slot="1" class="px-4 py-2 bg-mafia-blood/80 hover:bg-mafia-blood border border-mafia-gold/50 text-mafia-gold text-sm uppercase tracking-wider rounded cursor-pointer">Добавить треки</button>
+                <button type="button" data-action="music-add-zip-slot" data-slot="1" class="px-4 py-2 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream text-sm uppercase tracking-wider rounded cursor-pointer">Загрузить ZIP</button>
             </div>
             <input type="file" id="music-files-slot-1" class="hidden" accept="audio/*" multiple aria-hidden="true">
+            <input type="file" id="music-zip-slot-1" class="hidden" accept=".zip,application/zip,application/x-zip-compressed" aria-hidden="true">
+            <div id="spotify-slot-1-config" class="mb-3"></div>
             <div id="music-list-slot-1"></div>
         </section>
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Ночные действия</h2>
             <div class="flex flex-wrap gap-2 mb-3">
                 <button type="button" data-action="music-add-slot" data-slot="2" class="px-4 py-2 bg-mafia-blood/80 hover:bg-mafia-blood border border-mafia-gold/50 text-mafia-gold text-sm uppercase tracking-wider rounded cursor-pointer">Добавить треки</button>
+                <button type="button" data-action="music-add-zip-slot" data-slot="2" class="px-4 py-2 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream text-sm uppercase tracking-wider rounded cursor-pointer">Загрузить ZIP</button>
             </div>
             <input type="file" id="music-files-slot-2" class="hidden" accept="audio/*" multiple aria-hidden="true">
+            <input type="file" id="music-zip-slot-2" class="hidden" accept=".zip,application/zip,application/x-zip-compressed" aria-hidden="true">
+            <div id="spotify-slot-2-config" class="mb-3"></div>
             <div id="music-list-slot-2"></div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Spotify</h2>
+            <div id="spotify-settings-container"></div>
         </section>
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Озвучка</h2>
@@ -409,6 +419,26 @@
     </div>
 </div>
 
+<div id="modal-music-control" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-music-control-title">
+    <div class="absolute inset-0" data-action="music-control-close" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <h2 id="modal-music-control-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-2">Музыка</h2>
+        <p id="modal-music-control-track" class="text-mafia-cream/85 text-sm text-center mb-4 truncate"></p>
+        <div class="mb-4">
+            <input type="range" id="modal-music-control-seek" min="0" max="1000" step="1" value="0" class="w-full accent-mafia-gold cursor-pointer">
+            <div class="flex justify-between text-xs text-mafia-cream/60 tabular-nums mt-1">
+                <span id="modal-music-control-time-current">0:00</span>
+                <span id="modal-music-control-time-total">0:00</span>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button type="button" id="modal-music-control-pause" data-action="music-control-pause" class="flex-1 py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream font-semibold uppercase tracking-wider rounded cursor-pointer">Пауза</button>
+            <button type="button" data-action="music-control-stop" class="flex-1 py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Стоп</button>
+        </div>
+        <button type="button" data-action="music-control-close" class="w-full mt-3 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Закрыть</button>
+    </div>
+</div>
+
 <div id="modal-timer-voice" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-timer-voice-title">
     <div class="absolute inset-0" data-action="timer-voice-modal-close" aria-hidden="true"></div>
     <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-6 max-w-sm w-full shadow-xl">
@@ -470,8 +500,12 @@
 <audio id="sfx-voice" preload="auto" playsinline></audio>
 <audio id="music-preview" preload="none" playsinline></audio>
 
+<script src="js/vendor/jszip.min.js"></script>
 <script src="js/state.js"></script>
 <script src="js/shared-utils.js"></script>
+<script src="js/spotify-auth.js"></script>
+<script src="js/spotify-store.js"></script>
+<script src="js/spotify-player.js"></script>
 <script src="js/music-store.js"></script>
 <script src="js/music.js"></script>
 <script src="js/screens.js"></script>

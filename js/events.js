@@ -377,8 +377,47 @@
         });
         inputEl.value = '';
       }
+      function addZipFromSettings(slot, inputEl) {
+        if (!inputEl.files || !inputEl.files.length) return;
+        var file = inputEl.files[0];
+        inputEl.value = '';
+        if (!file) return;
+        if (typeof JSZip === 'undefined') {
+          if (app.showToast) app.showToast('Не удалось загрузить ZIP: библиотека недоступна');
+          return;
+        }
+        if (app.showToast) app.showToast('Распаковка ZIP…');
+        app.musicAddZipToSlot(slot, file).then(function (playlist) {
+          var key = String(slot) === '2' ? '2' : '1';
+          var other = key === '2' ? '1' : '2';
+          if (playlist && app.expandedMusicItemIdBySlot) {
+            var hadOpen = app.expandedMusicItemIdBySlot['1'] || app.expandedMusicItemIdBySlot['2'];
+            app.expandedMusicItemIdBySlot[other] = '';
+            app.expandedMusicItemIdBySlot[key] = playlist.id;
+            if (hadOpen && app.collapseOpenMusicPanelThen) {
+              app.collapseOpenMusicPanelThen(function () {
+                if (app.renderMusicSettings) app.renderMusicSettings();
+              });
+            } else if (app.renderMusicSettings) {
+              app.renderMusicSettings();
+            }
+          } else if (app.renderMusicSettings) {
+            app.renderMusicSettings();
+          }
+          if (app.showToast) {
+            var n = playlist && playlist.tracks ? playlist.tracks.length : 0;
+            app.showToast('Плейлист добавлен (' + n + ' треков)');
+          }
+        }).catch(function (err) {
+          var msg = 'Не удалось обработать ZIP';
+          if (err && err.code === 'no_audio') msg = 'В архиве нет аудио-файлов';
+          if (app.showToast) app.showToast(msg);
+        });
+      }
       var f1 = document.getElementById('music-files-slot-1');
       var f2 = document.getElementById('music-files-slot-2');
+      var z1 = document.getElementById('music-zip-slot-1');
+      var z2 = document.getElementById('music-zip-slot-2');
       var fe = document.getElementById('music-files-empty');
       if (f1)
         f1.addEventListener('change', function () {
@@ -387,6 +426,14 @@
       if (f2)
         f2.addEventListener('change', function () {
           addFromSettings(2, f2);
+        });
+      if (z1)
+        z1.addEventListener('change', function () {
+          addZipFromSettings(1, z1);
+        });
+      if (z2)
+        z2.addEventListener('change', function () {
+          addZipFromSettings(2, z2);
         });
       if (fe)
         fe.addEventListener('change', function () {
@@ -453,6 +500,16 @@
         if (app.saveNightActionsWaitPref) app.saveNightActionsWaitPref();
         var nlab = document.getElementById('setting-night-wait-label');
         if (nlab) nlab.textContent = String(nw);
+        return;
+      }
+      if (el && el.id === 'spotify-client-id') {
+        if (app.spotifySaveClientId) app.spotifySaveClientId(el.value);
+        if (app.renderSpotifyGlobalSettings) {
+          clearTimeout(el._spotifyRenderTimer);
+          el._spotifyRenderTimer = setTimeout(function () {
+            app.renderSpotifyGlobalSettings();
+          }, 400);
+        }
         return;
       }
       if (!el || !el.getAttribute || el.getAttribute('data-music-field') !== 'volume') return;

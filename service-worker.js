@@ -1,12 +1,16 @@
 // Bump the CACHE_NAME suffix on each release to force clients to refresh cached static assets.
-var CACHE_NAME = 'mafia-host-static-v12';
+var CACHE_NAME = 'mafia-host-static-v14';
 var ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/styles.css',
+  './js/vendor/jszip.min.js',
   './js/state.js',
   './js/shared-utils.js',
+  './js/spotify-auth.js',
+  './js/spotify-store.js',
+  './js/spotify-player.js',
   './js/music-store.js',
   './js/music.js',
   './js/screens.js',

@@ -4,6 +4,7 @@
   var currentSlot = null;
   var currentPlayItem = null;
   var duckedForTimerVoice = false;
+  var _spotifyActiveSlot = null;
 
   function getAudio() {
     return document.getElementById('bg-music');
@@ -37,6 +38,7 @@
   }
 
   app.isMusicPlaying = function () {
+    if (_spotifyActiveSlot) return true;
     var a = getAudio();
     if (!a || a.paused) return false;
     if (a.currentTime > 0) return true;
@@ -44,6 +46,10 @@
   };
 
   app.stopMusic = function () {
+    if (_spotifyActiveSlot) {
+      if (app.spotifyPause) app.spotifyPause().catch(function () {});
+      _spotifyActiveSlot = null;
+    }
     var a = getAudio();
     if (duckedForTimerVoice && a && currentPlayItem) {
       applyVolume(a, currentPlayItem);
@@ -58,6 +64,52 @@
       a.load();
     }
     setMusicButtonPlaying(false);
+    if (app.hideMusicControlModal) app.hideMusicControlModal();
+  };
+
+  app.pauseMusic = function () {
+    if (_spotifyActiveSlot) {
+      if (app.spotifyPause) app.spotifyPause().catch(function () {});
+      syncMusicControlPauseBtn();
+      return;
+    }
+    var a = getAudio();
+    if (a && !a.paused) {
+      a.pause();
+    }
+    syncMusicControlPauseBtn();
+  };
+
+  app.resumeMusic = function () {
+    if (_spotifyActiveSlot) {
+      if (app.spotifyResume) app.spotifyResume().catch(function () {});
+      syncMusicControlPauseBtn();
+      return;
+    }
+    var a = getAudio();
+    if (a && a.paused && a.src) {
+      var p = a.play();
+      if (p && typeof p.then === 'function') p.catch(function () {});
+    }
+    syncMusicControlPauseBtn();
+  };
+
+  app.toggleMusicPause = function () {
+    if (_spotifyActiveSlot) {
+      app.pauseMusic();
+      return;
+    }
+    var a = getAudio();
+    if (!a) return;
+    if (a.paused) app.resumeMusic();
+    else app.pauseMusic();
+  };
+
+  app.hasActiveMusicSession = function () {
+    if (_spotifyActiveSlot) return true;
+    if (currentPlayItem) return true;
+    var a = getAudio();
+    return !!(a && a.src);
   };
 
   function applyVolume(a, item) {
@@ -252,6 +304,12 @@
         : 0.38;
     if (mul < 0.05) mul = 0.05;
     if (mul > 1) mul = 1;
+    if (_spotifyActiveSlot) {
+      if (duckedForTimerVoice) return;
+      duckedForTimerVoice = true;
+      if (app.spotifySetVolume) app.spotifySetVolume(Math.max(0, BASE_VOLUME * mul)).catch(function () {});
+      return;
+    }
     var a = getAudio();
     if (!a || a.paused || duckedForTimerVoice) return;
     duckedForTimerVoice = true;
@@ -261,17 +319,23 @@
   app.restoreBackgroundMusicVolumeAfterTimerVoice = function () {
     if (!duckedForTimerVoice) return;
     duckedForTimerVoice = false;
+    if (_spotifyActiveSlot) {
+      if (app.spotifySetVolume) app.spotifySetVolume(BASE_VOLUME).catch(function () {});
+      return;
+    }
     var a = getAudio();
     if (!a || !currentPlayItem) return;
     applyVolume(a, currentPlayItem);
   };
 
   function pickRandomItem(slot) {
-    var items = app.getMusicSlotItems(slot).filter(function (it) {
-      return it && it.enabled !== false;
-    });
-    if (!items.length) return null;
-    return items[Math.floor(Math.random() * items.length)];
+    var pool = app.musicGetSlotPlayablePool
+      ? app.musicGetSlotPlayablePool(slot)
+      : app.getMusicSlotItems(slot).filter(function (it) {
+          return it && it.enabled !== false;
+        });
+    if (!pool.length) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 
   function showEl(id, show) {
@@ -303,15 +367,211 @@
   };
 
   app.toggleMusicPlayback = function () {
-    if (app.isMusicPlaying()) {
-      app.stopMusic();
+    if (app.hasActiveMusicSession()) {
+      app.showMusicControlModal();
       return;
     }
     app.showMusicSlotModal();
   };
 
+  function fmtTime(sec) {
+    if (typeof sec !== 'number' || !isFinite(sec) || sec < 0) sec = 0;
+    var s = Math.floor(sec);
+    var m = Math.floor(s / 60);
+    var r = s - m * 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+
+  function getMusicControlEls() {
+    return {
+      modal: document.getElementById('modal-music-control'),
+      title: document.getElementById('modal-music-control-track'),
+      seek: document.getElementById('modal-music-control-seek'),
+      cur: document.getElementById('modal-music-control-time-current'),
+      tot: document.getElementById('modal-music-control-time-total'),
+      pauseBtn: document.getElementById('modal-music-control-pause'),
+    };
+  }
+
+  var seekIsDragging = false;
+  var musicControlListenersBound = false;
+
+  function syncMusicControlPauseBtn() {
+    var els = getMusicControlEls();
+    if (!els.pauseBtn) return;
+    var paused = false;
+    if (_spotifyActiveSlot) {
+      paused = false;
+    } else {
+      var a = getAudio();
+      paused = !!(a && a.paused);
+    }
+    els.pauseBtn.textContent = paused ? 'Играть' : 'Пауза';
+  }
+
+  function syncMusicControlProgress() {
+    var els = getMusicControlEls();
+    if (!els.modal || els.modal.classList.contains('hidden')) return;
+    var a = getAudio();
+    if (_spotifyActiveSlot || !a) return;
+    var dur = a.duration;
+    var cur = a.currentTime;
+    if (els.tot) els.tot.textContent = fmtTime(dur);
+    if (els.cur) els.cur.textContent = fmtTime(cur);
+    if (els.seek && !seekIsDragging) {
+      if (typeof dur === 'number' && isFinite(dur) && dur > 0) {
+        els.seek.disabled = false;
+        var pct = Math.max(0, Math.min(1000, Math.round((cur / dur) * 1000)));
+        els.seek.value = String(pct);
+      } else {
+        els.seek.value = '0';
+      }
+    }
+  }
+
+  function bindMusicControlListenersOnce() {
+    if (musicControlListenersBound) return;
+    var a = getAudio();
+    if (!a) return;
+    a.addEventListener('timeupdate', syncMusicControlProgress);
+    a.addEventListener('loadedmetadata', syncMusicControlProgress);
+    a.addEventListener('durationchange', syncMusicControlProgress);
+    a.addEventListener('play', function () {
+      syncMusicControlPauseBtn();
+      syncMusicControlProgress();
+    });
+    a.addEventListener('pause', function () {
+      syncMusicControlPauseBtn();
+    });
+    var els = getMusicControlEls();
+    if (els.seek) {
+      els.seek.addEventListener('pointerdown', function () {
+        seekIsDragging = true;
+      });
+      var endDrag = function () {
+        if (!seekIsDragging) return;
+        seekIsDragging = false;
+        applySeekFromSlider();
+      };
+      els.seek.addEventListener('pointerup', endDrag);
+      els.seek.addEventListener('pointercancel', endDrag);
+      els.seek.addEventListener('change', function () {
+        seekIsDragging = false;
+        applySeekFromSlider();
+      });
+      els.seek.addEventListener('input', function () {
+        var au = getAudio();
+        if (!au) return;
+        var dur = au.duration;
+        if (typeof dur !== 'number' || !isFinite(dur) || dur <= 0) return;
+        var pct = parseInt(els.seek.value, 10);
+        if (isNaN(pct)) pct = 0;
+        var sec = (pct / 1000) * dur;
+        if (els.cur) els.cur.textContent = fmtTime(sec);
+      });
+    }
+    musicControlListenersBound = true;
+  }
+
+  function applySeekFromSlider() {
+    var els = getMusicControlEls();
+    if (!els.seek) return;
+    var a = getAudio();
+    if (!a) return;
+    var dur = a.duration;
+    if (typeof dur !== 'number' || !isFinite(dur) || dur <= 0) return;
+    var pct = parseInt(els.seek.value, 10);
+    if (isNaN(pct)) pct = 0;
+    var sec = (pct / 1000) * dur;
+    if (sec < 0) sec = 0;
+    if (sec > dur - 0.05) sec = Math.max(0, dur - 0.05);
+    try {
+      a.currentTime = sec;
+    } catch (e) {}
+  }
+
+  app.showMusicControlModal = function () {
+    var els = getMusicControlEls();
+    if (!els.modal) return;
+    bindMusicControlListenersOnce();
+    if (els.title) {
+      var label = '';
+      if (_spotifyActiveSlot) {
+        label = 'Spotify плейлист';
+      } else if (currentPlayItem && currentPlayItem.name) {
+        label = currentPlayItem.name;
+      } else {
+        label = 'Музыка';
+      }
+      els.title.textContent = label;
+    }
+    if (els.seek) {
+      if (_spotifyActiveSlot) {
+        els.seek.disabled = true;
+        els.seek.value = '0';
+      } else {
+        els.seek.disabled = false;
+      }
+    }
+    if (els.pauseBtn) {
+      els.pauseBtn.style.display = _spotifyActiveSlot ? 'none' : '';
+    }
+    syncMusicControlPauseBtn();
+    syncMusicControlProgress();
+    showEl('modal-music-control', true);
+  };
+
+  app.hideMusicControlModal = function () {
+    showEl('modal-music-control', false);
+  };
+
+  function playSpotifySlot(slot, playlist) {
+    var slotKey = String(slot) === '2' ? '2' : '1';
+    app.stopMusic();
+
+    function fallbackToLocal() {
+      _spotifyActiveSlot = null;
+      var item = pickRandomItem(slot);
+      if (item) playItem(slot, item);
+      else app.showMusicEmptyModal(slot);
+    }
+
+    app.spotifyEnsurePlayer().then(function (result) {
+      if (!result) {
+        if (app.spotifyLastError === 'premium_required') {
+          if (app.showToast) app.showToast('Нужен Spotify Premium');
+        } else {
+          if (app.showToast) app.showToast('Spotify: не удалось подключить плеер');
+        }
+        fallbackToLocal();
+        return;
+      }
+      app.spotifyPlayPlaylist(playlist.playlistId, BASE_VOLUME).then(function () {
+        _spotifyActiveSlot = slotKey;
+        currentSlot = slotKey;
+        currentPlayItem = null;
+        setMusicButtonPlaying(true);
+      }).catch(function () {
+        if (app.showToast) app.showToast('Spotify: ошибка воспроизведения');
+        setMusicButtonPlaying(false);
+        fallbackToLocal();
+      });
+    }).catch(function () {
+      if (app.showToast) app.showToast('Spotify: ошибка подключения');
+      setMusicButtonPlaying(false);
+      fallbackToLocal();
+    });
+  }
+
   app.musicStartSlot = function (slot) {
     app.hideMusicSlotModal();
+
+    var spotifyPlaylist = app.spotifyGetSlotPlaylist ? app.spotifyGetSlotPlaylist(slot) : null;
+    if (spotifyPlaylist && spotifyPlaylist.playlistId && app.spotifyIsAuthenticated && app.spotifyIsAuthenticated()) {
+      playSpotifySlot(slot, spotifyPlaylist);
+      return;
+    }
+
     var item = pickRandomItem(slot);
     if (!item) {
       app.showMusicEmptyModal(slot);
@@ -507,6 +767,86 @@
     if (c1) c1.innerHTML = app.buildMusicSlotListHtml('1');
     if (c2) c2.innerHTML = app.buildMusicSlotListHtml('2');
     app.finishMusicSettingsExpandAnimations();
+    if (app.renderSpotifySlotSettings) {
+      app.renderSpotifySlotSettings('1');
+      app.renderSpotifySlotSettings('2');
+    }
+  };
+
+  app.buildMusicPlaylistRowHtml = function (slot, it, isOpen) {
+    var offPool = it.enabled === false;
+    var trackCount = Array.isArray(it.tracks) ? it.tracks.length : 0;
+    var tracksHtml = '';
+    if (trackCount) {
+      tracksHtml += '<ol class="mt-1 space-y-1 text-mafia-cream/80 text-xs list-decimal list-inside marker:text-mafia-gold/55">';
+      for (var t = 0; t < it.tracks.length; t++) {
+        var tr = it.tracks[t];
+        if (!tr) continue;
+        tracksHtml +=
+          '<li class="truncate" title="' +
+          escapeHtml(tr.name || '') +
+          '">' +
+          escapeHtml(tr.name || '') +
+          '</li>';
+      }
+      tracksHtml += '</ol>';
+    } else {
+      tracksHtml += '<p class="mt-1 text-mafia-cream/50 text-xs">Плейлист пуст.</p>';
+    }
+    return (
+      '<li class="bg-mafia-black/40 border border-mafia-border rounded overflow-hidden text-left' +
+      (offPool ? ' opacity-60' : '') +
+      (isOpen ? ' music-item-pending-expand' : '') +
+      '" data-music-item-id="' +
+      escapeHtml(it.id) +
+      '" data-music-slot="' +
+      escapeHtml(slot) +
+      '" data-music-kind="playlist">' +
+      '<div class="flex items-stretch gap-0.5 pl-2 pr-1 sm:pl-3 sm:pr-2">' +
+      '<button type="button" data-action="music-toggle-item-panel" data-slot="' +
+      escapeHtml(slot) +
+      '" data-item-id="' +
+      escapeHtml(it.id) +
+      '" class="flex min-w-0 flex-1 items-center gap-2 py-2.5 text-left hover:bg-mafia-card/50 transition-colors duration-200 cursor-pointer rounded-sm">' +
+      '<span class="music-item-chevron" aria-hidden="true">▶</span>' +
+      '<span class="text-mafia-gold/90 text-sm font-medium truncate flex-1 min-w-0" title="' +
+      escapeHtml(it.name) +
+      '">' +
+      escapeHtml(it.name) +
+      '</span>' +
+      (offPool
+        ? '<span data-music-off-badge class="text-mafia-cream/45 text-xs flex-shrink-0 uppercase tracking-wider">выкл.</span>'
+        : '') +
+      '<span class="text-mafia-cream/40 text-xs flex-shrink-0">плейлист · ' +
+      trackCount +
+      '</span>' +
+      '</button>' +
+      '</div>' +
+      '<div class="music-item-settings-wrap">' +
+      '<div class="music-item-settings-inner">' +
+      '<div class="music-item-settings-panel px-3 pb-3 pt-0 border-t border-mafia-border/40">' +
+      '<label class="flex items-center gap-2 cursor-pointer text-xs text-mafia-cream/70 pt-3 select-none">' +
+      '<input type="checkbox" data-music-field="enabled" class="mafia-checkbox" ' +
+      (offPool ? '' : 'checked') +
+      '>' +
+      '<span>Участвует в случайном выборе</span>' +
+      '</label>' +
+      '<div class="pt-3">' +
+      '<div class="text-xs text-mafia-cream/60 uppercase tracking-wider">Треки</div>' +
+      tracksHtml +
+      '</div>' +
+      '<div class="flex justify-end mt-2">' +
+      '<button type="button" data-action="music-remove-item" data-slot="' +
+      escapeHtml(slot) +
+      '" data-item-id="' +
+      escapeHtml(it.id) +
+      '" class="text-red-400/90 hover:text-red-300 text-xs uppercase tracking-wider cursor-pointer">Удалить</button>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</li>'
+    );
   };
 
   app.buildMusicSlotListHtml = function (slot) {
@@ -520,6 +860,10 @@
       var it = items[i];
       var isOpen = expandedId === it.id;
       var offPool = it.enabled === false;
+      if (it.type === 'playlist') {
+        html += app.buildMusicPlaylistRowHtml(slot, it, isOpen);
+        continue;
+      }
       var srcLabel =
         it.source && it.source.type === 'idb' ? 'с устройства' : '';
       html +=
