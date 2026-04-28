@@ -119,6 +119,17 @@
       if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
       if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
     }
+    if (screenId === 'prepare-mode-screen' && app.renderPrepareModeScreen) app.renderPrepareModeScreen();
+    if (screenId === 'auto-setup-screen' && app.renderAutoSetup) app.renderAutoSetup();
+    if (screenId === 'auto-reveal-screen' && app.renderAutoReveal) app.renderAutoReveal();
+    if (screenId === 'auto-night-intro-screen' && app.renderAutoNightIntro) app.renderAutoNightIntro();
+    if (screenId === 'auto-night-pass-screen' && app.renderAutoNightPass) app.renderAutoNightPass();
+    if (screenId === 'auto-night-action-screen' && app.renderAutoNightAction) app.renderAutoNightAction();
+    if (screenId === 'auto-night-result-screen' && app.renderAutoNightResult) app.renderAutoNightResult();
+    if (screenId === 'auto-day-screen' && app.renderAutoDay) app.renderAutoDay();
+    if (screenId === 'auto-vote-screen' && app.renderAutoVote) app.renderAutoVote();
+    if (screenId === 'auto-last-words-screen' && app.renderAutoLastWords) app.renderAutoLastWords();
+    if (screenId === 'auto-end-screen' && app.renderAutoEnd) app.renderAutoEnd();
   };
 
   app.initGameFromMenu = function () {

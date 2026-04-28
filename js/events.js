@@ -199,7 +199,10 @@
       if (t) {
         e.preventDefault();
         const id = t.getAttribute('data-goto');
-        if (t.getAttribute('data-init') === 'game') app.initGameFromMenu();
+        const initKind = t.getAttribute('data-init');
+        if (initKind === 'game') app.initGameFromMenu();
+        else if (initKind === 'auto' && app.initAutoFromMenu) app.initAutoFromMenu();
+        else if (initKind === 'prepare-mode' && app.initPrepareModeFromMenu) app.initPrepareModeFromMenu();
         app.navigateToScreen(id);
         return;
       }
