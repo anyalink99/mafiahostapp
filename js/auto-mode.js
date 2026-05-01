@@ -951,7 +951,10 @@
     if (s.night) s.night.victimId = victimId;
     if (victimId) {
       var v = seatById(victimId);
-      if (v) v.alive = false;
+      if (v) {
+        v.alive = false;
+        v.eliminationReason = 'shot';
+      }
     }
     s.phase = 'night-result';
     saveAuto();
