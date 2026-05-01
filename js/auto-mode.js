@@ -1296,10 +1296,11 @@
   function addAutoFoul(seatId) {
     var s = app.autoState;
     var seat = seatById(seatId);
-    if (!seat || seat.eliminationReason) return;
+    if (!seat) return;
+    if (seat.fouls >= 4) return;
     pushHistory();
     seat.fouls++;
-    if (seat.fouls >= 4) {
+    if (seat.fouls >= 4 && !seat.eliminationReason) {
       seat.fouls = 4;
       seat.eliminationReason = 'disqual';
       seat.alive = false;
@@ -1315,7 +1316,7 @@
 
   function removeAutoFoul(seatId) {
     var seat = seatById(seatId);
-    if (!seat || seat.eliminationReason || seat.fouls <= 0) return;
+    if (!seat || seat.fouls <= 0) return;
     pushHistory();
     seat.fouls--;
     saveAuto();
@@ -1397,33 +1398,40 @@
     var whenActive = el('modal-auto-player-actions-when-active');
     var whenOut = el('modal-auto-player-actions-when-out');
     var out = !!seat.eliminationReason;
-    if (whenActive && whenOut) {
-      whenActive.classList.toggle('hidden', out);
-      whenOut.classList.toggle('hidden', !out);
+    if (whenActive) whenActive.classList.remove('hidden');
+    if (whenOut) whenOut.classList.toggle('hidden', !out);
+
+    var inQueue = app.autoState.day && app.autoState.day.nominees.indexOf(seatId) !== -1;
+    var foulBtn = modal.querySelector('[data-action="auto-player-modal-foul"]');
+    if (foulBtn) {
+      foulBtn.disabled = (seat.fouls >= 4);
+      foulBtn.classList.toggle('opacity-55', foulBtn.disabled);
+      foulBtn.classList.toggle('cursor-not-allowed', foulBtn.disabled);
     }
-    if (!out) {
-      var inQueue = app.autoState.day && app.autoState.day.nominees.indexOf(seatId) !== -1;
-      var voteBtn = modal.querySelector('[data-action="auto-player-modal-vote"]');
-      if (voteBtn) voteBtn.textContent = inQueue ? 'Убрать с голосования' : 'Выставить';
-      var elims = modal.querySelectorAll('[data-action="auto-player-modal-elim"]');
-      var elimOn = 'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border ring-2 ring-mafia-gold bg-mafia-blood/45 border-mafia-gold text-mafia-gold transition-colors cursor-pointer';
-      var elimOff = 'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer';
-      var elimDisabled = 'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border/45 bg-mafia-card/50 text-mafia-cream/30 opacity-55 cursor-not-allowed';
-      for (var ei = 0; ei < elims.length; ei++) {
-        var b = elims[ei];
-        var er = b.getAttribute('data-elim');
-        if (er === 'hang' && !inQueue) {
-          b.disabled = true;
-          b.setAttribute('aria-disabled', 'true');
-          b.title = 'Сначала выставьте в очередь голосования';
-          b.className = elimDisabled;
-          continue;
-        }
-        b.disabled = false;
-        b.removeAttribute('aria-disabled');
-        b.className = seat.eliminationReason === er ? elimOn : elimOff;
-        b.title = ELIM_REASON_TITLES[er] || '';
+    var voteBtn = modal.querySelector('[data-action="auto-player-modal-vote"]');
+    if (voteBtn) {
+      voteBtn.classList.toggle('hidden', out);
+      if (!out) voteBtn.textContent = inQueue ? 'Убрать с голосования' : 'Выставить';
+    }
+    var elims = modal.querySelectorAll('[data-action="auto-player-modal-elim"]');
+    var elimOn = 'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border ring-2 ring-mafia-gold bg-mafia-blood/45 border-mafia-gold text-mafia-gold transition-colors cursor-pointer';
+    var elimOff = 'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer';
+    var elimDisabled = 'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border/45 bg-mafia-card/50 text-mafia-cream/30 opacity-55 cursor-not-allowed';
+    for (var ei = 0; ei < elims.length; ei++) {
+      var b = elims[ei];
+      var er = b.getAttribute('data-elim');
+      var isCurrent = seat.eliminationReason === er;
+      if (er === 'hang' && !inQueue && !isCurrent) {
+        b.disabled = true;
+        b.setAttribute('aria-disabled', 'true');
+        b.title = 'Сначала выставьте в очередь голосования';
+        b.className = elimDisabled;
+        continue;
       }
+      b.disabled = false;
+      b.removeAttribute('aria-disabled');
+      b.className = isCurrent ? elimOn : elimOff;
+      b.title = ELIM_REASON_TITLES[er] || '';
     }
     modal.dataset.playerId = String(seatId);
     if (app.modalSetOpen) app.modalSetOpen(modal, true);
@@ -2305,7 +2313,7 @@
   app.uiActionHandlers['auto-player-modal-foul'] = function () {
     withAutoModalSeatId(function (pid) {
       var seat = seatById(pid);
-      if (!seat || seat.eliminationReason) return;
+      if (!seat) return;
       app.hideAutoPlayerActionsModal();
       addAutoFoul(pid);
     });
