@@ -11,7 +11,7 @@
   var TIMER_VOICE_FILES = {
     discuss10: 'you-have-10-seconds.mp3',
     discuss0: 'thank-you-stop.mp3',
-    mafia10: 'mafia-10-seconds.mp3',
+    mafia10: 'mafia-10-seconds acquaintance.mp3',
     mafia0: 'mafia-leaves.mp3',
   };
 
@@ -484,7 +484,7 @@
     Promise.resolve()
       .then(function () {
         guardNightActions(gen);
-        return app.playSfxVoiceFile('mafia shoots with a number.mp3');
+        return app.playSfxVoiceFile('mafia-shoots-with-a-number.mp3');
       })
       .then(function () {
         guardNightActions(gen);
@@ -492,7 +492,7 @@
       })
       .then(function () {
         guardNightActions(gen);
-        return app.playSfxVoiceFile('mafia leaves.mp3');
+        return app.playSfxVoiceFile('mafia-leaves.mp3');
       })
       .then(function () {
         guardNightActions(gen);
@@ -500,7 +500,7 @@
       })
       .then(function () {
         guardNightActions(gen);
-        return app.playSfxVoiceFile('don wakes.mp3');
+        return app.playSfxVoiceFile('don-wakes.mp3');
       })
       .then(function () {
         guardNightActions(gen);
@@ -508,7 +508,7 @@
       })
       .then(function () {
         guardNightActions(gen);
-        return app.playSfxVoiceFile('don leaves.mp3');
+        return app.playSfxVoiceFile('don-leaves.mp3');
       })
       .then(function () {
         guardNightActions(gen);
@@ -516,7 +516,7 @@
       })
       .then(function () {
         guardNightActions(gen);
-        return app.playSfxVoiceFile('sheriff wakes.mp3');
+        return app.playSfxVoiceFile('sheriff-wakes.mp3');
       })
       .then(function () {
         guardNightActions(gen);
@@ -524,7 +524,7 @@
       })
       .then(function () {
         guardNightActions(gen);
-        return app.playSfxVoiceFile('sheriff leaves.mp3');
+        return app.playSfxVoiceFile('sheriff-leaves.mp3');
       })
       .catch(function () {})
       .then(function () {

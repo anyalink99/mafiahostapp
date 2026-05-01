@@ -5,6 +5,7 @@
   var currentPlayItem = null;
   var duckedForTimerVoice = false;
   var _spotifyActiveSlot = null;
+  var sessionVolumeMul = null;
 
   function getAudio() {
     return document.getElementById('bg-music');
@@ -58,6 +59,7 @@
     currentPlayItem = null;
     revokeCurrentUrl();
     currentSlot = null;
+    sessionVolumeMul = null;
     if (a) {
       a.pause();
       a.removeAttribute('src');
@@ -113,12 +115,33 @@
   };
 
   function applyVolume(a, item) {
-    var mul = item && typeof item.volumeMul === 'number' ? item.volumeMul : 1;
+    var mul;
+    if (sessionVolumeMul !== null && !isNaN(sessionVolumeMul)) {
+      mul = sessionVolumeMul;
+    } else {
+      mul = item && typeof item.volumeMul === 'number' ? item.volumeMul : 1;
+    }
     var v = BASE_VOLUME * mul;
     if (v < 0) v = 0;
     if (v > 1) v = 1;
     a.volume = v;
   }
+
+  app.musicSetSessionVolumeMul = function (mul) {
+    if (typeof mul === 'number' && !isNaN(mul)) {
+      sessionVolumeMul = Math.max(0, Math.min(1, mul));
+    } else {
+      sessionVolumeMul = null;
+    }
+    if (duckedForTimerVoice) return;
+    if (_spotifyActiveSlot) {
+      var v = sessionVolumeMul !== null ? BASE_VOLUME * sessionVolumeMul : BASE_VOLUME;
+      if (app.spotifySetVolume) app.spotifySetVolume(Math.max(0, Math.min(1, v))).catch(function () {});
+      return;
+    }
+    var a = getAudio();
+    if (a && currentPlayItem) applyVolume(a, currentPlayItem);
+  };
 
   function seekAudioToItemOffset(a, item) {
     var dur = a.duration;
@@ -320,7 +343,8 @@
     if (!duckedForTimerVoice) return;
     duckedForTimerVoice = false;
     if (_spotifyActiveSlot) {
-      if (app.spotifySetVolume) app.spotifySetVolume(BASE_VOLUME).catch(function () {});
+      var v = sessionVolumeMul !== null ? BASE_VOLUME * sessionVolumeMul : BASE_VOLUME;
+      if (app.spotifySetVolume) app.spotifySetVolume(Math.max(0, Math.min(1, v))).catch(function () {});
       return;
     }
     var a = getAudio();

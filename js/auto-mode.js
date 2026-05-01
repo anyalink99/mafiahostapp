@@ -229,12 +229,40 @@
     if (e.dayTimerInterval) { clearInterval(e.dayTimerInterval); e.dayTimerInterval = null; }
     if (e.introPreInterval) { clearInterval(e.introPreInterval); e.introPreInterval = null; }
     if (e.introMainInterval) { clearInterval(e.introMainInterval); e.introMainInterval = null; }
+    if (e.introGapInterval) { clearInterval(e.introGapInterval); e.introGapInterval = null; }
+    if (e.introFreesitInterval) { clearInterval(e.introFreesitInterval); e.introFreesitInterval = null; }
     if (e.lastWordsInterval) { clearInterval(e.lastWordsInterval); e.lastWordsInterval = null; }
+    if (e.bestMoveTimer) { clearInterval(e.bestMoveTimer); e.bestMoveTimer = null; }
+    cancelSfx();
+    if (e.introMusicActive) {
+      if (app.stopMusic) { try { app.stopMusic(); } catch (_) {} }
+      e.introMusicActive = false;
+    }
   }
 
   function playSfx(filename) {
     if (app.playSfxVoiceFile) {
       try { app.playSfxVoiceFile(filename); } catch (_) {}
+    }
+  }
+
+  var sfxSeqGen = 0;
+  function playSfxSequence(files) {
+    if (!app.playSfxVoiceFile) return Promise.resolve();
+    sfxSeqGen++;
+    var gen = sfxSeqGen;
+    return files.reduce(function (chain, fname) {
+      return chain.then(function () {
+        if (gen !== sfxSeqGen) return null;
+        try { return app.playSfxVoiceFile(fname); } catch (_) { return null; }
+      });
+    }, Promise.resolve());
+  }
+
+  function cancelSfx() {
+    sfxSeqGen++;
+    if (app.cancelSfxVoice) {
+      try { app.cancelSfxVoice(); } catch (_) {}
     }
   }
 
@@ -419,7 +447,15 @@
       var conf = el('auto-reveal-confirm');
       if (conf) conf.classList.remove('hidden');
       var prompt = el('auto-reveal-prompt');
-      if (prompt) prompt.textContent = 'Запомнил? Передавай дальше.';
+      if (prompt) {
+        var s = app.autoState;
+        var next = (s.reveal.cursor || 1) + 1;
+        if (next > playerCount()) {
+          prompt.textContent = 'Запомнил? Кладите телефон в центр стола.';
+        } else {
+          prompt.textContent = 'Запомнил? Передавай дальше, игроку №' + next + '.';
+        }
+      }
     };
     if (window.PointerEvent) {
       btn.addEventListener('pointerdown', startHold);
@@ -460,16 +496,56 @@
     app.navigateToScreen('auto-night-intro-screen');
   }
 
+  var FREESIT_SEC = 30;
+  var INTRO_GAP_SEC = 5;
+
+  function showIntroStage(name) {
+    var names = ['pre', 'main', 'gap', 'freesit'];
+    for (var i = 0; i < names.length; i++) {
+      var x = el('auto-intro-stage-' + names[i]);
+      if (x) x.classList.toggle('hidden', names[i] !== name);
+    }
+  }
+
+  function clearIntroTimers() {
+    var e = app._autoEphemeral;
+    if (e.introPreInterval) { clearInterval(e.introPreInterval); e.introPreInterval = null; }
+    if (e.introMainInterval) { clearInterval(e.introMainInterval); e.introMainInterval = null; }
+    if (e.introGapInterval) { clearInterval(e.introGapInterval); e.introGapInterval = null; }
+    if (e.introFreesitInterval) { clearInterval(e.introFreesitInterval); e.introFreesitInterval = null; }
+  }
+
+  function startNightIntroMusic() {
+    if (app._autoEphemeral.introMusicActive) return;
+    var hasLocal = false, hasSpotify = false;
+    if (app.musicGetSlotPlayablePool) {
+      try { hasLocal = (app.musicGetSlotPlayablePool('2') || []).length > 0; } catch (_) {}
+    }
+    if (app.spotifyGetSlotPlaylist && app.spotifyIsAuthenticated) {
+      try {
+        var sp = app.spotifyGetSlotPlaylist('2');
+        hasSpotify = !!(sp && sp.playlistId && app.spotifyIsAuthenticated());
+      } catch (_) {}
+    }
+    if (!hasLocal && !hasSpotify) return;
+    if (!app.musicStartSlot) return;
+    if (app.musicSetSessionVolumeMul) app.musicSetSessionVolumeMul(null);
+    try { app.musicStartSlot('2'); } catch (_) {}
+    app._autoEphemeral.introMusicActive = true;
+  }
+
+  function stopIntroMusic() {
+    if (!app._autoEphemeral.introMusicActive) return;
+    if (app.stopMusic) { try { app.stopMusic(); } catch (_) {} }
+    app._autoEphemeral.introMusicActive = false;
+  }
+
   app.renderAutoNightIntro = function () {
-    var stagePre = el('auto-intro-stage-pre');
-    var stageMain = el('auto-intro-stage-main');
-    if (stagePre) stagePre.classList.remove('hidden');
-    if (stageMain) stageMain.classList.add('hidden');
+    clearIntroTimers();
+    showIntroStage('pre');
     var preEl = el('auto-intro-pre-countdown');
     if (preEl) preEl.textContent = String(INTRO_PRE_SEC);
-    if (app._autoEphemeral.introPreInterval) clearInterval(app._autoEphemeral.introPreInterval);
-    if (app._autoEphemeral.introMainInterval) clearInterval(app._autoEphemeral.introMainInterval);
-
+    startNightIntroMusic();
     var preLeft = INTRO_PRE_SEC;
     app._autoEphemeral.introPreInterval = setInterval(function () {
       preLeft--;
@@ -478,39 +554,80 @@
       if (preLeft <= 0) {
         clearInterval(app._autoEphemeral.introPreInterval);
         app._autoEphemeral.introPreInterval = null;
-        startIntroMain();
+        startIntroBriefing();
       }
     }, 1000);
   };
 
-  function startIntroMain() {
-    var stagePre = el('auto-intro-stage-pre');
-    var stageMain = el('auto-intro-stage-main');
-    if (stagePre) stagePre.classList.add('hidden');
-    if (stageMain) stageMain.classList.remove('hidden');
+  function startIntroBriefing() {
+    showIntroStage('main');
     var mainEl = el('auto-intro-main-countdown');
     if (mainEl) mainEl.textContent = String(INTRO_MAIN_SEC);
-    playSfx('mafia shoots with a number.mp3');
+    playSfx('mafia-wakes-acquaintance.mp3');
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       try { navigator.vibrate([60, 40, 60]); } catch (_) {}
     }
     app._autoEphemeral.introMainEnd = Date.now() + INTRO_MAIN_SEC * 1000;
+    app._autoEphemeral.intro10Played = false;
     app._autoEphemeral.introMainInterval = setInterval(function () {
       var left = Math.max(0, Math.ceil((app._autoEphemeral.introMainEnd - Date.now()) / 1000));
       var m = el('auto-intro-main-countdown');
       if (m) m.textContent = String(left);
+      if (left === 10 && !app._autoEphemeral.intro10Played) {
+        app._autoEphemeral.intro10Played = true;
+        playSfx('mafia-10-seconds acquaintance.mp3');
+      }
       if (left <= 0) {
         clearInterval(app._autoEphemeral.introMainInterval);
         app._autoEphemeral.introMainInterval = null;
-        finishIntro();
+        startIntroGap();
       }
     }, 250);
   }
 
-  function finishIntro() {
-    if (app._autoEphemeral.introPreInterval) { clearInterval(app._autoEphemeral.introPreInterval); app._autoEphemeral.introPreInterval = null; }
-    if (app._autoEphemeral.introMainInterval) { clearInterval(app._autoEphemeral.introMainInterval); app._autoEphemeral.introMainInterval = null; }
-    playSfx('mafia leaves.mp3');
+  function startIntroGap() {
+    showIntroStage('gap');
+    playSfx('mafia-leaves-acquaintance.mp3');
+    if (app.musicSetSessionVolumeMul) app.musicSetSessionVolumeMul(0.5);
+    var endTs = Date.now() + INTRO_GAP_SEC * 1000;
+    var c = el('auto-intro-gap-countdown');
+    if (c) c.textContent = String(INTRO_GAP_SEC);
+    app._autoEphemeral.introGapInterval = setInterval(function () {
+      var left = Math.max(0, Math.ceil((endTs - Date.now()) / 1000));
+      var cd = el('auto-intro-gap-countdown');
+      if (cd) cd.textContent = String(left);
+      if (left <= 0) {
+        clearInterval(app._autoEphemeral.introGapInterval);
+        app._autoEphemeral.introGapInterval = null;
+        startFreeSeating();
+      }
+    }, 250);
+  }
+
+  function startFreeSeating() {
+    showIntroStage('freesit');
+    playSfx('30-seconds-free-sit.mp3');
+    var endTs = Date.now() + FREESIT_SEC * 1000;
+    var c = el('auto-intro-freesit-countdown');
+    if (c) c.textContent = String(FREESIT_SEC);
+    app._autoEphemeral.introFreesitInterval = setInterval(function () {
+      var left = Math.max(0, Math.ceil((endTs - Date.now()) / 1000));
+      var cd = el('auto-intro-freesit-countdown');
+      if (cd) cd.textContent = String(left);
+      if (left <= 0) {
+        clearInterval(app._autoEphemeral.introFreesitInterval);
+        app._autoEphemeral.introFreesitInterval = null;
+        finishFreeSeating();
+      }
+    }, 250);
+  }
+
+  function finishFreeSeating() {
+    stopIntroMusic();
+    var opener = dayOpenerSeatId(1);
+    var seq = ['morning.mp3'];
+    if (opener) seq.push(opener + '.mp3');
+    playSfxSequence(seq);
     var s = app.autoState;
     s.dayNum = 1;
     transitionToDay(1);
@@ -518,10 +635,38 @@
 
   app.handleIntroFinish = function () {
     pushHistory();
-    finishIntro();
+    if (app._autoEphemeral.introMainInterval) {
+      clearInterval(app._autoEphemeral.introMainInterval);
+      app._autoEphemeral.introMainInterval = null;
+    }
+    startIntroGap();
+  };
+
+  app.handleFreesitFinish = function () {
+    pushHistory();
+    if (app._autoEphemeral.introFreesitInterval) {
+      clearInterval(app._autoEphemeral.introFreesitInterval);
+      app._autoEphemeral.introFreesitInterval = null;
+    }
+    finishFreeSeating();
   };
 
   // ============ Night phase (kill nights) ============
+
+  function dayOpenerSeatId(dayNum) {
+    var s = app.autoState;
+    var aliveSet = {};
+    for (var i = 0; i < s.seats.length; i++) {
+      if (s.seats[i].alive) aliveSet[s.seats[i].id] = true;
+    }
+    var pc = playerCount();
+    var startCandidate = ((dayNum - 1) % pc) + 1;
+    for (var k = 0; k < pc; k++) {
+      var seatId = ((startCandidate - 1 + k) % pc) + 1;
+      if (aliveSet[seatId]) return seatId;
+    }
+    return null;
+  }
 
   function buildNightTurnOrder(nightNum) {
     var s = app.autoState;
@@ -811,6 +956,64 @@
     s.phase = 'night-result';
     saveAuto();
     app.navigateToScreen('auto-night-result-screen');
+    setTimeout(playNightResultAudio, 50);
+  }
+
+  function playNightResultAudio() {
+    var s = app.autoState;
+    if (!s.night) return;
+    var phantom = !!s.night.phantom10Kill;
+    var victimId = s.night.victimId;
+    var nightNum = s.night.nightNum;
+    var realKill = (victimId !== null && victimId !== undefined && !phantom);
+    if (phantom) {
+      var nextDay = (s.dayNum || 0) + 1;
+      var opener = dayOpenerSeatId(nextDay);
+      var seq = ['morning.mp3'];
+      if (opener) seq.push(opener + '.mp3');
+      playSfxSequence(seq);
+      return;
+    }
+    if (!realKill) {
+      playSfxSequence(['morning-miss.mp3']);
+      return;
+    }
+    if (nightNum === 1) {
+      playSfxSequence([
+        'first-killed-best-predicition.mp3',
+        victimId + '.mp3'
+      ]).then(function () {
+        startBestMoveCountdown(function () {
+          playSfxSequence(['morning-last-speech.mp3', victimId + '.mp3']);
+        });
+      });
+    } else {
+      playSfxSequence(['morning-last-speech.mp3', victimId + '.mp3']);
+    }
+  }
+
+  function startBestMoveCountdown(onDone) {
+    var bm = el('auto-night-result-bestmove');
+    if (bm) bm.classList.remove('hidden');
+    var n = 10;
+    var cd = el('auto-night-result-bestmove-countdown');
+    if (cd) cd.textContent = String(n);
+    if (app._autoEphemeral.bestMoveTimer) {
+      clearInterval(app._autoEphemeral.bestMoveTimer);
+      app._autoEphemeral.bestMoveTimer = null;
+    }
+    app._autoEphemeral.bestMoveTimer = setInterval(function () {
+      n--;
+      var c = el('auto-night-result-bestmove-countdown');
+      if (c) c.textContent = String(Math.max(0, n));
+      if (n <= 0) {
+        clearInterval(app._autoEphemeral.bestMoveTimer);
+        app._autoEphemeral.bestMoveTimer = null;
+        var bm2 = el('auto-night-result-bestmove');
+        if (bm2) bm2.classList.add('hidden');
+        if (typeof onDone === 'function') onDone();
+      }
+    }, 1000);
   }
 
   app.renderAutoNightResult = function () {
@@ -818,6 +1021,8 @@
     var body = el('auto-night-result-body');
     var labelEl = el('auto-night-result-label');
     if (labelEl) labelEl.textContent = s.night ? 'Ночь ' + s.night.nightNum : 'Ночь';
+    var bm = el('auto-night-result-bestmove');
+    if (bm) bm.classList.add('hidden');
     if (!body) return;
     if (s.night && s.night.phantom10Kill) {
       body.innerHTML = '<p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Ночью убит</p>' +
@@ -865,6 +1070,7 @@
     applyAutoDayTimerButtonState(false);
     renderAutoDayPlayers();
     refreshAutoDayNominees();
+    refreshAutoDaySwitchHostButton();
   };
 
   function isNoVoteDay() {
@@ -917,10 +1123,16 @@
         var t = el('auto-day-timer');
         if (t) t.textContent = String(s.day.timeLeft);
         syncAutoDayTimerAppearance();
+        if (app.timerVoiceEnabled && s.day.timeLeft === 10 && app.playTimerVoiceCue) {
+          app.playTimerVoiceCue('10');
+        }
         if (s.day.timeLeft <= 0) {
           clearInterval(app._autoEphemeral.dayTimerInterval);
           app._autoEphemeral.dayTimerInterval = null;
           applyAutoDayTimerButtonState(false);
+          if (app.timerVoiceEnabled && app.playTimerVoiceCue) {
+            app.playTimerVoiceCue('0');
+          }
           if (typeof navigator !== 'undefined' && navigator.vibrate) {
             try { navigator.vibrate([90, 45, 90]); } catch (_) {}
           }
@@ -990,6 +1202,7 @@
         '</div>';
       list.appendChild(btn);
     });
+    refreshAutoDaySwitchHostButton();
   }
 
   function patchAutoPlayerSlotStatus(seatId) {
@@ -1002,6 +1215,19 @@
     var row = btn.querySelector('.player-slot__row');
     if (!row || !row.children[0]) return;
     row.children[0].innerHTML = autoPlayerStatusHtml(seat);
+  }
+
+  function refreshAutoDaySwitchHostButton() {
+    var btn = el('auto-day-switch-host');
+    if (!btn) return;
+    var s = app.autoState;
+    var anyOut = false;
+    if (s.seats && s.seats.length) {
+      for (var i = 0; i < s.seats.length; i++) {
+        if (!s.seats[i].alive) { anyOut = true; break; }
+      }
+    }
+    btn.classList.toggle('hidden', !anyOut);
   }
 
   function refreshAutoDayNominees() {
@@ -1531,10 +1757,16 @@
         var cd = el('auto-last-words-countdown');
         if (cd) cd.textContent = String(s.lastWords.timeLeft);
         syncAutoLastWordsTimerAppearance();
+        if (app.timerVoiceEnabled && s.lastWords.timeLeft === 10 && app.playTimerVoiceCue) {
+          app.playTimerVoiceCue('10');
+        }
         if (s.lastWords.timeLeft <= 0) {
           clearInterval(app._autoEphemeral.lastWordsInterval);
           app._autoEphemeral.lastWordsInterval = null;
           applyAutoLastWordsTimerButtonState(false);
+          if (app.timerVoiceEnabled && app.playTimerVoiceCue) {
+            app.playTimerVoiceCue('0');
+          }
           if (typeof navigator !== 'undefined' && navigator.vibrate) {
             try { navigator.vibrate([90, 45, 90]); } catch (_) {}
           }
@@ -1591,6 +1823,133 @@
   function checkWinAndContinue() {
     if (isPeacefulWin()) endGame('peaceful');
     else if (isMafiaWin()) endGame('mafia');
+  }
+
+  // ============ Switch to host mode ============
+
+  var switchHostStep = 0;
+
+  function roleCodeToRussian(code) {
+    if (code === 'don') return 'Дон';
+    if (code === 'sheriff') return 'Шериф';
+    if (code === 'mafia') return 'Мафия';
+    return 'Мирный';
+  }
+
+  function renderSwitchHostModal() {
+    var titleEl = el('modal-auto-switch-host-title');
+    var bodyEl = el('modal-auto-switch-host-body');
+    var primaryEl = el('modal-auto-switch-host-primary');
+    if (switchHostStep === 1) {
+      if (titleEl) titleEl.textContent = 'Передать обычному ведущему?';
+      if (bodyEl) bodyEl.textContent = 'Прогресс автономной партии перенесётся в обычный режим. Дальше игру будет вести живой ведущий.';
+      if (primaryEl) primaryEl.textContent = 'Продолжить';
+    } else if (switchHostStep === 2) {
+      if (titleEl) titleEl.textContent = 'Точно передать?';
+      if (bodyEl) bodyEl.textContent = 'Вернуться в автономный режим в этой партии нельзя.';
+      if (primaryEl) primaryEl.textContent = 'Да, передать';
+    }
+  }
+
+  app.showAutoSwitchHostModal = function () {
+    var s = app.autoState;
+    var anyOut = s.seats && s.seats.some(function (x) { return !x.alive; });
+    if (!anyOut) return;
+    switchHostStep = 1;
+    renderSwitchHostModal();
+    var modal = el('modal-auto-switch-host');
+    if (modal && app.modalSetOpen) app.modalSetOpen(modal, true);
+  };
+
+  app.hideAutoSwitchHostModal = function () {
+    var modal = el('modal-auto-switch-host');
+    if (modal && app.modalSetOpen) app.modalSetOpen(modal, false);
+    switchHostStep = 0;
+  };
+
+  app.handleAutoSwitchHostPrimary = function () {
+    if (switchHostStep === 1) {
+      switchHostStep = 2;
+      renderSwitchHostModal();
+      return;
+    }
+    if (switchHostStep === 2) {
+      app.hideAutoSwitchHostModal();
+      migrateAutoToHost();
+    }
+  };
+
+  function migrateAutoToHost() {
+    var s = app.autoState;
+    if (!s.active || !Array.isArray(s.seats) || !s.seats.length) return;
+    clearAllAutoTimers();
+
+    var hostPlayers = [];
+    var hostRoles = [];
+    var n = playerCount();
+    for (var i = 0; i < 10; i++) {
+      if (i < n && s.seats[i]) {
+        var seat = s.seats[i];
+        hostPlayers.push({
+          id: seat.id,
+          fouls: seat.fouls || 0,
+          eliminationReason: seat.eliminationReason || null,
+          nick: seat.nick || ''
+        });
+        hostRoles.push(roleCodeToRussian(seat.role));
+      } else {
+        hostPlayers.push({ id: i + 1, fouls: 0, eliminationReason: 'shot', nick: '' });
+        hostRoles.push('Мирный');
+      }
+    }
+
+    app.players = hostPlayers;
+    app.roles = hostRoles;
+    app.revealedIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    app.nomineeQueue = (s.day && Array.isArray(s.day.nominees)) ? s.day.nominees.slice() : [];
+    app.activeVoteRound = null;
+    app.timeLeft = (s.day && typeof s.day.timeLeft === 'number') ? s.day.timeLeft : 60;
+    app.playerRoleOverrides = {};
+    app.winningTeam = null;
+    app.bonusPointsByPlayerId = {};
+    app.summaryRoleByPlayerId = {};
+    app.bonusNoteByPlayerId = {};
+    app.bestMoveByPlayerId = {};
+    app.summaryHostName = '';
+    app.summarySyntheticFirstDayLine = null;
+    app.summarySkipLineOverrides = {};
+
+    for (var k = 0; k < hostPlayers.length; k++) {
+      var p = hostPlayers[k];
+      var roleStr = hostRoles[k];
+      var code = roleStr === 'Дон' ? 'don' : roleStr === 'Шериф' ? 'sheriff' : roleStr === 'Мафия' ? 'mafia' : 'peaceful';
+      app.summaryRoleByPlayerId[String(p.id)] = code;
+    }
+
+    var baseTs = Date.now() - 1000;
+    app.gameLog = [];
+    for (var m = 0; m < hostPlayers.length; m++) {
+      var pp = hostPlayers[m];
+      if (pp.eliminationReason) {
+        app.gameLog.push({
+          type: 'elimination',
+          ts: baseTs + m,
+          playerId: pp.id,
+          reason: pp.eliminationReason
+        });
+      }
+    }
+
+    if (app.saveState) app.saveState();
+
+    app.autoState = makeFreshState();
+    saveAuto();
+
+    app.prepareConfig.mode = 'host';
+    savePrepareConfig();
+
+    if (app.initGameFromMenu) app.initGameFromMenu();
+    app.navigateToScreen('game-screen');
   }
 
   app.renderAutoEnd = function () {
@@ -1852,6 +2211,27 @@
 
   app.uiActionHandlers = app.uiActionHandlers || {};
 
+  app.uiActionHandlers['prepare-enter'] = function () {
+    loadAuto();
+    loadPrepareConfig();
+    bindRevealHoldGestures();
+    bindBackGestures();
+    bindAutoPlayerGestures();
+    var mode = app.prepareConfig.mode;
+    if (mode === 'auto') {
+      var s = app.autoState;
+      if (s.active && s.phase !== 'setup' && s.phase !== 'gameover') {
+        app.navigateToScreen('auto-setup-screen');
+        return;
+      }
+    } else if (mode === 'host') {
+      if (app.hasResettableState && app.hasResettableState()) {
+        app.navigateToScreen('prepare-screen');
+        return;
+      }
+    }
+    app.navigateToScreen('prepare-mode-screen');
+  };
   app.uiActionHandlers['prepare-mode-pick'] = function (el2) {
     var mode = el2.getAttribute('data-mode');
     if (mode !== 'host' && mode !== 'auto') return;
@@ -1883,6 +2263,7 @@
     app.navigateToScreen('menu-screen');
   };
   app.uiActionHandlers['auto-intro-finish'] = function () { app.handleIntroFinish(); };
+  app.uiActionHandlers['auto-freesit-finish'] = function () { app.handleFreesitFinish(); };
   app.uiActionHandlers['auto-night-turn-start'] = function () { app.startNightTurn(); };
   app.uiActionHandlers['auto-night-turn-done'] = function () { app.handleNightTurnDone(); };
   app.uiActionHandlers['auto-mafia-pick'] = function (el2) {
@@ -1953,6 +2334,9 @@
       setAutoElim(pid, reason);
     });
   };
+  app.uiActionHandlers['auto-switch-host-open'] = function () { app.showAutoSwitchHostModal(); };
+  app.uiActionHandlers['auto-switch-host-cancel'] = function () { app.hideAutoSwitchHostModal(); };
+  app.uiActionHandlers['auto-switch-host-primary'] = function () { app.handleAutoSwitchHostPrimary(); };
   app.uiActionHandlers['auto-day-go-vote'] = function () { app.startAutoVote(); };
   app.uiActionHandlers['auto-day-skip-vote'] = function () { app.skipAutoVote(); };
   app.uiActionHandlers['auto-vote-back-to-day'] = function () {

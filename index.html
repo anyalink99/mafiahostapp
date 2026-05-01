@@ -75,7 +75,7 @@
         <h1 class="font-display font-bold text-4xl min-[400px]:text-5xl sm:text-6xl md:text-7xl text-mafia-gold tracking-widest drop-shadow-lg leading-tight">МАФИЯ</h1>
         <p class="font-display text-mafia-goldLight/80 text-base sm:text-xl mt-2 tracking-widest uppercase">Ведущий</p>
         <div class="mt-10 sm:mt-14 flex flex-col gap-4 max-w-sm w-full mx-auto flex-shrink-0">
-            <button type="button" id="btn-setup" data-goto="prepare-mode-screen" data-init="prepare-mode" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
+            <button type="button" id="btn-setup" data-action="prepare-enter" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
                 Подготовка
             </button>
             <button type="button" id="btn-game" data-goto="game-screen" data-init="game" class="w-full py-4 px-8 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold text-lg tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] rounded-sm shadow-lg cursor-pointer">
@@ -542,7 +542,7 @@
         <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Раздача ролей</span>
     </div>
     <div class="flex-1 min-h-0 flex flex-col items-center justify-center text-center max-w-md w-full mx-auto">
-        <p class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest uppercase mb-1">Передай телефон игроку</p>
+        <p class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest uppercase mb-1">Ход игрока</p>
         <h1 id="auto-reveal-num" class="font-display font-bold text-7xl sm:text-8xl text-mafia-gold mb-6 tabular-nums">№1</h1>
         <p id="auto-reveal-prompt" class="text-mafia-cream/75 text-sm sm:text-base mb-6 px-4">Удерживай круг, чтобы увидеть свою роль. Отпустишь — экран очистится.</p>
         <button id="auto-reveal-hold-btn" type="button" class="auto-reveal-hold-btn select-none flex flex-col items-center justify-center w-56 h-56 sm:w-64 sm:h-64 rounded-full border-2 border-mafia-gold/60 bg-mafia-coal text-mafia-gold/95 cursor-pointer transition-all active:scale-95">
@@ -576,6 +576,16 @@
             <p class="text-mafia-cream/85 text-sm sm:text-base">Мафия открывает глаза, изучает друг друга. Без отстрела.</p>
             <h1 id="auto-intro-main-countdown" class="font-display font-bold text-7xl sm:text-8xl text-mafia-gold tabular-nums">60</h1>
             <button type="button" data-action="auto-intro-finish" class="mt-4 w-full max-w-xs mx-auto py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Завершить раньше</button>
+        </div>
+        <div id="auto-intro-stage-gap" class="hidden space-y-3">
+            <p class="font-display text-mafia-gold/85 text-base sm:text-lg tracking-widest uppercase">Скоро свободная посадка</p>
+            <h1 id="auto-intro-gap-countdown" class="font-display font-bold text-7xl sm:text-8xl text-mafia-gold tabular-nums">5</h1>
+        </div>
+        <div id="auto-intro-stage-freesit" class="hidden space-y-3">
+            <p class="font-display text-mafia-gold/85 text-base sm:text-lg tracking-widest uppercase">Свободная посадка</p>
+            <p class="text-mafia-cream/85 text-sm sm:text-base">После таймера — день.</p>
+            <h1 id="auto-intro-freesit-countdown" class="font-display font-bold text-7xl sm:text-8xl text-mafia-gold tabular-nums">30</h1>
+            <button type="button" data-action="auto-freesit-finish" class="mt-4 w-full max-w-xs mx-auto py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Завершить раньше</button>
         </div>
     </div>
 </div>
@@ -615,6 +625,10 @@
     </div>
     <div class="flex-1 min-h-0 flex flex-col items-center justify-center text-center max-w-md w-full mx-auto">
         <div id="auto-night-result-body" class="text-mafia-cream/95"></div>
+        <div id="auto-night-result-bestmove" class="hidden mt-4">
+            <p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Лучший ход</p>
+            <h2 id="auto-night-result-bestmove-countdown" class="font-display font-bold text-5xl text-mafia-gold tabular-nums">10</h2>
+        </div>
         <button type="button" data-action="auto-night-result-continue" class="mt-8 w-full max-w-xs py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Продолжить</button>
     </div>
 </div>
@@ -632,6 +646,12 @@
                     <button type="button" id="auto-day-start-btn" data-action="auto-day-toggle-timer" aria-pressed="false" class="px-3 py-2 sm:px-5 sm:py-3 bg-green-800 hover:bg-green-700 border border-green-600 text-white font-semibold rounded uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition-[background-color,border-color,box-shadow,transform,color] duration-[118ms] ease-out">Старт</button>
                     <button type="button" data-action="auto-day-reset-timer" data-seconds="60" class="px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-xs sm:text-sm cursor-pointer">60 с</button>
                     <button type="button" data-action="auto-day-reset-timer" data-seconds="30" class="px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-xs sm:text-sm cursor-pointer">30 с</button>
+                    <button type="button" id="auto-day-switch-host" data-action="auto-switch-host-open" class="hidden ml-1 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded border border-mafia-gold/55 bg-mafia-blood/20 hover:bg-mafia-blood/40 text-mafia-gold cursor-pointer transition-colors" title="Передать обычному ведущему" aria-label="Передать обычному ведущему">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m3 11 18-5v12L3 14v-3z"/>
+                            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -729,6 +749,18 @@
             <button type="button" data-action="auto-player-modal-revive" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Вернуть игрока</button>
         </div>
         <button type="button" data-action="auto-player-modal-save" class="w-full mt-4 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Сохранить</button>
+    </div>
+</div>
+
+<div id="modal-auto-switch-host" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-auto-switch-host-title">
+    <div class="absolute inset-0" data-action="auto-switch-host-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-5 max-w-sm w-full shadow-xl">
+        <h2 id="modal-auto-switch-host-title" class="font-display text-mafia-gold text-2xl text-center font-bold tracking-wide leading-tight mb-3"></h2>
+        <p id="modal-auto-switch-host-body" class="text-mafia-cream/85 text-sm text-center mb-5"></p>
+        <div class="flex flex-col gap-2.5">
+            <button type="button" id="modal-auto-switch-host-primary" data-action="auto-switch-host-primary" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer"></button>
+            <button type="button" data-action="auto-switch-host-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+        </div>
     </div>
 </div>
 
