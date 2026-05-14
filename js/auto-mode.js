@@ -170,6 +170,7 @@
   // Cross-file API for role pickers (game.players.js, summary.js).
   app.variantConfig = variantConfig;
   app.getPrepareVariant = getPrepareVariant;
+  app.SUPPORTED_VARIANTS = SUPPORTED_VARIANTS;
 
   function makeFreshState() {
     return {
