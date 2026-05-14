@@ -56,8 +56,10 @@
       { value: 'mafia', label: 'Мафия' },
       { value: 'don', label: 'Дон' },
       { value: 'sheriff', label: 'Шериф' },
-      { value: 'merlin', label: 'Мерлин' },
     ];
+    if (app.prepareConfig && app.prepareConfig.variant === 'merlin') {
+      opts.push({ value: 'merlin', label: 'Мерлин' });
+    }
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
       var selected = o.value === selectedCode;
@@ -112,9 +114,9 @@
   }
 
   app.pickPrepareModalRole = function (roleCode) {
-    if (roleCode !== 'peaceful' && roleCode !== 'mafia' && roleCode !== 'don' && roleCode !== 'sheriff') {
-      return;
-    }
+    var allowed = ['peaceful', 'mafia', 'don', 'sheriff'];
+    if (app.prepareConfig && app.prepareConfig.variant === 'merlin') allowed.push('merlin');
+    if (allowed.indexOf(roleCode) === -1) return;
     var m = document.getElementById('modal-player-actions');
     if (!m || m.getAttribute('data-mode') !== 'prepare') return;
     renderPrepareModalRoleRadios(roleCode);
@@ -336,7 +338,9 @@
   };
 
   app.renderPlayers = function () {
-    return app.renderPlayersTo('players-list');
+    var ok = app.renderPlayersTo('players-list');
+    if (app.renderGameSidePanels) app.renderGameSidePanels();
+    return ok;
   };
 
   app.renderPreparePlayers = function () {

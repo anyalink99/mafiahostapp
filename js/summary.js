@@ -370,8 +370,20 @@
       { value: 'mafia', label: 'Мафия' },
       { value: 'don', label: 'Дон' },
       { value: 'sheriff', label: 'Шериф' },
-      { value: 'merlin', label: 'Мерлин' },
     ];
+    var hasMerlinSeat = false;
+    if (app.summaryRoleByPlayerId) {
+      for (var k in app.summaryRoleByPlayerId) {
+        if (Object.prototype.hasOwnProperty.call(app.summaryRoleByPlayerId, k) && app.summaryRoleByPlayerId[k] === 'merlin') {
+          hasMerlinSeat = true;
+          break;
+        }
+      }
+    }
+    var isMerlinVariant = (app.prepareConfig && app.prepareConfig.variant === 'merlin') || hasMerlinSeat;
+    if (isMerlinVariant) {
+      opts.push({ value: 'merlin', label: 'Мерлин' });
+    }
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
       var selected = enabled && o.value === selectedCode;
@@ -619,6 +631,8 @@
     return syntheticPairSkipDefaultText(roundNum);
   }
 
+  app.buildSummaryHistoryRows = function () { return buildSummaryHistoryRows(); };
+
   function buildSummaryHistoryRows() {
     var log = sortedLog();
     var wm = gameLogEntryToRoundNumWeakMap();
@@ -659,6 +673,8 @@
   app.hideSummaryPlayerModal = function () {
     var m = document.getElementById('modal-summary-player');
     if (m && app.modalSetOpen) app.modalSetOpen(m, false);
+    var gs = document.getElementById('game-screen');
+    if (gs && gs.classList.contains('active') && app.renderPlayers) app.renderPlayers();
   };
 
   app._summaryLogSortedIndex = null;
@@ -855,6 +871,7 @@
         app.saveState();
         app.hideSummaryPlayerModal();
         app.renderSummary();
+        if (app.renderGameSidePanels) app.renderGameSidePanels();
         return;
       }
       if (bm1 && bm2 && bm3) {
@@ -863,6 +880,7 @@
       app.saveState();
       app.hideSummaryPlayerModal();
       app.renderSummary();
+      if (app.renderGameSidePanels) app.renderGameSidePanels();
       return;
     }
     if (showBm && bm1 && bm2 && bm3) {
@@ -883,6 +901,7 @@
     app.saveState();
     app.hideSummaryPlayerModal();
     app.renderSummary();
+    if (app.renderGameSidePanels) app.renderGameSidePanels();
   };
 
   app.renderSummary = function () {
@@ -1035,5 +1054,10 @@
 
     var teamVal = app.winningTeam === 'mafia' || app.winningTeam === 'peaceful' ? app.winningTeam : '';
     renderSummaryWinningTeamRow(teamVal);
+
+    var gs = document.getElementById('game-screen');
+    if (gs && gs.classList.contains('active') && app.renderGameSidePanels) {
+      app.renderGameSidePanels();
+    }
   };
 })(window.MafiaApp);
