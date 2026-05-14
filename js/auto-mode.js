@@ -2232,6 +2232,23 @@
     var s = app.autoState;
     var teamEl = el('auto-end-team');
     if (teamEl) teamEl.textContent = TEAM_NAMES[s.result] || '—';
+    var subEl = el('auto-end-subtitle');
+    if (subEl) {
+      if (s.merlinGuess) {
+        subEl.classList.remove('hidden');
+        var guesser = s.merlinGuess.by;
+        if (s.merlinGuess.skipped) {
+          subEl.innerHTML = '№' + guesser + ' отказался называть Мерлина — победа красных подтверждена.';
+        } else if (s.merlinGuess.correct) {
+          subEl.innerHTML = '№' + guesser + ' угадал Мерлина (№' + s.merlinGuess.target + ') — победа уходит чёрным.';
+        } else {
+          subEl.innerHTML = '№' + guesser + ' назвал №' + s.merlinGuess.target + ' — мимо. Победа остаётся красным.';
+        }
+      } else {
+        subEl.classList.add('hidden');
+        subEl.textContent = '';
+      }
+    }
     var rolesEl = el('auto-end-roles');
     if (rolesEl) {
       rolesEl.innerHTML = '';
@@ -2588,6 +2605,12 @@
     if (!isNaN(targetId)) app.handleSheriffCheck(seatId, targetId);
   };
   app.uiActionHandlers['auto-night-result-continue'] = function () { app.continueAfterNightResult(); };
+  app.uiActionHandlers['auto-merlin-guess-pick'] = function (el2) {
+    var tid = parseInt(el2.getAttribute('data-target-id'), 10);
+    if (!isNaN(tid)) app.handleMerlinGuessPick(tid);
+  };
+  app.uiActionHandlers['auto-merlin-guess-finish'] = function () { app.handleMerlinGuessFinish(); };
+  app.uiActionHandlers['auto-merlin-guess-skip'] = function () { app.handleMerlinGuessSkip(); };
   app.uiActionHandlers['auto-day-toggle-timer'] = function () { app.toggleAutoDayTimer(); };
   app.uiActionHandlers['auto-day-reset-timer'] = function (el2) {
     var sec = parseInt(el2.getAttribute('data-seconds'), 10);
