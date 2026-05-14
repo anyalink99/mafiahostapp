@@ -274,15 +274,47 @@
         </div>
     </div>
 
-    <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
-        <div id="players-list" class="grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden"></div>
-    </div>
+    <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-3 lg:gap-4 overflow-hidden">
+        <aside id="game-side-left" class="hidden lg:flex lg:flex-col lg:w-[18rem] xl:w-[20rem] min-h-0 gap-3 overflow-hidden">
+            <div class="bg-mafia-coal border border-mafia-border rounded-lg flex-shrink-0 flex items-center gap-2 px-3 py-2">
+                <span class="font-display text-mafia-gold text-sm tracking-widest flex-1 truncate">Игроки</span>
+                <button type="button" id="game-side-roles-toggle" data-action="game-side-toggle-roles" aria-pressed="false" class="px-2.5 py-1 rounded border border-mafia-border bg-mafia-card hover:border-mafia-gold/45 text-mafia-cream/85 text-[11px] uppercase tracking-wider cursor-pointer transition-colors">Показать роли</button>
+            </div>
+            <div class="bg-mafia-coal border border-mafia-border rounded-lg p-2 flex-1 min-h-0 overflow-hidden">
+                <div id="game-side-roles-grid" class="h-full min-h-0"></div>
+            </div>
+        </aside>
 
-    <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
-        <div id="voting-order" class="voting-order-queue text-mafia-cream/80 min-h-[1.5rem] mb-3 font-mono tabular-nums">—</div>
-        <div class="flex flex-col gap-2">
-            <button type="button" id="btn-go-voting" data-goto="vote-screen" disabled class="w-full py-2.5 bg-mafia-blood/50 border border-mafia-gold/40 text-mafia-gold/50 font-semibold rounded text-sm uppercase tracking-wider cursor-not-allowed transition-all">Голосование</button>
+        <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-4 overflow-hidden">
+            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div id="players-list" class="grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden"></div>
+            </div>
+            <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
+                <div id="voting-order" class="voting-order-queue text-mafia-cream/80 min-h-[1.5rem] mb-3 font-mono tabular-nums">—</div>
+                <div class="flex flex-col gap-2">
+                    <button type="button" id="btn-go-voting" data-goto="vote-screen" disabled class="w-full py-2.5 bg-mafia-blood/50 border border-mafia-gold/40 text-mafia-gold/50 font-semibold rounded text-sm uppercase tracking-wider cursor-not-allowed transition-all">Голосование</button>
+                </div>
+            </div>
         </div>
+
+        <aside id="game-side-right" class="hidden lg:flex lg:flex-col lg:w-[20rem] xl:w-[22rem] min-h-0 gap-3 overflow-hidden">
+            <div class="bg-mafia-coal border border-mafia-border rounded-lg flex-shrink-0 px-3 py-2">
+                <span class="font-display text-mafia-gold text-sm tracking-widest">Ход игры</span>
+            </div>
+            <div class="bg-mafia-coal border border-mafia-border rounded-lg p-3 flex-1 min-h-0 overflow-y-auto">
+                <ul id="game-side-history" class="text-sm text-mafia-cream/85 space-y-1.5 list-disc pl-5 marker:text-mafia-gold/60"></ul>
+                <p id="game-side-history-empty" class="text-sm text-mafia-cream/50">Пока пусто: голосования и выбывания появятся здесь.</p>
+            </div>
+            <div id="game-side-notes-wrap" class="bg-mafia-coal border border-mafia-border rounded-lg flex-shrink-0">
+                <button type="button" id="game-side-notes-toggle" data-action="game-side-toggle-notes" aria-expanded="true" class="w-full flex items-center justify-between gap-2 px-3 py-2 text-left cursor-pointer">
+                    <span class="font-display text-mafia-gold text-sm tracking-widest">Примечания</span>
+                    <span id="game-side-notes-chevron" class="text-mafia-gold/80 text-xs leading-none transition-transform">▾</span>
+                </button>
+                <div id="game-side-notes-body" class="px-3 pb-3">
+                    <textarea id="game-side-notes" rows="5" placeholder="Заметки ведущего…" class="w-full resize-y rounded border border-mafia-border bg-mafia-card px-2.5 py-2 text-sm text-mafia-cream/90 outline-none transition-colors placeholder:text-mafia-cream/35 focus:border-mafia-gold/45"></textarea>
+                </div>
+            </div>
+        </aside>
     </div>
 </div>
 
@@ -844,6 +876,7 @@
 <script src="js/cards.js"></script>
 <script src="js/game.js"></script>
 <script src="js/game.players.js"></script>
+<script src="js/game.side.js"></script>
 <script src="js/game.voting.js"></script>
 <script src="js/game.voice.js"></script>
 <script src="js/summary.js"></script>

@@ -65,4 +65,17 @@
       app.setPlayerEliminationState(pid, reason);
     });
   };
+
+  app.uiActionHandlers['game-side-toggle-roles'] = function () {
+    if (app.toggleGameSideRoles) app.toggleGameSideRoles();
+  };
+
+  app.uiActionHandlers['game-side-toggle-notes'] = function () {
+    if (app.toggleGameSideNotes) app.toggleGameSideNotes();
+  };
+
+  app.uiActionHandlers['summary-player-open-from-game'] = function (el, _event, ui) {
+    var spid = ui.getIntAttr(el, 'data-player-id');
+    if (spid !== null && app.showSummaryPlayerModal) app.showSummaryPlayerModal(spid);
+  };
 })(window.MafiaApp);

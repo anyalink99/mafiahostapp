@@ -112,6 +112,19 @@
       },
       'summary-modal-log-save': function () {
         if (app.applySummaryLogModal) app.applySummaryLogModal();
+      },
+      'game-side-toggle-roles': function () {
+        if (!uiHelpers.isScreenActive('game-screen')) return;
+        if (app.toggleGameSideRoles) app.toggleGameSideRoles();
+      },
+      'game-side-toggle-notes': function () {
+        if (!uiHelpers.isScreenActive('game-screen')) return;
+        if (app.toggleGameSideNotes) app.toggleGameSideNotes();
+      },
+      'summary-player-open-from-game': function (el) {
+        if (!uiHelpers.isScreenActive('game-screen')) return;
+        var spid = uiHelpers.getIntAttr(el, 'data-player-id');
+        if (spid !== null && app.showSummaryPlayerModal) app.showSummaryPlayerModal(spid);
       }
     };
 
@@ -454,6 +467,10 @@
 
     document.body.addEventListener('input', function (e) {
       var el = e.target;
+      if (el && el.id === 'game-side-notes') {
+        if (app.applyGameSideNotesInput) app.applyGameSideNotesInput(el.value);
+        return;
+      }
       if (el && el.id === 'setting-timer-voice-duck-mul') {
         var v = parseFloat(el.value);
         if (isNaN(v)) return;

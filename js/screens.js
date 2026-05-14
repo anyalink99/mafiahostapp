@@ -108,6 +108,7 @@
       if (timerEl) timerEl.textContent = app.timeLeft;
       if (app.syncTimerAppearance) app.syncTimerAppearance();
       app.refreshNomineeQueueUi();
+      if (app.renderGameSidePanels) app.renderGameSidePanels();
     }
     if (screenId === 'prepare-screen' && app.renderPreparePlayers) app.renderPreparePlayers();
     if (screenId === 'vote-screen' && app.prepareVoteRoundScreen) app.prepareVoteRoundScreen();

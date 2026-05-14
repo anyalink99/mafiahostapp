@@ -69,6 +69,12 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.summarySkipLineOverrides = {};
 
+  app.gameSideShowRoles = false;
+
+  app.gameSideNotes = '';
+
+  app.gameSideNotesCollapsed = false;
+
   app.saveState = function () {
     try {
       const payload = {
@@ -88,6 +94,9 @@ window.MafiaApp = window.MafiaApp || {};
         summaryHostName: app.summaryHostName,
         summarySyntheticFirstDayLine: app.summarySyntheticFirstDayLine,
         summarySkipLineOverrides: app.summarySkipLineOverrides,
+        gameSideShowRoles: app.gameSideShowRoles,
+        gameSideNotes: app.gameSideNotes,
+        gameSideNotesCollapsed: app.gameSideNotesCollapsed,
       };
       localStorage.setItem(app.STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {}
@@ -163,6 +172,9 @@ window.MafiaApp = window.MafiaApp || {};
       if (data.summarySkipLineOverrides && typeof data.summarySkipLineOverrides === 'object' && !Array.isArray(data.summarySkipLineOverrides)) {
         app.summarySkipLineOverrides = data.summarySkipLineOverrides;
       } else app.summarySkipLineOverrides = {};
+      app.gameSideShowRoles = !!data.gameSideShowRoles;
+      app.gameSideNotes = typeof data.gameSideNotes === 'string' ? data.gameSideNotes : '';
+      app.gameSideNotesCollapsed = !!data.gameSideNotesCollapsed;
       if (!app.playerRoleOverrides || !Object.keys(app.playerRoleOverrides).length) {
         if (data.summary && Array.isArray(data.summary.rolesManual)) {
           for (var rmi = 0; rmi < data.summary.rolesManual.length; rmi++) {
@@ -210,6 +222,8 @@ window.MafiaApp = window.MafiaApp || {};
     app.summaryHostName = '';
     app.summarySyntheticFirstDayLine = null;
     app.summarySkipLineOverrides = {};
+    app.gameSideNotes = '';
+    app.gameSideNotesCollapsed = false;
     if (app.timerInterval) clearInterval(app.timerInterval);
     app.timerInterval = null;
     app.saveState();
@@ -240,6 +254,7 @@ window.MafiaApp = window.MafiaApp || {};
     if (app.summaryHostName && app.summaryHostName.trim() !== '') return true;
     if (app.summarySyntheticFirstDayLine !== null) return true;
     if (app.summarySkipLineOverrides && Object.keys(app.summarySkipLineOverrides).length > 0) return true;
+    if (typeof app.gameSideNotes === 'string' && app.gameSideNotes.trim() !== '') return true;
     if (Array.isArray(app.players)) {
       for (var i = 0; i < app.players.length; i++) {
         var p = app.players[i];
