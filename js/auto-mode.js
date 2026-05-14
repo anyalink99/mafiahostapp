@@ -687,8 +687,7 @@
     var s = app.autoState;
     s.phase = 'night-intro';
     s.nightNum = 0;
-    saveAuto();
-    app.navigateToScreen('auto-night-intro-screen');
+    navAfter('auto-night-intro-screen');
   }
 
   var FREESIT_SEC = 30;
@@ -960,8 +959,7 @@
         }
       }
     }
-    saveAuto();
-    app.navigateToScreen('auto-night-pass-screen');
+    navAfter('auto-night-pass-screen');
   }
 
   app.renderAutoNightPass = function () {
@@ -1233,8 +1231,7 @@
       }
     }
     s.phase = 'night-result';
-    saveAuto();
-    app.navigateToScreen('auto-night-result-screen');
+    navAfter('auto-night-result-screen');
     setTimeout(playNightResultAudio, 50);
   }
 
@@ -1336,8 +1333,7 @@
     var s = app.autoState;
     s.phase = 'day';
     s.day = { dayNum: dayNum, timeLeft: DEFAULT_DAY_SEC, nominees: [] };
-    saveAuto();
-    app.navigateToScreen('auto-day-screen');
+    navAfter('auto-day-screen');
   }
 
   app.renderAutoDay = function () {
@@ -1981,8 +1977,7 @@
     s.lastWords = { hangedIds: hangedIds.slice(), cursor: 0, timeLeft: LAST_WORDS_SEC };
     s.vote = null;
     if (s.day) s.day.nominees = [];
-    saveAuto();
-    app.navigateToScreen('auto-last-words-screen');
+    navAfter('auto-last-words-screen');
   }
 
   app.renderAutoLastWords = function () {
@@ -2132,8 +2127,7 @@
   function transitionToMerlinGuess() {
     var s = app.autoState;
     s.phase = 'merlin-guess';
-    saveAuto();
-    app.navigateToScreen('auto-merlin-guess-screen');
+    navAfter('auto-merlin-guess-screen');
   }
 
   app.renderAutoMerlinGuess = function () {
@@ -2817,6 +2811,15 @@
     bindRevealHoldGestures();
     bindBackGestures();
     bindAutoPlayerGestures();
+  };
+
+  // Internals exposed for siblings (auto-migration.js).
+  app._autoInternals = {
+    clearAllAutoTimers: clearAllAutoTimers,
+    makeFreshState: makeFreshState,
+    saveAuto: saveAuto,
+    savePrepareConfig: savePrepareConfig,
+    el: el,
   };
 
   loadAuto();
