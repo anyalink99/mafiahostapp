@@ -945,6 +945,8 @@
     if (!order.length) { checkWinAndContinue(); return; }
     s.phase = 'night-pass';
     s.nightNum = nightNum;
+    var cfg = variantConfig(s.variant);
+    var kasperNight = !!cfg.firstNightKillsKasper && nightNum === 1;
     s.night = {
       nightNum: nightNum,
       turnOrder: order,
@@ -952,7 +954,9 @@
       mafiaVotes: {},
       sheriffCheck: null,
       donCheck: null,
-      donKillPicked: false,
+      // В ночь Каспера мафия не стреляет, но дон всё равно должен мочь
+      // проверить шерифа — поэтому фиксируем donKillPicked=true сразу.
+      donKillPicked: kasperNight,
       victimId: null,
       sheriffPredetermined: null,
     };
