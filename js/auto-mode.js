@@ -1,3 +1,45 @@
+/**
+ * Автономный режим — навигация по файлу.
+ *
+ *   1. Константы и хранилища ключи
+ *   2. VARIANTS — декларативная конфигурация режимов (Стандарт/Каспер/Мерлин)
+ *   3. Variant-derived helpers (isKasperKillNight, isMerlinMode и т.д.)
+ *   4. makeFreshState + prepareConfig + experimental modes API
+ *   5. Persistence (saveAuto / loadAuto)
+ *   6. Snapshot history (pushHistory / popHistory)
+ *   7. Helpers (escapeHtml, el, shuffle, seatById, aliveSeats, …)
+ *   8. Mutation helpers (mutate, trackHangIfBlack, …)
+ *   9. clearAllAutoTimers, аудио (playSfx / playSfxSequence / cancelSfx)
+ *  10. Setup (renderAutoSetup, startFreshAutoGame, resumeAutoGame, restartAutoGame)
+ *  11. Prepare-mode screen (host vs auto + variant)
+ *  12. Reveal (раздача ролей с pass-and-hold)
+ *  13. Night 0 — intro (мафия знакомится, музыка, Merlin reveal)
+ *  14. Night phase — kill nights (turns, kill resolution, sheriff/don)
+ *  15. Night result (audio: morning-miss / first-killed / morning-last-speech / morning)
+ *  16. Day (timer, player slots, foul management)
+ *  17. Auto-day mutations (addAutoFoul, addAutoNominee, setAutoElim …)
+ *  18. Auto player modal (foul, vote, elim, revive)
+ *  19. Vote (counts, tie revote, raise-all)
+ *  20. Last words (timer, multi-hang loop)
+ *  21. Game over (endGame, checkWinAndContinue)
+ *  22. Merlin endgame guess
+ *  23. Switch to host mode (миграция)
+ *  24. Back navigation (5-сек удержание + Backspace + snapshot pop)
+ *  25. Auto-day player slot gestures (long-press / swipe / tap)
+ *  26. Event handlers — app.uiActionHandlers["auto-*"]
+ *  27. Init hook (initAutoFromMenu / initPrepareModeFromMenu)
+ *
+ * Источники правды:
+ *   • app.autoState        — игровое состояние, персистится через STORAGE_KEY.
+ *   • app.prepareConfig    — выбранный режим/вариант, персистится отдельно.
+ *   • app.experimentalModesEnabled — флаг доступности Каспера/Мерлина.
+ *   • app._autoEphemeral   — таймеры/состояния UI, НЕ персистится.
+ *   • VARIANTS[variant]    — декларативные правила режима (роли, ночные особенности).
+ *
+ * Любое мутирующее действие пользователя должно вызывать pushHistory() перед
+ * мутацией (или использовать mutate() обёртку), чтобы работал откат 5-сек удержанием
+ * / Backspace.
+ */
 (function (app) {
   'use strict';
 
@@ -338,20 +380,13 @@
   }
 
   // ============ Mutation helpers ============
+  // mutate(fn): user action that should be undoable — snapshots history, runs fn,
+  //   persists. Use for any state change initiated by a user tap.
+  // navAfter(screenId): persist + navigate without snapshotting. Use for internal
+  //   transitions driven by timers/sequences (where back-navigation should pop
+  //   the user action that started the chain, not the intermediate step).
 
   function navAfter(screenId) {
-    saveAuto();
-    if (screenId) app.navigateToScreen(screenId);
-  }
-  function commit(fn) {
-    pushHistory();
-    var r = fn ? fn(app.autoState) : undefined;
-    saveAuto();
-    return r;
-  }
-  function commitNav(fn, screenId) {
-    pushHistory();
-    if (fn) fn(app.autoState);
     saveAuto();
     if (screenId) app.navigateToScreen(screenId);
   }
@@ -2204,131 +2239,8 @@
   };
 
   // ============ Switch to host mode ============
-
-  var switchHostStep = 0;
-
-  function roleCodeToRussian(code) {
-    if (code === 'don') return 'Дон';
-    if (code === 'sheriff') return 'Шериф';
-    if (code === 'mafia') return 'Мафия';
-    return 'Мирный';
-  }
-
-  function renderSwitchHostModal() {
-    var titleEl = el('modal-auto-switch-host-title');
-    var bodyEl = el('modal-auto-switch-host-body');
-    var primaryEl = el('modal-auto-switch-host-primary');
-    if (switchHostStep === 1) {
-      if (titleEl) titleEl.textContent = 'Передать обычному ведущему?';
-      if (bodyEl) bodyEl.textContent = 'Прогресс автономной партии перенесётся в обычный режим. Дальше игру будет вести живой ведущий.';
-      if (primaryEl) primaryEl.textContent = 'Продолжить';
-    } else if (switchHostStep === 2) {
-      if (titleEl) titleEl.textContent = 'Точно передать?';
-      if (bodyEl) bodyEl.textContent = 'Вернуться в автономный режим в этой партии нельзя.';
-      if (primaryEl) primaryEl.textContent = 'Да, передать';
-    }
-  }
-
-  app.showAutoSwitchHostModal = function () {
-    var s = app.autoState;
-    var anyOut = s.seats && s.seats.some(function (x) { return !x.alive; });
-    if (!anyOut) return;
-    switchHostStep = 1;
-    renderSwitchHostModal();
-    var modal = el('modal-auto-switch-host');
-    if (modal && app.modalSetOpen) app.modalSetOpen(modal, true);
-  };
-
-  app.hideAutoSwitchHostModal = function () {
-    var modal = el('modal-auto-switch-host');
-    if (modal && app.modalSetOpen) app.modalSetOpen(modal, false);
-    switchHostStep = 0;
-  };
-
-  app.handleAutoSwitchHostPrimary = function () {
-    if (switchHostStep === 1) {
-      switchHostStep = 2;
-      renderSwitchHostModal();
-      return;
-    }
-    if (switchHostStep === 2) {
-      app.hideAutoSwitchHostModal();
-      migrateAutoToHost();
-    }
-  };
-
-  function migrateAutoToHost() {
-    var s = app.autoState;
-    if (!s.active || !Array.isArray(s.seats) || !s.seats.length) return;
-    clearAllAutoTimers();
-
-    var hostPlayers = [];
-    var hostRoles = [];
-    var n = playerCount();
-    for (var i = 0; i < 10; i++) {
-      if (i < n && s.seats[i]) {
-        var seat = s.seats[i];
-        hostPlayers.push({
-          id: seat.id,
-          fouls: seat.fouls || 0,
-          eliminationReason: seat.eliminationReason || null,
-          nick: seat.nick || ''
-        });
-        hostRoles.push(roleCodeToRussian(seat.role));
-      } else {
-        hostPlayers.push({ id: i + 1, fouls: 0, eliminationReason: 'shot', nick: '' });
-        hostRoles.push('Мирный');
-      }
-    }
-
-    app.players = hostPlayers;
-    app.roles = hostRoles;
-    app.revealedIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    app.nomineeQueue = (s.day && Array.isArray(s.day.nominees)) ? s.day.nominees.slice() : [];
-    app.activeVoteRound = null;
-    app.timeLeft = (s.day && typeof s.day.timeLeft === 'number') ? s.day.timeLeft : 60;
-    app.playerRoleOverrides = {};
-    app.winningTeam = null;
-    app.bonusPointsByPlayerId = {};
-    app.summaryRoleByPlayerId = {};
-    app.bonusNoteByPlayerId = {};
-    app.bestMoveByPlayerId = {};
-    app.summaryHostName = '';
-    app.summarySyntheticFirstDayLine = null;
-    app.summarySkipLineOverrides = {};
-
-    for (var k = 0; k < hostPlayers.length; k++) {
-      var p = hostPlayers[k];
-      var roleStr = hostRoles[k];
-      var code = roleStr === 'Дон' ? 'don' : roleStr === 'Шериф' ? 'sheriff' : roleStr === 'Мафия' ? 'mafia' : 'peaceful';
-      app.summaryRoleByPlayerId[String(p.id)] = code;
-    }
-
-    var baseTs = Date.now() - 1000;
-    app.gameLog = [];
-    for (var m = 0; m < hostPlayers.length; m++) {
-      var pp = hostPlayers[m];
-      if (pp.eliminationReason) {
-        app.gameLog.push({
-          type: 'elimination',
-          ts: baseTs + m,
-          playerId: pp.id,
-          reason: pp.eliminationReason
-        });
-      }
-    }
-
-    if (app.saveState) app.saveState();
-
-    app.autoState = makeFreshState();
-    saveAuto();
-
-    app.prepareConfig.mode = 'host';
-    savePrepareConfig();
-
-    if (app.initGameFromMenu) app.initGameFromMenu();
-    app.navigateToScreen('game-screen');
-  }
+  // Migration logic + two-step confirmation modal live in js/auto-migration.js.
+  // Internals exposed via app._autoInternals at the bottom of this file.
 
   app.renderAutoEnd = function () {
     var s = app.autoState;
