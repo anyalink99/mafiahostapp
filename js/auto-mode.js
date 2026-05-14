@@ -12,7 +12,7 @@
   var DEFAULT_PLAYER_COUNT = 10;
   var SUPPORTED_VARIANTS = ['standard', 'kasper', 'merlin'];
   var VARIANT_LABELS = { standard: 'Стандарт', kasper: 'Каспер', merlin: 'Мерлин' };
-  var VARIANT_COUNTS = { standard: 10, kasper: 9, merlin: 8 };
+  var VARIANT_COUNTS = { standard: 10, kasper: 10, merlin: 10 };
   var NIGHT_TURN_SEC = 10;
   var INTRO_PRE_SEC = 10;
   var INTRO_MAIN_SEC = 60;
@@ -23,22 +23,29 @@
   var BACK_MOVE_THRESHOLD_PX = 24;
   var HISTORY_LIMIT = 120;
 
-  var STATE_KEYS = ['phase','seats','reveal','nightNum','night','day','vote','lastWords','result','dayNum','playerCount','is9','isMerlin','variant','hangedBlacks','merlinGuess'];
+  var STATE_KEYS = ['phase','seats','reveal','nightNum','night','day','vote','lastWords','result','dayNum','playerCount','is9','isKasper','isMerlin','variant','hangedBlacks','merlinGuess'];
 
   function playerCount() {
-    var n = app.autoState && app.autoState.playerCount;
-    if (n === 8 || n === 9 || n === 10) return n;
     return DEFAULT_PLAYER_COUNT;
   }
 
-  function countForVariant(v) {
-    return VARIANT_COUNTS[v] || DEFAULT_PLAYER_COUNT;
+  function countForVariant() {
+    return DEFAULT_PLAYER_COUNT;
   }
 
   function rolesForVariant(v) {
-    if (v === 'merlin') return ['peaceful','peaceful','peaceful','sheriff','mafia','mafia','don','merlin'];
-    if (v === 'kasper') return ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
+    if (v === 'merlin') return ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','merlin','mafia','mafia','don'];
     return ['peaceful','peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
+  }
+
+  function dealRolesForVariant(v) {
+    if (v === 'kasper') {
+      var first9 = ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
+      var shuffled = shuffle(first9);
+      shuffled.push('peaceful');
+      return shuffled;
+    }
+    return shuffle(rolesForVariant(v));
   }
 
   function makeFreshState() {
@@ -56,6 +63,7 @@
       dayNum: 0,
       playerCount: DEFAULT_PLAYER_COUNT,
       is9: false,
+      isKasper: false,
       isMerlin: false,
       variant: 'standard',
       hangedBlacks: [],
@@ -185,8 +193,12 @@
       } else {
         s.variant = 'standard';
       }
-      s.playerCount = countForVariant(s.variant);
-      s.is9 = (s.variant === 'kasper');
+      s.playerCount = DEFAULT_PLAYER_COUNT;
+      s.is9 = false;
+      s.isKasper = (s.variant === 'kasper');
+      s.isMerlin = (s.variant === 'merlin');
+      s.hangedBlacks = Array.isArray(d.hangedBlacks) ? d.hangedBlacks.slice() : [];
+      s.merlinGuess = d.merlinGuess && typeof d.merlinGuess === 'object' ? d.merlinGuess : null;
       s.history = Array.isArray(d.history) ? d.history : [];
       app.autoState = s;
     } catch (e) {}
@@ -421,21 +433,20 @@
     var variant = app.experimentalModesEnabled && SUPPORTED_VARIANTS.indexOf(app.prepareConfig.variant) !== -1
       ? app.prepareConfig.variant
       : 'standard';
-    var count = countForVariant(variant);
-    var roles = rolesForVariant(variant);
-    var shuffled = shuffle(roles);
+    var dealt = dealRolesForVariant(variant);
     var fresh = makeFreshState();
     fresh.active = true;
     fresh.phase = 'reveal';
     fresh.reveal = { cursor: 1 };
     fresh.dayNum = 0;
     fresh.nightNum = 0;
-    fresh.playerCount = count;
+    fresh.playerCount = DEFAULT_PLAYER_COUNT;
     fresh.variant = variant;
-    fresh.is9 = (variant === 'kasper');
+    fresh.is9 = false;
+    fresh.isKasper = (variant === 'kasper');
     fresh.isMerlin = (variant === 'merlin');
-    for (var i = 0; i < count; i++) {
-      fresh.seats.push({ id: i + 1, role: shuffled[i], alive: true, fouls: 0, nick: '' });
+    for (var i = 0; i < DEFAULT_PLAYER_COUNT; i++) {
+      fresh.seats.push({ id: i + 1, role: dealt[i], alive: true, fouls: 0, nick: '' });
     }
     app.autoState = fresh;
     saveAuto();
