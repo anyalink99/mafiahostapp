@@ -252,6 +252,11 @@
 <div id="game-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6">
     <div class="relative bg-mafia-coal border border-mafia-border rounded-lg p-3 sm:p-4 flex-shrink-0 min-w-0">
         <button type="button" data-goto="menu-screen" class="absolute left-3 top-3 sm:left-4 sm:top-4 z-10 text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer text-left leading-none">← Меню</button>
+        <button type="button" id="btn-host-tools" data-action="host-tools-open" aria-label="Инструменты ведущего" class="absolute right-[6.5rem] top-2.5 sm:right-[7.5rem] sm:top-3 z-10 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-lg border-2 bg-mafia-card border-mafia-border text-mafia-cream hover:border-mafia-gold/50 transition-colors cursor-pointer" title="Инструменты ведущего">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+        </button>
         <button type="button" id="btn-timer-voice" data-action="timer-voice-modal-open" aria-label="Озвучка / Ночные действия" aria-pressed="false" class="absolute right-14 top-2.5 sm:right-[4.1rem] sm:top-3 z-10 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-lg border-2 bg-mafia-card border-mafia-border text-mafia-cream hover:border-mafia-gold/50 transition-colors cursor-pointer" title="Озвучка / Ночные действия">
             <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46"/>
@@ -508,6 +513,24 @@
             <button type="button" data-action="music-control-stop" class="flex-1 py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Стоп</button>
         </div>
         <button type="button" data-action="music-control-close" class="w-full mt-3 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Закрыть</button>
+    </div>
+</div>
+
+<div id="modal-host-tools" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-host-tools-title">
+    <div class="absolute inset-0" data-action="host-tools-close" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-5 max-w-sm w-full shadow-xl">
+        <h2 id="modal-host-tools-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-4">Инструменты ведущего</h2>
+        <div class="flex flex-col gap-3">
+            <div>
+                <button type="button" data-action="host-tools-roles" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-colors">Назвать роли</button>
+                <div id="host-tools-roles-result" class="hidden mt-3 space-y-1 text-sm text-mafia-cream/90"></div>
+            </div>
+            <div id="host-tools-sheriff-section" class="hidden">
+                <button type="button" data-action="host-tools-sheriff-random" class="w-full py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-gold/55 text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-colors">Рандомная проверка шерифа</button>
+                <div id="host-tools-sheriff-result" class="hidden mt-3 text-sm text-mafia-cream/95 text-center"></div>
+            </div>
+        </div>
+        <button type="button" data-action="host-tools-close" class="w-full mt-4 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Закрыть</button>
     </div>
 </div>
 
@@ -888,6 +911,7 @@
 <script src="js/auto-mode.js"></script>
 <script src="js/auto-prepare-ui.js"></script>
 <script src="js/auto-migration.js"></script>
+<script src="js/host-tools.js"></script>
 <script src="js/events.js"></script>
 <script src="js/main.js"></script>
 </body>
