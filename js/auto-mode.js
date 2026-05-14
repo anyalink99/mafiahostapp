@@ -202,10 +202,6 @@
   function saveExperimentalModes() {
     try { localStorage.setItem(EXP_MODES_KEY, app.experimentalModesEnabled ? '1' : '0'); } catch (e) {}
   }
-  function availableVariants() {
-    return app.experimentalModesEnabled ? SUPPORTED_VARIANTS.slice() : ['standard'];
-  }
-
   function loadPrepareConfig() {
     try {
       var raw = localStorage.getItem(PREPARE_CONFIG_KEY);
@@ -518,55 +514,9 @@
     }
   };
 
-  // ============ Prepare-mode screen (host vs auto + variant) ============
-
-  app.renderPrepareModeScreen = function () {
-    var modeContainer = el('prepare-mode-options');
-    if (modeContainer) {
-      modeContainer.innerHTML = '';
-      var modes = [
-        { value: 'host', label: 'Обычный ведущий' },
-        { value: 'auto', label: 'Автономный ведущий' }
-      ];
-      modes.forEach(function (m) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.setAttribute('data-action', 'prepare-mode-pick');
-        b.setAttribute('data-mode', m.value);
-        b.className = 'prepare-toggle-btn' + (app.prepareConfig.mode === m.value ? ' prepare-toggle-active' : '');
-        b.textContent = m.label;
-        modeContainer.appendChild(b);
-      });
-    }
-    var variantSection = el('prepare-variant-section');
-    var showVariants = !!app.experimentalModesEnabled;
-    if (variantSection) variantSection.classList.toggle('hidden', !showVariants);
-    if (showVariants) {
-      var variantContainer = el('prepare-variant-options');
-      if (variantContainer) {
-        variantContainer.innerHTML = '';
-        SUPPORTED_VARIANTS.forEach(function (v) {
-          var b = document.createElement('button');
-          b.type = 'button';
-          b.setAttribute('data-action', 'prepare-variant-pick');
-          b.setAttribute('data-variant', v);
-          b.className = 'prepare-toggle-btn' + (app.prepareConfig.variant === v ? ' prepare-toggle-active' : '');
-          b.textContent = VARIANT_LABELS[v];
-          variantContainer.appendChild(b);
-        });
-      }
-      var hint = el('prepare-variant-hint');
-      if (hint) {
-        if (app.prepareConfig.variant === 'kasper') {
-          hint.textContent = 'Каспер: 10 игроков. 10-й всегда мирный и автоматически «убивается» в первую активную ночь. День 1 проходит с обычным голосованием — возможны равные раздачи.';
-        } else if (app.prepareConfig.variant === 'merlin') {
-          hint.textContent = 'Мерлин: 10 игроков. Кроме обычных ролей есть Мерлин — в первую активную ночь он узнаёт тройку чёрных и шерифа. Если выиграли красные, последний повешенный чёрный может попробовать назвать Мерлина.';
-        } else {
-          hint.textContent = 'Стандартный состав: 10 игроков, 6 мирных, шериф, 2 мафии, дон.';
-        }
-      }
-    }
-  };
+  // ============ Prepare-mode screen ============
+  // UI rendering moved to js/auto-prepare-ui.js; this file owns only the data layer
+  // (VARIANTS, prepareConfig, experimentalModes) and the prepare-* action handlers.
 
   app.startFreshAutoGame = function () {
     loadPrepareConfig();
