@@ -77,6 +77,10 @@
         if (!uiHelpers.isScreenActive('summary-screen')) return;
         if (app.downloadGameExportCsv) app.downloadGameExportCsv();
       },
+      'export-copy-mu-json': function () {
+        if (!uiHelpers.isScreenActive('summary-screen')) return;
+        if (app.copyMUJsonToClipboard) app.copyMUJsonToClipboard();
+      },
       'summary-player-open': function (el) {
         if (!uiHelpers.isScreenActive('summary-screen')) return;
         var spid = uiHelpers.getIntAttr(el, 'data-player-id');

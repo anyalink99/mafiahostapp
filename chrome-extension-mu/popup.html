@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>MU Importer</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #1c1c1f;
+        color: #e6e1d6;
+      }
+      body {
+        width: 380px;
+        padding: 12px 12px 14px;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 13px;
+        margin: 0 0 8px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #c8a96a;
+      }
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        height: 220px;
+        background: #111114;
+        color: #f1ece2;
+        border: 1px solid #3a3a3f;
+        border-radius: 4px;
+        padding: 8px;
+        font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+        font-size: 11px;
+        resize: vertical;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      button {
+        flex: 1;
+        padding: 8px 10px;
+        background: #2a2a30;
+        color: #f1ece2;
+        border: 1px solid #4a4a52;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #4a1f25;
+        border-color: #c8a96a;
+        color: #f3d68f;
+      }
+      button:hover {
+        filter: brightness(1.1);
+      }
+      .status {
+        margin-top: 10px;
+        font-size: 11px;
+        line-height: 1.45;
+        min-height: 14px;
+        white-space: pre-wrap;
+      }
+      .status.ok {
+        color: #8fbb74;
+      }
+      .status.err {
+        color: #e2786a;
+      }
+      .status.info {
+        color: #a4a4ab;
+      }
+      details {
+        margin-top: 8px;
+        font-size: 11px;
+        color: #a4a4ab;
+      }
+      summary {
+        cursor: pointer;
+        user-select: none;
+      }
+      details p {
+        margin: 6px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Mafia Host → MafiaUniverse</h1>
+    <textarea
+      id="json-input"
+      placeholder="Вставьте JSON из кнопки &quot;Скопировать MU JSON&quot; в приложении"
+    ></textarea>
+    <div class="row">
+      <button id="paste-btn" type="button" title="Вставить из буфера">Вставить</button>
+      <button id="fill-btn" class="primary" type="button">Заполнить форму</button>
+    </div>
+    <div id="status" class="status info">
+      Откройте страницу mafiauniverse.org/Games/Edit и вставьте JSON.
+    </div>
+    <details>
+      <summary>Подсказки</summary>
+      <p>
+        Имена игроков вставятся текстом — привязывать к базе нужно вручную через выпадающий список сайта.
+      </p>
+      <p>
+        Перед сохранением проверьте роли, фолы, ДСК и голосования.
+      </p>
+    </details>
+    <script src="popup.js"></script>
+  </body>
+</html>
