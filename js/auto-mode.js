@@ -368,9 +368,9 @@
       if (summ) {
         var v = app.experimentalModesEnabled ? app.prepareConfig.variant : 'standard';
         if (v === 'kasper') {
-          summ.innerHTML = '<strong class="text-mafia-gold">Каспер (9 игроков):</strong> 5 мирных, шериф, 2 мафии, дон. 10-й — фантом-мирный, в первую активную ночь считается убитым; в нулевой круг голосование не проводится.';
+          summ.innerHTML = '<strong class="text-mafia-gold">Каспер (10 игроков):</strong> 6 мирных, шериф, 2 мафии, дон. 10-й всегда мирный и автоматически убивается в первую активную ночь — день 1 проходит с обычным голосованием.';
         } else if (v === 'merlin') {
-          summ.innerHTML = '<strong class="text-mafia-gold">Мерлин (8 игроков):</strong> 3 мирных, шериф, 2 мафии, дон, Мерлин. В первую активную ночь Мерлин узнаёт тройку чёрных и шерифа.';
+          summ.innerHTML = '<strong class="text-mafia-gold">Мерлин (10 игроков):</strong> 5 мирных, шериф, Мерлин, 2 мафии, дон. В первую активную ночь Мерлин узнаёт тройку чёрных и шерифа.';
         } else {
           summ.innerHTML = '<strong class="text-mafia-gold">Стандарт (10 игроков):</strong> 6 мирных, шериф, 2 мафии, дон.';
         }
@@ -411,16 +411,16 @@
           b.setAttribute('data-action', 'prepare-variant-pick');
           b.setAttribute('data-variant', v);
           b.className = 'prepare-toggle-btn' + (app.prepareConfig.variant === v ? ' prepare-toggle-active' : '');
-          b.innerHTML = VARIANT_LABELS[v] + '<br><span class="text-xs font-normal text-mafia-cream/60 normal-case tracking-normal">' + countForVariant(v) + ' игроков</span>';
+          b.innerHTML = VARIANT_LABELS[v] + '<br><span class="text-xs font-normal text-mafia-cream/60 normal-case tracking-normal">10 игроков</span>';
           variantContainer.appendChild(b);
         });
       }
       var hint = el('prepare-variant-hint');
       if (hint) {
         if (app.prepareConfig.variant === 'kasper') {
-          hint.textContent = 'Каспер: 9 игроков. 10-й считается мирным и убитым в первую активную ночь, в этот круг голосование не проводится. Шериф в первую активную ночь получает случайную проверку среди 1–9.';
+          hint.textContent = 'Каспер: 10 игроков. 10-й всегда мирный и автоматически «убивается» в первую активную ночь. День 1 проходит с обычным голосованием — возможны равные раздачи.';
         } else if (app.prepareConfig.variant === 'merlin') {
-          hint.textContent = 'Мерлин: 8 игроков. Кроме обычных ролей есть Мерлин — в первую активную ночь он узнаёт тройку чёрных и шерифа.';
+          hint.textContent = 'Мерлин: 10 игроков. Кроме обычных ролей есть Мерлин — в первую активную ночь он узнаёт тройку чёрных и шерифа. Если выиграли красные, последний повешенный чёрный может попробовать назвать Мерлина.';
         } else {
           hint.textContent = 'Стандартный состав: 10 игроков, 6 мирных, шериф, 2 мафии, дон.';
         }
@@ -843,10 +843,11 @@
       donKillPicked: false,
       victimId: null,
       phantom10Kill: false,
+      kasperKill: false,
       sheriffPredetermined: null,
     };
-    if (s.is9 && nightNum === 1) {
-      s.night.phantom10Kill = true;
+    if (s.isKasper && nightNum === 1) {
+      s.night.kasperKill = true;
       s.night.donKillPicked = true;
       var sheriffSeat = null;
       for (var si = 0; si < s.seats.length; si++) {
@@ -956,7 +957,7 @@
 
   function renderMafiaSection(seat, isDon) {
     var s = app.autoState;
-    if (s.night.phantom10Kill) {
+    if (s.night.kasperKill) {
       var heading0 = isDon ? 'Выстрел мафии (ты — Дон)' : 'Выстрел мафии';
       return '<div class="auto-night-section">' +
         '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">' + heading0 + '</h2>' +
@@ -1000,7 +1001,7 @@
 
   function renderSheriffSection(seat) {
     var s = app.autoState;
-    if (s.night.phantom10Kill && s.night.sheriffPredetermined) {
+    if (s.night.kasperKill && s.night.sheriffPredetermined) {
       var pre = s.night.sheriffPredetermined;
       var preSeat = seatById(pre.target);
       var preNick = (preSeat && preSeat.nick && preSeat.nick.trim()) ? ' (' + escapeHtml(preSeat.nick.trim()) + ')' : '';
@@ -1120,7 +1121,13 @@
 
   function transitionToNightResult() {
     var s = app.autoState;
-    var victimId = (s.night && s.night.phantom10Kill) ? null : pickMafiaVictimUnanimous();
+    var isKasperAutoKill = !!(s.night && s.night.kasperKill);
+    var victimId;
+    if (isKasperAutoKill) {
+      victimId = 10;
+    } else {
+      victimId = pickMafiaVictimUnanimous();
+    }
     if (s.night) s.night.victimId = victimId;
     if (victimId) {
       var v = seatById(victimId);
@@ -1138,11 +1145,11 @@
   function playNightResultAudio() {
     var s = app.autoState;
     if (!s.night) return;
-    var phantom = !!s.night.phantom10Kill;
+    var isKasperAutoKill = !!s.night.kasperKill;
     var victimId = s.night.victimId;
     var nightNum = s.night.nightNum;
-    var realKill = (victimId !== null && victimId !== undefined && !phantom);
-    if (phantom) {
+    var realKill = (victimId !== null && victimId !== undefined);
+    if (isKasperAutoKill) {
       var nextDay = (s.dayNum || 0) + 1;
       var opener = dayOpenerSeatId(nextDay);
       var seq = ['morning.mp3'];
@@ -1200,10 +1207,12 @@
     var bm = el('auto-night-result-bestmove');
     if (bm) bm.classList.add('hidden');
     if (!body) return;
-    if (s.night && s.night.phantom10Kill) {
+    if (s.night && s.night.kasperKill) {
+      var seat10 = seatById(10);
+      var nick10 = seat10 && seat10.nick && seat10.nick.trim() ? escapeHtml(seat10.nick.trim()) : '';
       body.innerHTML = '<p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Ночью убит</p>' +
         '<h1 class="font-display font-bold text-6xl text-mafia-blood drop-shadow-[0_0_10px_rgba(127,29,29,0.4)] mb-2">№10</h1>' +
-        '<p class="text-mafia-cream/85 text-base">мирный житель</p>';
+        (nick10 ? '<p class="text-mafia-cream/85 text-base">' + nick10 + '</p>' : '<p class="text-mafia-cream/85 text-base">мирный житель</p>');
     } else if (s.night && s.night.victimId) {
       var v = seatById(s.night.victimId);
       var nick = v && v.nick && v.nick.trim() ? escapeHtml(v.nick.trim()) : '';
@@ -1250,8 +1259,7 @@
   };
 
   function isNoVoteDay() {
-    var s = app.autoState;
-    return !!(s.is9 && s.day && s.day.dayNum === 1);
+    return false;
   }
 
   function syncAutoDayTimerAppearance() {
