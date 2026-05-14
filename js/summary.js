@@ -7,6 +7,7 @@
     sheriff: 'icon-sheriff',
     mafia: 'icon-mafia',
     peaceful: 'icon-like',
+    merlin: 'icon-merlin',
   };
 
   app.rolesFromDealForSeats = function () {
@@ -54,6 +55,7 @@
     if (r === 'Шериф') return 'sheriff';
     if (r === 'Дон') return 'don';
     if (r === 'Мафия') return 'mafia';
+    if (r === 'Мерлин') return 'merlin';
     return 'peaceful';
   };
 
@@ -368,6 +370,7 @@
       { value: 'mafia', label: 'Мафия' },
       { value: 'don', label: 'Дон' },
       { value: 'sheriff', label: 'Шериф' },
+      { value: 'merlin', label: 'Мерлин' },
     ];
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];

@@ -37,6 +37,16 @@
       <circle cx="12" cy="12" r="10" />
       <path d="M11.051 7.616a1 1 0 0 1 1.909.024l.737 1.452a1 1 0 0 0 .737.535l1.634.256a1 1 0 0 1 .588 1.806l-1.172 1.168a1 1 0 0 0-.282.866l.259 1.613a1 1 0 0 1-1.541 1.134l-1.465-.75a1 1 0 0 0-.912 0l-1.465.75a1 1 0 0 1-1.539-1.133l.258-1.613a1 1 0 0 0-.282-.867l-1.156-1.152a1 1 0 0 1 .572-1.822l1.633-.256a1 1 0 0 0 .737-.535z" />
     </symbol>
+    <symbol id="icon-merlin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z" />
+      <path d="m14 7 3 3" />
+      <path d="M5 6v4" />
+      <path d="M19 14v4" />
+      <path d="M10 2v2" />
+      <path d="M7 8H3" />
+      <path d="M21 16h-4" />
+      <path d="M11 3H9" />
+    </symbol>
     <symbol id="icon-like" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.39a2 2 0 0 0 1.98-1.67l1.2-7A2 2 0 0 0 21.76 9H14z" />
       <path d="M2 9h4v12H2z" />
@@ -175,6 +185,14 @@
             </div>
             <input type="range" id="setting-night-wait" min="0" max="20" step="1" value="10" class="mt-2 w-full accent-mafia-gold">
         </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Экспериментальные режимы</h2>
+            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                <input type="checkbox" id="setting-experimental-modes" class="mafia-checkbox">
+                <span>Включить (Каспер, Мерлин)</span>
+            </label>
+            <p class="text-mafia-cream/60 text-xs mt-3 leading-relaxed">При выборе «Подготовка» появится выбор режима игры. <strong class="text-mafia-gold/85">Каспер</strong> — 9 игроков, 10-й считается мирным и убитым в первую активную ночь. <strong class="text-mafia-gold/85">Мерлин</strong> — 8 игроков, кроме обычных ролей есть Мерлин (знает чёрных и шерифа).</p>
+        </section>
     </div>
 </div>
 
@@ -188,10 +206,10 @@
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Режим</h2>
             <div id="prepare-mode-options" class="grid grid-cols-2 gap-2"></div>
         </section>
-        <section id="prepare-count-section" class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 hidden">
-            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Игроков</h2>
-            <div id="prepare-count-options" class="grid grid-cols-2 gap-2"></div>
-            <p id="prepare-count-hint" class="text-mafia-cream/65 text-xs mt-3"></p>
+        <section id="prepare-variant-section" class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 hidden">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Режим игры</h2>
+            <div id="prepare-variant-options" class="grid grid-cols-3 gap-2"></div>
+            <p id="prepare-variant-hint" class="text-mafia-cream/65 text-xs mt-3"></p>
         </section>
         <button type="button" data-action="prepare-continue" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold text-base uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Продолжить</button>
     </div>
@@ -584,6 +602,19 @@
             <p class="font-display text-mafia-gold/85 text-base sm:text-lg tracking-widest uppercase">Скоро свободная посадка</p>
             <h1 id="auto-intro-gap-countdown" class="font-display font-bold text-7xl sm:text-8xl text-mafia-gold tabular-nums">5</h1>
         </div>
+        <div id="auto-intro-stage-merlin-pass" class="hidden space-y-3">
+            <p class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest uppercase">Просыпается Мерлин</p>
+            <p class="text-mafia-cream/85 text-sm sm:text-base">Передай телефон Мерлину — игроку</p>
+            <h1 id="auto-intro-merlin-pass-num" class="font-display font-bold text-7xl sm:text-8xl text-mafia-gold mb-2 tabular-nums">№1</h1>
+            <p class="text-mafia-cream/65 text-xs">Остальные не подсматривают.</p>
+            <button type="button" data-action="auto-merlin-pass-start" class="mt-4 w-full max-w-xs mx-auto py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Получил, смотрю</button>
+        </div>
+        <div id="auto-intro-stage-merlin-action" class="hidden space-y-3">
+            <p class="font-display text-mafia-gold/85 text-base sm:text-lg tracking-widest uppercase">Ты — Мерлин</p>
+            <p class="text-mafia-cream/85 text-sm sm:text-base">Запомни: тройка чёрных и шериф.</p>
+            <div id="auto-intro-merlin-reveal" class="mt-3 space-y-2 text-mafia-cream/95"></div>
+            <button type="button" data-action="auto-merlin-action-done" class="mt-4 w-full max-w-xs mx-auto py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Запомнил, передаю дальше</button>
+        </div>
         <div id="auto-intro-stage-freesit" class="hidden space-y-3">
             <p class="font-display text-mafia-gold/85 text-base sm:text-lg tracking-widest uppercase">Свободная посадка</p>
             <p class="text-mafia-cream/85 text-sm sm:text-base">После таймера — день.</p>
@@ -705,6 +736,24 @@
     </div>
 </div>
 
+<div id="auto-merlin-guess-screen" class="screen flex flex-col p-4 sm:p-6 overflow-auto">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <span class="text-mafia-cream/60 text-sm sm:text-base uppercase tracking-wider">Попытка чёрных</span>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Мерлин</span>
+    </div>
+    <div class="max-w-md w-full mx-auto mt-6 space-y-5 flex-shrink-0 pb-8">
+        <div class="bg-mafia-coal border-2 border-mafia-gold/60 rounded-lg p-5 text-center">
+            <p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Красные победили</p>
+            <p class="text-mafia-cream/85 text-sm">Последний повешенный чёрный — игрок <span id="auto-merlin-guesser-num" class="text-mafia-gold font-semibold tabular-nums">№?</span> — может назвать Мерлина. Угадает — победа уходит к чёрным.</p>
+        </div>
+        <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Кто Мерлин?</h2>
+            <div id="auto-merlin-guess-grid" class="auto-target-grid"></div>
+        </div>
+        <button type="button" data-action="auto-merlin-guess-skip" class="w-full py-2 text-mafia-cream/55 hover:text-mafia-cream/85 text-sm uppercase tracking-wider cursor-pointer">Пропустить — оставить красных</button>
+    </div>
+</div>
+
 <div id="auto-end-screen" class="screen flex flex-col p-4 sm:p-6 overflow-auto">
     <div class="flex items-center justify-between flex-shrink-0 py-2">
         <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
@@ -714,6 +763,7 @@
         <div class="bg-mafia-coal border-2 border-mafia-gold/60 rounded-lg p-6 text-center">
             <p class="font-display text-mafia-gold/80 text-base tracking-widest uppercase mb-2">Победили</p>
             <h1 id="auto-end-team" class="font-display font-bold text-4xl sm:text-5xl text-mafia-gold tracking-wider"></h1>
+            <p id="auto-end-subtitle" class="hidden mt-3 text-mafia-cream/80 text-sm"></p>
         </div>
         <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
             <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Роли</h2>

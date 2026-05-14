@@ -538,6 +538,10 @@
         if (app.syncTimerVoiceDuckControls) app.syncTimerVoiceDuckControls();
         return;
       }
+      if (el.id === 'setting-experimental-modes') {
+        if (app.setExperimentalModes) app.setExperimentalModes(!!el.checked);
+        return;
+      }
       var field = el.getAttribute('data-music-field');
       if (field === 'offset') {
         app.applyMusicFieldChange(el);

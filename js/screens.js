@@ -118,6 +118,7 @@
       if (app.renderMusicSettings) app.renderMusicSettings();
       if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
       if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
+      if (app.syncExperimentalModesCheckbox) app.syncExperimentalModesCheckbox();
     }
     if (screenId === 'prepare-mode-screen' && app.renderPrepareModeScreen) app.renderPrepareModeScreen();
     if (screenId === 'auto-setup-screen' && app.renderAutoSetup) app.renderAutoSetup();
@@ -129,6 +130,7 @@
     if (screenId === 'auto-day-screen' && app.renderAutoDay) app.renderAutoDay();
     if (screenId === 'auto-vote-screen' && app.renderAutoVote) app.renderAutoVote();
     if (screenId === 'auto-last-words-screen' && app.renderAutoLastWords) app.renderAutoLastWords();
+    if (screenId === 'auto-merlin-guess-screen' && app.renderAutoMerlinGuess) app.renderAutoMerlinGuess();
     if (screenId === 'auto-end-screen' && app.renderAutoEnd) app.renderAutoEnd();
   };
 

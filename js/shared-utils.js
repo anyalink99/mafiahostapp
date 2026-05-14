@@ -18,6 +18,7 @@
     if (roleCode === 'don') return 'Дон';
     if (roleCode === 'sheriff') return 'Шериф';
     if (roleCode === 'mafia') return 'Мафия';
+    if (roleCode === 'merlin') return 'Мерлин';
     return 'Мирный';
   };
 })(window.MafiaApp);

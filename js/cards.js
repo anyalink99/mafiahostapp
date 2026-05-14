@@ -4,6 +4,7 @@
     if (role === 'Мафия') return 'icon-mafia';
     if (role === 'Дон') return 'icon-don';
     if (role === 'Шериф') return 'icon-sheriff';
+    if (role === 'Мерлин') return 'icon-merlin';
     return null;
   };
 

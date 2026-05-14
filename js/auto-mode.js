@@ -3,13 +3,16 @@
 
   var STORAGE_KEY = 'mafia_auto_state';
   var PREPARE_CONFIG_KEY = 'mafia_prepare_config';
-  var ROLE_ICONS = { peaceful: 'icon-peaceful', mafia: 'icon-mafia', don: 'icon-don', sheriff: 'icon-sheriff' };
-  var ROLE_NAMES = { peaceful: 'Мирный', mafia: 'Мафия', don: 'Дон', sheriff: 'Шериф' };
+  var EXP_MODES_KEY = 'mafia_experimental_modes';
+  var ROLE_ICONS = { peaceful: 'icon-peaceful', mafia: 'icon-mafia', don: 'icon-don', sheriff: 'icon-sheriff', merlin: 'icon-merlin' };
+  var ROLE_NAMES = { peaceful: 'Мирный', mafia: 'Мафия', don: 'Дон', sheriff: 'Шериф', merlin: 'Мерлин' };
   var TEAM_NAMES = { peaceful: 'Мирные жители', mafia: 'Мафия' };
   var ELIM_REASON_TITLES = { disqual: 'Удалён', hang: 'Казнён', shot: 'Убит' };
 
   var DEFAULT_PLAYER_COUNT = 10;
-  var SUPPORTED_AUTO_COUNTS = [9, 10];
+  var SUPPORTED_VARIANTS = ['standard', 'kasper', 'merlin'];
+  var VARIANT_LABELS = { standard: 'Стандарт', kasper: 'Каспер', merlin: 'Мерлин' };
+  var VARIANT_COUNTS = { standard: 10, kasper: 9, merlin: 8 };
   var NIGHT_TURN_SEC = 10;
   var INTRO_PRE_SEC = 10;
   var INTRO_MAIN_SEC = 60;
@@ -20,11 +23,22 @@
   var BACK_MOVE_THRESHOLD_PX = 24;
   var HISTORY_LIMIT = 120;
 
-  var STATE_KEYS = ['phase','seats','reveal','nightNum','night','day','vote','lastWords','result','dayNum','playerCount','is9'];
+  var STATE_KEYS = ['phase','seats','reveal','nightNum','night','day','vote','lastWords','result','dayNum','playerCount','is9','isMerlin','variant','hangedBlacks','merlinGuess'];
 
   function playerCount() {
     var n = app.autoState && app.autoState.playerCount;
-    return (n === 9 || n === 10) ? n : DEFAULT_PLAYER_COUNT;
+    if (n === 8 || n === 9 || n === 10) return n;
+    return DEFAULT_PLAYER_COUNT;
+  }
+
+  function countForVariant(v) {
+    return VARIANT_COUNTS[v] || DEFAULT_PLAYER_COUNT;
+  }
+
+  function rolesForVariant(v) {
+    if (v === 'merlin') return ['peaceful','peaceful','peaceful','sheriff','mafia','mafia','don','merlin'];
+    if (v === 'kasper') return ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
+    return ['peaceful','peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
   }
 
   function makeFreshState() {
@@ -42,11 +56,26 @@
       dayNum: 0,
       playerCount: DEFAULT_PLAYER_COUNT,
       is9: false,
+      isMerlin: false,
+      variant: 'standard',
+      hangedBlacks: [],
+      merlinGuess: null,
       history: [],
     };
   }
 
-  app.prepareConfig = { mode: 'host', count: DEFAULT_PLAYER_COUNT };
+  app.prepareConfig = { mode: 'host', variant: 'standard' };
+  app.experimentalModesEnabled = false;
+
+  function loadExperimentalModes() {
+    try { app.experimentalModesEnabled = localStorage.getItem(EXP_MODES_KEY) === '1'; } catch (e) {}
+  }
+  function saveExperimentalModes() {
+    try { localStorage.setItem(EXP_MODES_KEY, app.experimentalModesEnabled ? '1' : '0'); } catch (e) {}
+  }
+  function availableVariants() {
+    return app.experimentalModesEnabled ? SUPPORTED_VARIANTS.slice() : ['standard'];
+  }
 
   function loadPrepareConfig() {
     try {
@@ -55,13 +84,36 @@
       var d = JSON.parse(raw);
       if (!d || typeof d !== 'object') return;
       if (d.mode === 'host' || d.mode === 'auto') app.prepareConfig.mode = d.mode;
-      if (SUPPORTED_AUTO_COUNTS.indexOf(d.count) !== -1) app.prepareConfig.count = d.count;
+      if (SUPPORTED_VARIANTS.indexOf(d.variant) !== -1) {
+        app.prepareConfig.variant = d.variant;
+      } else if (d.count === 9) {
+        app.prepareConfig.variant = 'kasper';
+      } else if (d.count === 8) {
+        app.prepareConfig.variant = 'merlin';
+      } else {
+        app.prepareConfig.variant = 'standard';
+      }
     } catch (e) {}
   }
 
   function savePrepareConfig() {
     try { localStorage.setItem(PREPARE_CONFIG_KEY, JSON.stringify(app.prepareConfig)); } catch (e) {}
   }
+
+  app.setExperimentalModes = function (enabled) {
+    app.experimentalModesEnabled = !!enabled;
+    if (!app.experimentalModesEnabled && app.prepareConfig.variant !== 'standard') {
+      app.prepareConfig.variant = 'standard';
+      savePrepareConfig();
+    }
+    saveExperimentalModes();
+    app.syncExperimentalModesCheckbox();
+  };
+
+  app.syncExperimentalModesCheckbox = function () {
+    var cb = el('setting-experimental-modes');
+    if (cb) cb.checked = !!app.experimentalModesEnabled;
+  };
 
   app.autoState = makeFreshState();
   app._autoEphemeral = {
@@ -126,8 +178,15 @@
       s.lastWords = d.lastWords && typeof d.lastWords === 'object' ? d.lastWords : null;
       s.result = d.result || null;
       s.dayNum = typeof d.dayNum === 'number' ? d.dayNum : 0;
-      s.playerCount = (d.playerCount === 9 || d.playerCount === 10) ? d.playerCount : DEFAULT_PLAYER_COUNT;
-      s.is9 = !!d.is9;
+      if (SUPPORTED_VARIANTS.indexOf(d.variant) !== -1) {
+        s.variant = d.variant;
+      } else if (d.is9) {
+        s.variant = 'kasper';
+      } else {
+        s.variant = 'standard';
+      }
+      s.playerCount = countForVariant(s.variant);
+      s.is9 = (s.variant === 'kasper');
       s.history = Array.isArray(d.history) ? d.history : [];
       app.autoState = s;
     } catch (e) {}
@@ -174,10 +233,6 @@
     return a;
   }
 
-  function rolesForCount(n) {
-    if (n === 9) return ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
-    return ['peaceful','peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
-  }
 
   function seatById(id) {
     var seats = app.autoState.seats;
@@ -219,8 +274,26 @@
     if (phase === 'day') return 'auto-day-screen';
     if (phase === 'vote') return 'auto-vote-screen';
     if (phase === 'last-words') return 'auto-last-words-screen';
+    if (phase === 'merlin-guess') return 'auto-merlin-guess-screen';
     if (phase === 'gameover') return 'auto-end-screen';
     return 'auto-setup-screen';
+  }
+
+  function trackHangIfBlack(seatId) {
+    var s = app.autoState;
+    if (s.variant !== 'merlin') return;
+    var seat = seatById(seatId);
+    if (!seat) return;
+    if (seat.role !== 'mafia' && seat.role !== 'don') return;
+    if (!Array.isArray(s.hangedBlacks)) s.hangedBlacks = [];
+    if (s.hangedBlacks.indexOf(seatId) === -1) s.hangedBlacks.push(seatId);
+  }
+
+  function untrackHang(seatId) {
+    var s = app.autoState;
+    if (!Array.isArray(s.hangedBlacks)) return;
+    var ix = s.hangedBlacks.indexOf(seatId);
+    if (ix !== -1) s.hangedBlacks.splice(ix, 1);
   }
 
   function clearAllAutoTimers() {
@@ -281,17 +354,19 @@
     } else {
       var summ = el('auto-fresh-summary');
       if (summ) {
-        var n = app.prepareConfig.count;
-        if (n === 9) {
-          summ.innerHTML = '<strong class="text-mafia-gold">9 игроков:</strong> 5 мирных, шериф, 2 мафии, дон. 10-й — фантом-мирный, в первую активную ночь считается убитым; в нулевой круг голосование не проводится.';
+        var v = app.experimentalModesEnabled ? app.prepareConfig.variant : 'standard';
+        if (v === 'kasper') {
+          summ.innerHTML = '<strong class="text-mafia-gold">Каспер (9 игроков):</strong> 5 мирных, шериф, 2 мафии, дон. 10-й — фантом-мирный, в первую активную ночь считается убитым; в нулевой круг голосование не проводится.';
+        } else if (v === 'merlin') {
+          summ.innerHTML = '<strong class="text-mafia-gold">Мерлин (8 игроков):</strong> 3 мирных, шериф, 2 мафии, дон, Мерлин. В первую активную ночь Мерлин узнаёт тройку чёрных и шерифа.';
         } else {
-          summ.innerHTML = '<strong class="text-mafia-gold">10 игроков:</strong> 6 мирных, шериф, 2 мафии, дон.';
+          summ.innerHTML = '<strong class="text-mafia-gold">Стандарт (10 игроков):</strong> 6 мирных, шериф, 2 мафии, дон.';
         }
       }
     }
   };
 
-  // ============ Prepare-mode screen (host vs auto + count) ============
+  // ============ Prepare-mode screen (host vs auto + variant) ============
 
   app.renderPrepareModeScreen = function () {
     var modeContainer = el('prepare-mode-options');
@@ -311,28 +386,31 @@
         modeContainer.appendChild(b);
       });
     }
-    var countSection = el('prepare-count-section');
-    if (countSection) countSection.classList.toggle('hidden', app.prepareConfig.mode !== 'auto');
-    if (app.prepareConfig.mode === 'auto') {
-      var countContainer = el('prepare-count-options');
-      if (countContainer) {
-        countContainer.innerHTML = '';
-        SUPPORTED_AUTO_COUNTS.forEach(function (n) {
+    var variantSection = el('prepare-variant-section');
+    var showVariants = !!app.experimentalModesEnabled;
+    if (variantSection) variantSection.classList.toggle('hidden', !showVariants);
+    if (showVariants) {
+      var variantContainer = el('prepare-variant-options');
+      if (variantContainer) {
+        variantContainer.innerHTML = '';
+        SUPPORTED_VARIANTS.forEach(function (v) {
           var b = document.createElement('button');
           b.type = 'button';
-          b.setAttribute('data-action', 'prepare-count-pick');
-          b.setAttribute('data-count', String(n));
-          b.className = 'prepare-toggle-btn' + (app.prepareConfig.count === n ? ' prepare-toggle-active' : '');
-          b.textContent = String(n) + ' игроков';
-          countContainer.appendChild(b);
+          b.setAttribute('data-action', 'prepare-variant-pick');
+          b.setAttribute('data-variant', v);
+          b.className = 'prepare-toggle-btn' + (app.prepareConfig.variant === v ? ' prepare-toggle-active' : '');
+          b.innerHTML = VARIANT_LABELS[v] + '<br><span class="text-xs font-normal text-mafia-cream/60 normal-case tracking-normal">' + countForVariant(v) + ' игроков</span>';
+          variantContainer.appendChild(b);
         });
       }
-      var hint = el('prepare-count-hint');
+      var hint = el('prepare-variant-hint');
       if (hint) {
-        if (app.prepareConfig.count === 9) {
-          hint.textContent = '10-й считается мирным и убитым в первую активную ночь. В тот же круг голосование не проводится. Шериф в первую активную ночь получает случайную проверку среди 1–9.';
+        if (app.prepareConfig.variant === 'kasper') {
+          hint.textContent = 'Каспер: 9 игроков. 10-й считается мирным и убитым в первую активную ночь, в этот круг голосование не проводится. Шериф в первую активную ночь получает случайную проверку среди 1–9.';
+        } else if (app.prepareConfig.variant === 'merlin') {
+          hint.textContent = 'Мерлин: 8 игроков. Кроме обычных ролей есть Мерлин — в первую активную ночь он узнаёт тройку чёрных и шерифа.';
         } else {
-          hint.textContent = 'Стандартный состав: 6 мирных, шериф, 2 мафии, дон.';
+          hint.textContent = 'Стандартный состав: 10 игроков, 6 мирных, шериф, 2 мафии, дон.';
         }
       }
     }
@@ -340,8 +418,11 @@
 
   app.startFreshAutoGame = function () {
     loadPrepareConfig();
-    var count = SUPPORTED_AUTO_COUNTS.indexOf(app.prepareConfig.count) !== -1 ? app.prepareConfig.count : DEFAULT_PLAYER_COUNT;
-    var roles = rolesForCount(count);
+    var variant = app.experimentalModesEnabled && SUPPORTED_VARIANTS.indexOf(app.prepareConfig.variant) !== -1
+      ? app.prepareConfig.variant
+      : 'standard';
+    var count = countForVariant(variant);
+    var roles = rolesForVariant(variant);
     var shuffled = shuffle(roles);
     var fresh = makeFreshState();
     fresh.active = true;
@@ -350,7 +431,9 @@
     fresh.dayNum = 0;
     fresh.nightNum = 0;
     fresh.playerCount = count;
-    fresh.is9 = (count === 9);
+    fresh.variant = variant;
+    fresh.is9 = (variant === 'kasper');
+    fresh.isMerlin = (variant === 'merlin');
     for (var i = 0; i < count; i++) {
       fresh.seats.push({ id: i + 1, role: shuffled[i], alive: true, fouls: 0, nick: '' });
     }
@@ -500,7 +583,7 @@
   var INTRO_GAP_SEC = 5;
 
   function showIntroStage(name) {
-    var names = ['pre', 'main', 'gap', 'freesit'];
+    var names = ['pre', 'main', 'gap', 'merlin-pass', 'merlin-action', 'freesit'];
     for (var i = 0; i < names.length; i++) {
       var x = el('auto-intro-stage-' + names[i]);
       if (x) x.classList.toggle('hidden', names[i] !== name);
@@ -599,10 +682,60 @@
       if (left <= 0) {
         clearInterval(app._autoEphemeral.introGapInterval);
         app._autoEphemeral.introGapInterval = null;
-        startFreeSeating();
+        var s = app.autoState;
+        if (s.isMerlin) startMerlinReveal();
+        else startFreeSeating();
       }
     }, 250);
   }
+
+  function findSeatByRole(role) {
+    var seats = app.autoState.seats;
+    for (var i = 0; i < seats.length; i++) {
+      if (seats[i].role === role) return seats[i];
+    }
+    return null;
+  }
+
+  function startMerlinReveal() {
+    var merlin = findSeatByRole('merlin');
+    if (!merlin) { startFreeSeating(); return; }
+    showIntroStage('merlin-pass');
+    var num = el('auto-intro-merlin-pass-num');
+    if (num) num.textContent = '№' + merlin.id;
+  }
+
+  app.handleMerlinPassStart = function () {
+    pushHistory();
+    showIntroStage('merlin-action');
+    var revealEl = el('auto-intro-merlin-reveal');
+    if (!revealEl) return;
+    var seats = app.autoState.seats;
+    var blacks = [];
+    var sheriff = null;
+    for (var i = 0; i < seats.length; i++) {
+      if (seats[i].role === 'mafia' || seats[i].role === 'don') blacks.push(seats[i]);
+      else if (seats[i].role === 'sheriff') sheriff = seats[i];
+    }
+    blacks.sort(function (a, b) { return a.id - b.id; });
+    var html = '';
+    html += '<div class="text-mafia-cream/85 text-sm">Чёрные:</div>';
+    html += '<div class="flex justify-center gap-2 flex-wrap">';
+    for (var bi = 0; bi < blacks.length; bi++) {
+      html += '<span class="font-display font-bold text-3xl sm:text-4xl text-mafia-blood tabular-nums px-3 py-1 rounded border border-mafia-blood/55 bg-mafia-blood/15">№' + blacks[bi].id + '</span>';
+    }
+    html += '</div>';
+    if (sheriff) {
+      html += '<div class="text-mafia-cream/85 text-sm mt-3">Шериф:</div>';
+      html += '<div class="flex justify-center"><span class="font-display font-bold text-3xl sm:text-4xl text-mafia-gold tabular-nums px-3 py-1 rounded border border-mafia-gold/55 bg-mafia-gold/10">№' + sheriff.id + '</span></div>';
+    }
+    revealEl.innerHTML = html;
+  };
+
+  app.handleMerlinActionDone = function () {
+    pushHistory();
+    startFreeSeating();
+  };
 
   function startFreeSeating() {
     showIntroStage('freesit');
@@ -765,7 +898,36 @@
     if (role === 'mafia') return renderMafiaSection(seat, false);
     if (role === 'don') return renderMafiaSection(seat, true) + renderDonCheckSection(seat);
     if (role === 'sheriff') return renderSheriffSection(seat);
+    if (role === 'merlin') return renderMerlinSection(seat);
     return renderPeacefulSection();
+  }
+
+  function renderMerlinSection(seat) {
+    var s = app.autoState;
+    if (s.night.nightNum !== 1) return renderPeacefulSection();
+    var blacks = [];
+    var sheriffNum = null;
+    for (var i = 0; i < s.seats.length; i++) {
+      var x = s.seats[i];
+      if (x.role === 'mafia' || x.role === 'don') blacks.push(x.id);
+      else if (x.role === 'sheriff') sheriffNum = x.id;
+    }
+    blacks.sort(function (a, b) { return a - b; });
+    function fmtSeat(id) {
+      var t = seatById(id);
+      var nick = t && t.nick && t.nick.trim() ? ' (' + escapeHtml(t.nick.trim()) + ')' : '';
+      return '<span class="text-mafia-gold font-semibold">№' + id + '</span>' + nick;
+    }
+    var blacksList = blacks.map(fmtSeat).join(', ');
+    var sheriffPart = sheriffNum !== null ? '<div class="mt-2">Шериф: ' + fmtSeat(sheriffNum) + '</div>' : '';
+    return '<div class="auto-night-section">' +
+      '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">Ход Мерлина</h2>' +
+      '<p class="text-mafia-cream/65 text-xs mb-3">В первую активную ночь Мерлин узнаёт тройку чёрных и шерифа. Запомни и не выдавай себя.</p>' +
+      '<div class="auto-night-result-banner text-left">' +
+      '<div>Чёрные: ' + blacksList + '</div>' +
+      sheriffPart +
+      '</div>' +
+      '</div>';
   }
 
   function renderTargetGrid(candidates, selectedId, action) {
@@ -1045,7 +1207,7 @@
 
   app.continueAfterNightResult = function () {
     pushHistory();
-    if (isPeacefulWin()) { endGame('peaceful'); return; }
+    if (isPeacefulWin()) { endPeacefulOrMerlinGuess(); return; }
     if (isMafiaWin()) { endGame('mafia'); return; }
     var s = app.autoState;
     s.dayNum = (s.dayNum || 0) + 1;
@@ -1332,13 +1494,17 @@
       seat.eliminationReason = null;
       seat.alive = true;
       if (reason === 'disqual') seat.fouls = 0;
+      if (reason === 'hang') untrackHang(seatId);
     } else {
+      var prev = seat.eliminationReason;
       seat.eliminationReason = reason;
       seat.alive = false;
       if (s.day) {
         var ix = s.day.nominees.indexOf(seatId);
         if (ix !== -1) s.day.nominees.splice(ix, 1);
       }
+      if (prev === 'hang' && reason !== 'hang') untrackHang(seatId);
+      if (reason === 'hang') trackHangIfBlack(seatId);
     }
     saveAuto();
     renderAutoDayPlayers();
@@ -1679,14 +1845,22 @@
 
   function finalizeHang(seatId) {
     var seat = seatById(seatId);
-    if (seat) { seat.alive = false; seat.eliminationReason = 'hang'; }
+    if (seat) {
+      seat.alive = false;
+      seat.eliminationReason = 'hang';
+      trackHangIfBlack(seatId);
+    }
     transitionToLastWords([seatId]);
   }
 
   function finalizeMultiHang(ids) {
     for (var i = 0; i < ids.length; i++) {
       var seat = seatById(ids[i]);
-      if (seat) { seat.alive = false; seat.eliminationReason = 'hang'; }
+      if (seat) {
+        seat.alive = false;
+        seat.eliminationReason = 'hang';
+        trackHangIfBlack(ids[i]);
+      }
     }
     transitionToLastWords(ids);
   }
@@ -1815,7 +1989,7 @@
       return;
     }
     s.lastWords = null;
-    if (isPeacefulWin()) { endGame('peaceful'); return; }
+    if (isPeacefulWin()) { endPeacefulOrMerlinGuess(); return; }
     if (isMafiaWin()) { endGame('mafia'); return; }
     transitionToNight((s.nightNum || 0) + 1);
   };
@@ -1831,10 +2005,101 @@
     app.navigateToScreen('auto-end-screen');
   }
 
+  function endPeacefulOrMerlinGuess() {
+    var s = app.autoState;
+    if (s.variant === 'merlin' && Array.isArray(s.hangedBlacks) && s.hangedBlacks.length > 0 && !s.merlinGuess) {
+      transitionToMerlinGuess();
+      return;
+    }
+    endGame('peaceful');
+  }
+
   function checkWinAndContinue() {
-    if (isPeacefulWin()) endGame('peaceful');
+    if (isPeacefulWin()) endPeacefulOrMerlinGuess();
     else if (isMafiaWin()) endGame('mafia');
   }
+
+  // ============ Merlin endgame guess ============
+
+  function transitionToMerlinGuess() {
+    var s = app.autoState;
+    s.phase = 'merlin-guess';
+    saveAuto();
+    app.navigateToScreen('auto-merlin-guess-screen');
+  }
+
+  app.renderAutoMerlinGuess = function () {
+    var s = app.autoState;
+    if (s.variant !== 'merlin' || !Array.isArray(s.hangedBlacks) || !s.hangedBlacks.length) {
+      endGame('peaceful');
+      return;
+    }
+    var guesserId = s.hangedBlacks[s.hangedBlacks.length - 1];
+    var numEl = el('auto-merlin-guesser-num');
+    if (numEl) numEl.textContent = '№' + guesserId;
+    var grid = el('auto-merlin-guess-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    var result = s.merlinGuess;
+    for (var i = 0; i < s.seats.length; i++) {
+      var seat = s.seats[i];
+      if (seat.role === 'mafia' || seat.role === 'don') continue;
+      var nick = seat.nick && seat.nick.trim() ? '<span class="auto-target-nick">' + escapeHtml(seat.nick.trim()) + '</span>' : '';
+      var isPicked = result && result.target === seat.id;
+      var revealRole = result ? (ROLE_NAMES[seat.role] || seat.role) : '';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      if (!result) {
+        btn.setAttribute('data-action', 'auto-merlin-guess-pick');
+        btn.setAttribute('data-target-id', String(seat.id));
+      }
+      btn.disabled = !!result;
+      btn.className = 'auto-target-tile' + (isPicked ? ' auto-target-selected' : '');
+      btn.innerHTML = '№' + seat.id + nick + (revealRole ? '<span class="auto-target-nick text-mafia-gold/85">' + revealRole + '</span>' : '');
+      grid.appendChild(btn);
+    }
+    if (result) {
+      var done = document.createElement('button');
+      done.type = 'button';
+      done.setAttribute('data-action', 'auto-merlin-guess-finish');
+      done.className = 'mt-4 col-span-full w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer';
+      done.textContent = result.correct ? 'Чёрные забирают победу — продолжить' : 'Мимо — победа красных';
+      grid.appendChild(done);
+    }
+  };
+
+  app.handleMerlinGuessPick = function (targetId) {
+    var s = app.autoState;
+    if (s.phase !== 'merlin-guess') return;
+    if (s.merlinGuess) return;
+    var target = seatById(targetId);
+    if (!target) return;
+    if (target.role === 'mafia' || target.role === 'don') return;
+    pushHistory();
+    s.merlinGuess = {
+      by: s.hangedBlacks[s.hangedBlacks.length - 1],
+      target: targetId,
+      correct: target.role === 'merlin'
+    };
+    saveAuto();
+    app.renderAutoMerlinGuess();
+  };
+
+  app.handleMerlinGuessFinish = function () {
+    var s = app.autoState;
+    if (!s.merlinGuess) { endGame('peaceful'); return; }
+    pushHistory();
+    endGame(s.merlinGuess.correct ? 'mafia' : 'peaceful');
+  };
+
+  app.handleMerlinGuessSkip = function () {
+    var s = app.autoState;
+    if (s.phase !== 'merlin-guess') return;
+    pushHistory();
+    s.merlinGuess = { by: null, target: null, correct: false, skipped: true };
+    saveAuto();
+    endGame('peaceful');
+  };
 
   // ============ Switch to host mode ============
 
@@ -2225,6 +2490,7 @@
   app.uiActionHandlers['prepare-enter'] = function () {
     loadAuto();
     loadPrepareConfig();
+    loadExperimentalModes();
     bindRevealHoldGestures();
     bindBackGestures();
     bindAutoPlayerGestures();
@@ -2250,20 +2516,34 @@
     savePrepareConfig();
     app.renderPrepareModeScreen();
   };
-  app.uiActionHandlers['prepare-count-pick'] = function (el2) {
-    var n = parseInt(el2.getAttribute('data-count'), 10);
-    if (SUPPORTED_AUTO_COUNTS.indexOf(n) === -1) return;
-    app.prepareConfig.count = n;
+  app.uiActionHandlers['prepare-variant-pick'] = function (el2) {
+    var v = el2.getAttribute('data-variant');
+    if (SUPPORTED_VARIANTS.indexOf(v) === -1) return;
+    app.prepareConfig.variant = v;
     savePrepareConfig();
     app.renderPrepareModeScreen();
   };
   app.uiActionHandlers['prepare-continue'] = function () {
     if (app.prepareConfig.mode === 'host') {
+      maybeApplyHostVariantDeck();
       app.navigateToScreen('prepare-screen');
     } else {
       app.navigateToScreen('auto-setup-screen');
     }
   };
+
+  function maybeApplyHostVariantDeck() {
+    if (!app.experimentalModesEnabled) return;
+    if (app.hasResettableState && app.hasResettableState()) return;
+    var variant = app.prepareConfig.variant;
+    if (variant === 'merlin') {
+      app.roles = ['Мирный','Мирный','Мирный','Мирный','Мирный','Шериф','Мафия','Мафия','Дон','Мерлин'];
+    } else {
+      app.roles = ['Мирный','Мирный','Мирный','Мирный','Мирный','Мирный','Шериф','Мафия','Мафия','Дон'];
+    }
+    app.revealedIndices = [];
+    if (app.saveState) app.saveState();
+  }
   app.uiActionHandlers['auto-begin'] = function () { app.startFreshAutoGame(); };
   app.uiActionHandlers['auto-resume'] = function () { app.resumeAutoGame(); };
   app.uiActionHandlers['auto-restart'] = function () { app.restartAutoGame(); };
@@ -2275,6 +2555,15 @@
   };
   app.uiActionHandlers['auto-intro-finish'] = function () { app.handleIntroFinish(); };
   app.uiActionHandlers['auto-freesit-finish'] = function () { app.handleFreesitFinish(); };
+  app.uiActionHandlers['auto-merlin-pass-start'] = function () { app.handleMerlinPassStart(); };
+  app.uiActionHandlers['auto-merlin-action-done'] = function () { app.handleMerlinActionDone(); };
+  app.uiActionHandlers['auto-merlin-guess-pick'] = function (el2) {
+    var sid = parseInt(el2.getAttribute('data-seat-id'), 10);
+    if (!isNaN(sid) && app.handleMerlinGuessPick) app.handleMerlinGuessPick(sid);
+  };
+  app.uiActionHandlers['auto-merlin-guess-skip'] = function () {
+    if (app.handleMerlinGuessSkip) app.handleMerlinGuessSkip();
+  };
   app.uiActionHandlers['auto-night-turn-start'] = function () { app.startNightTurn(); };
   app.uiActionHandlers['auto-night-turn-done'] = function () { app.handleNightTurnDone(); };
   app.uiActionHandlers['auto-mafia-pick'] = function (el2) {
@@ -2384,6 +2673,7 @@
   app.initAutoFromMenu = function () {
     loadAuto();
     loadPrepareConfig();
+    loadExperimentalModes();
     bindRevealHoldGestures();
     bindBackGestures();
     bindAutoPlayerGestures();
@@ -2392,6 +2682,7 @@
   app.initPrepareModeFromMenu = function () {
     loadAuto();
     loadPrepareConfig();
+    loadExperimentalModes();
     bindRevealHoldGestures();
     bindBackGestures();
     bindAutoPlayerGestures();
@@ -2399,6 +2690,7 @@
 
   loadAuto();
   loadPrepareConfig();
+  loadExperimentalModes();
   bindBackGestures();
   bindAutoPlayerGestures();
 })(window.MafiaApp);

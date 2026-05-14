@@ -5,12 +5,14 @@
     sheriff: 'Шериф',
     mafia: 'Мафия',
     peaceful: 'Мирный',
+    merlin: 'Мерлин',
   };
   var PREPARE_ROLE_ICONS = {
     don: 'icon-don',
     sheriff: 'icon-sheriff',
     mafia: 'icon-mafia',
     peaceful: 'icon-like',
+    merlin: 'icon-merlin',
   };
   var ELIM_REASON_TITLES = {
     disqual: 'Удалён',
@@ -54,6 +56,7 @@
       { value: 'mafia', label: 'Мафия' },
       { value: 'don', label: 'Дон' },
       { value: 'sheriff', label: 'Шериф' },
+      { value: 'merlin', label: 'Мерлин' },
     ];
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
