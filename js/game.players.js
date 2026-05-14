@@ -47,19 +47,28 @@
     return 'flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-gold/40 bg-mafia-blood text-mafia-gold sm:h-9 sm:w-9';
   }
 
+  var ROLE_OPT_LABELS = {
+    peaceful: 'Мирный житель',
+    mafia: 'Мафия',
+    don: 'Дон',
+    sheriff: 'Шериф',
+    merlin: 'Мерлин',
+  };
+
+  function manualRolesForCurrentPrepare() {
+    if (app.variantConfig && app.prepareConfig) {
+      return app.variantConfig(app.prepareConfig.variant).manualRoles.slice();
+    }
+    return ['peaceful', 'mafia', 'don', 'sheriff'];
+  }
+
   function renderPrepareModalRoleRadios(selectedCode) {
     var row = document.getElementById('modal-player-prepare-role-icons');
     if (!row) return;
     row.innerHTML = '';
-    var opts = [
-      { value: 'peaceful', label: 'Мирный житель' },
-      { value: 'mafia', label: 'Мафия' },
-      { value: 'don', label: 'Дон' },
-      { value: 'sheriff', label: 'Шериф' },
-    ];
-    if (app.prepareConfig && app.prepareConfig.variant === 'merlin') {
-      opts.push({ value: 'merlin', label: 'Мерлин' });
-    }
+    var opts = manualRolesForCurrentPrepare().map(function (code) {
+      return { value: code, label: ROLE_OPT_LABELS[code] || code };
+    });
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
       var selected = o.value === selectedCode;
@@ -114,9 +123,7 @@
   }
 
   app.pickPrepareModalRole = function (roleCode) {
-    var allowed = ['peaceful', 'mafia', 'don', 'sheriff'];
-    if (app.prepareConfig && app.prepareConfig.variant === 'merlin') allowed.push('merlin');
-    if (allowed.indexOf(roleCode) === -1) return;
+    if (manualRolesForCurrentPrepare().indexOf(roleCode) === -1) return;
     var m = document.getElementById('modal-player-actions');
     if (!m || m.getAttribute('data-mode') !== 'prepare') return;
     renderPrepareModalRoleRadios(roleCode);

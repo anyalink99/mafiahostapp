@@ -10,9 +10,70 @@
   var ELIM_REASON_TITLES = { disqual: 'Удалён', hang: 'Казнён', shot: 'Убит' };
 
   var DEFAULT_PLAYER_COUNT = 10;
-  var SUPPORTED_VARIANTS = ['standard', 'kasper', 'merlin'];
-  var VARIANT_LABELS = { standard: 'Стандарт', kasper: 'Каспер', merlin: 'Мерлин' };
-  var VARIANT_COUNTS = { standard: 10, kasper: 10, merlin: 10 };
+
+  var STANDARD_POOL = ['peaceful','peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
+  var KASPER_POOL_9 = ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
+  var MERLIN_POOL  = ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','merlin','mafia','mafia','don'];
+
+  // Variant-specific behaviour lives here. To add/edit a mode, change this object
+  // and the rest of the code reads from it via getVariant() / getPrepareVariant().
+  var VARIANTS = {
+    standard: {
+      key: 'standard',
+      label: 'Стандарт',
+      rolePool: STANDARD_POOL,
+      dealRoles: function () { return shuffle(STANDARD_POOL); },
+      firstNightKillsKasper: false,
+      firstNightSheriffRandom: false,
+      introWakesMerlin: false,
+      bestMoveOnFirstKill: true,
+      postGameMerlinGuess: false,
+      manualRoles: ['peaceful', 'mafia', 'don', 'sheriff'],
+    },
+    kasper: {
+      key: 'kasper',
+      label: 'Каспер',
+      rolePool: STANDARD_POOL,
+      dealRoles: function () {
+        // Seat 10 is always peaceful — phantom Каспер killed on first active night.
+        var shuffled = shuffle(KASPER_POOL_9);
+        shuffled.push('peaceful');
+        return shuffled;
+      },
+      firstNightKillsKasper: true,
+      firstNightSheriffRandom: true,
+      introWakesMerlin: false,
+      bestMoveOnFirstKill: false,
+      postGameMerlinGuess: false,
+      manualRoles: ['peaceful', 'mafia', 'don', 'sheriff'],
+    },
+    merlin: {
+      key: 'merlin',
+      label: 'Мерлин',
+      rolePool: MERLIN_POOL,
+      dealRoles: function () { return shuffle(MERLIN_POOL); },
+      firstNightKillsKasper: false,
+      firstNightSheriffRandom: false,
+      introWakesMerlin: true,
+      bestMoveOnFirstKill: true,
+      postGameMerlinGuess: true,
+      manualRoles: ['peaceful', 'mafia', 'don', 'sheriff', 'merlin'],
+    },
+  };
+
+  var SUPPORTED_VARIANTS = Object.keys(VARIANTS);
+  var VARIANT_LABELS = (function () { var o = {}; SUPPORTED_VARIANTS.forEach(function (k) { o[k] = VARIANTS[k].label; }); return o; })();
+  var VARIANT_COUNTS = (function () { var o = {}; SUPPORTED_VARIANTS.forEach(function (k) { o[k] = DEFAULT_PLAYER_COUNT; }); return o; })();
+
+  function variantConfig(name) {
+    return (name && VARIANTS[name]) ? VARIANTS[name] : VARIANTS.standard;
+  }
+  function getVariant() {
+    return variantConfig(app.autoState && app.autoState.variant);
+  }
+  function getPrepareVariant() {
+    return variantConfig(app.prepareConfig && app.prepareConfig.variant);
+  }
   var NIGHT_TURN_SEC = 10;
   var INTRO_PRE_SEC = 10;
   var INTRO_MAIN_SEC = 60;
@@ -23,7 +84,7 @@
   var BACK_MOVE_THRESHOLD_PX = 24;
   var HISTORY_LIMIT = 120;
 
-  var STATE_KEYS = ['phase','seats','reveal','nightNum','night','day','vote','lastWords','result','dayNum','playerCount','is9','isKasper','isMerlin','variant','hangedBlacks','merlinGuess'];
+  var STATE_KEYS = ['phase','seats','reveal','nightNum','night','day','vote','lastWords','result','dayNum','playerCount','variant','hangedBlacks','merlinGuess'];
 
   function playerCount() {
     return DEFAULT_PLAYER_COUNT;
@@ -32,21 +93,41 @@
   function countForVariant() {
     return DEFAULT_PLAYER_COUNT;
   }
+  function rolesForVariant(v) { return variantConfig(v).rolePool; }
+  function dealRolesForVariant(v) { return variantConfig(v).dealRoles(); }
 
-  function rolesForVariant(v) {
-    if (v === 'merlin') return ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','merlin','mafia','mafia','don'];
-    return ['peaceful','peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
+  // Variant-derived predicates — single source of truth for game-flow branching.
+  function isKasperKillNight(s) {
+    s = s || app.autoState;
+    if (!s || !s.night) return false;
+    return !!variantConfig(s.variant).firstNightKillsKasper && s.night.nightNum === 1;
+  }
+  function isSheriffRandomCheckNight(s) {
+    s = s || app.autoState;
+    if (!s || !s.night) return false;
+    return !!variantConfig(s.variant).firstNightSheriffRandom && s.night.nightNum === 1;
+  }
+  function isMerlinMode(s) {
+    s = s || app.autoState;
+    return !!variantConfig(s && s.variant).introWakesMerlin;
+  }
+  function hasPostGameMerlinGuess(s) {
+    s = s || app.autoState;
+    return !!variantConfig(s && s.variant).postGameMerlinGuess;
+  }
+  function shouldDoBestMoveOnFirstKill(s) {
+    s = s || app.autoState;
+    return !!variantConfig(s && s.variant).bestMoveOnFirstKill;
+  }
+  function findMerlinSeat() {
+    var seats = (app.autoState && app.autoState.seats) || [];
+    for (var mi = 0; mi < seats.length; mi++) if (seats[mi].role === 'merlin') return seats[mi];
+    return null;
   }
 
-  function dealRolesForVariant(v) {
-    if (v === 'kasper') {
-      var first9 = ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
-      var shuffled = shuffle(first9);
-      shuffled.push('peaceful');
-      return shuffled;
-    }
-    return shuffle(rolesForVariant(v));
-  }
+  // Cross-file API for role pickers (game.players.js, summary.js).
+  app.variantConfig = variantConfig;
+  app.getPrepareVariant = getPrepareVariant;
 
   function makeFreshState() {
     return {
@@ -62,9 +143,6 @@
       result: null,
       dayNum: 0,
       playerCount: DEFAULT_PLAYER_COUNT,
-      is9: false,
-      isKasper: false,
-      isMerlin: false,
       variant: 'standard',
       hangedBlacks: [],
       merlinGuess: null,
@@ -194,9 +272,6 @@
         s.variant = 'standard';
       }
       s.playerCount = DEFAULT_PLAYER_COUNT;
-      s.is9 = false;
-      s.isKasper = (s.variant === 'kasper');
-      s.isMerlin = (s.variant === 'merlin');
       s.hangedBlacks = Array.isArray(d.hangedBlacks) ? d.hangedBlacks.slice() : [];
       s.merlinGuess = d.merlinGuess && typeof d.merlinGuess === 'object' ? d.merlinGuess : null;
       s.history = Array.isArray(d.history) ? d.history : [];
@@ -292,8 +367,8 @@
   }
 
   function trackHangIfBlack(seatId) {
+    if (!getVariant().postGameMerlinGuess) return;
     var s = app.autoState;
-    if (s.variant !== 'merlin') return;
     var seat = seatById(seatId);
     if (!seat) return;
     if (seat.role !== 'mafia' && seat.role !== 'don') return;
@@ -442,9 +517,6 @@
     fresh.nightNum = 0;
     fresh.playerCount = DEFAULT_PLAYER_COUNT;
     fresh.variant = variant;
-    fresh.is9 = false;
-    fresh.isKasper = (variant === 'kasper');
-    fresh.isMerlin = (variant === 'merlin');
     for (var i = 0; i < DEFAULT_PLAYER_COUNT; i++) {
       fresh.seats.push({ id: i + 1, role: dealt[i], alive: true, fouls: 0, nick: '' });
     }
@@ -693,8 +765,7 @@
       if (left <= 0) {
         clearInterval(app._autoEphemeral.introGapInterval);
         app._autoEphemeral.introGapInterval = null;
-        var s = app.autoState;
-        if (s.isMerlin) startMerlinReveal();
+        if (getVariant().introWakesMerlin) startMerlinReveal();
         else startFreeSeating();
       }
     }, 250);
@@ -846,9 +917,12 @@
       kasperKill: false,
       sheriffPredetermined: null,
     };
-    if (s.isKasper && nightNum === 1) {
+    var cfg = getVariant();
+    if (cfg.firstNightKillsKasper && nightNum === 1) {
       s.night.kasperKill = true;
-      s.night.donKillPicked = true;
+      if (cfg.firstNightSheriffRandom) {
+        s.night.donKillPicked = true;
+      }
       var sheriffSeat = null;
       for (var si = 0; si < s.seats.length; si++) {
         if (s.seats[si].alive && s.seats[si].role === 'sheriff') { sheriffSeat = s.seats[si]; break; }
@@ -2026,7 +2100,7 @@
 
   function endPeacefulOrMerlinGuess() {
     var s = app.autoState;
-    if (s.variant === 'merlin' && Array.isArray(s.hangedBlacks) && s.hangedBlacks.length > 0 && !s.merlinGuess) {
+    if (getVariant().postGameMerlinGuess && Array.isArray(s.hangedBlacks) && s.hangedBlacks.length > 0 && !s.merlinGuess) {
       transitionToMerlinGuess();
       return;
     }

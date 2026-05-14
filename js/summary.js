@@ -361,29 +361,37 @@
     }
   }
 
-  function renderModalSummaryRoleRadios(selectedCode, enabled) {
-    var row = document.getElementById('modal-summary-role-icons');
-    if (!row) return;
-    row.innerHTML = '';
-    var opts = [
-      { value: 'peaceful', label: 'Мирный житель' },
-      { value: 'mafia', label: 'Мафия' },
-      { value: 'don', label: 'Дон' },
-      { value: 'sheriff', label: 'Шериф' },
-    ];
-    var hasMerlinSeat = false;
-    if (app.summaryRoleByPlayerId) {
+  var SUMMARY_ROLE_LABELS = {
+    peaceful: 'Мирный житель',
+    mafia: 'Мафия',
+    don: 'Дон',
+    sheriff: 'Шериф',
+    merlin: 'Мерлин',
+  };
+
+  function summaryAllowedRoles() {
+    var roles = (app.variantConfig && app.prepareConfig)
+      ? app.variantConfig(app.prepareConfig.variant).manualRoles.slice()
+      : ['peaceful', 'mafia', 'don', 'sheriff'];
+    // Show Merlin in summary too if any seat already has it (e.g. migrated game).
+    if (roles.indexOf('merlin') === -1 && app.summaryRoleByPlayerId) {
       for (var k in app.summaryRoleByPlayerId) {
         if (Object.prototype.hasOwnProperty.call(app.summaryRoleByPlayerId, k) && app.summaryRoleByPlayerId[k] === 'merlin') {
-          hasMerlinSeat = true;
+          roles.push('merlin');
           break;
         }
       }
     }
-    var isMerlinVariant = (app.prepareConfig && app.prepareConfig.variant === 'merlin') || hasMerlinSeat;
-    if (isMerlinVariant) {
-      opts.push({ value: 'merlin', label: 'Мерлин' });
-    }
+    return roles;
+  }
+
+  function renderModalSummaryRoleRadios(selectedCode, enabled) {
+    var row = document.getElementById('modal-summary-role-icons');
+    if (!row) return;
+    row.innerHTML = '';
+    var opts = summaryAllowedRoles().map(function (code) {
+      return { value: code, label: SUMMARY_ROLE_LABELS[code] || code };
+    });
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
       var selected = enabled && o.value === selectedCode;
