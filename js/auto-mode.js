@@ -135,6 +135,19 @@
   function countForVariant() {
     return DEFAULT_PLAYER_COUNT;
   }
+
+  // Каспер — seat 10 is a phantom (no real player) until his auto-kill in night 1.
+  // He sits in autoState.seats so his "vote" counts in day-1 voting pool, but is
+  // hidden from reveal turns, night turns, nomination, fouls, modal interaction.
+  function isPhantomSeat(seat) {
+    return !!(seat && seat.phantom);
+  }
+  function activeSeats() {
+    return app.autoState.seats.filter(function (s) { return !isPhantomSeat(s); });
+  }
+  function aliveActiveSeats() {
+    return app.autoState.seats.filter(function (s) { return s.alive && !isPhantomSeat(s); });
+  }
   function rolesForVariant(v) { return variantConfig(v).rolePool; }
   function dealRolesForVariant(v) { return variantConfig(v).dealRoles(); }
 
@@ -535,6 +548,10 @@
     for (var i = 0; i < DEFAULT_PLAYER_COUNT; i++) {
       fresh.seats.push({ id: i + 1, role: dealt[i], alive: true, fouls: 0, nick: '' });
     }
+    // Каспер: 10-й — фантом до его автоубийства в первую активную ночь.
+    // alive=true (его «голос» учитывается в пуле дневного голосования),
+    // но phantom=true → исключаем из раздачи, ночных ходов, выставлений, фолов, модалок.
+    if (variant === 'kasper' && fresh.seats[9]) fresh.seats[9].phantom = true;
     app.autoState = fresh;
     saveAuto();
     app.navigateToScreen('auto-reveal-screen');
@@ -555,8 +572,16 @@
 
   // ============ Reveal ============
 
+  function revealTargetCount() {
+    return activeSeats().length;
+  }
+
   app.renderAutoReveal = function () {
     var s = app.autoState;
+    // Skip phantom seats (Каспер) — no real player to view their card.
+    while (s.reveal.cursor <= playerCount() && isPhantomSeat(seatById(s.reveal.cursor))) {
+      s.reveal.cursor++;
+    }
     var n = s.reveal.cursor;
     if (n > playerCount()) {
       transitionToNightIntro();
@@ -631,6 +656,8 @@
       if (prompt) {
         var s = app.autoState;
         var next = (s.reveal.cursor || 1) + 1;
+        // Skip phantom seats — they have no real player to pass to.
+        while (next <= playerCount() && isPhantomSeat(seatById(next))) next++;
         if (next > playerCount()) {
           prompt.textContent = 'Запомнил? Кладите телефон в центр стола.';
         } else {
@@ -886,7 +913,7 @@
     var s = app.autoState;
     var aliveSet = {};
     for (var i = 0; i < s.seats.length; i++) {
-      if (s.seats[i].alive) aliveSet[s.seats[i].id] = true;
+      if (s.seats[i].alive && !isPhantomSeat(s.seats[i])) aliveSet[s.seats[i].id] = true;
     }
     var pc = playerCount();
     var startCandidate = ((dayNum - 1) % pc) + 1;
@@ -901,7 +928,7 @@
     var s = app.autoState;
     var aliveSet = {};
     for (var i = 0; i < s.seats.length; i++) {
-      if (s.seats[i].alive) aliveSet[s.seats[i].id] = true;
+      if (s.seats[i].alive && !isPhantomSeat(s.seats[i])) aliveSet[s.seats[i].id] = true;
     }
     var startCandidate = ((nightNum - 1) % playerCount()) + 1;
     var order = [];
@@ -937,7 +964,7 @@
       if (sheriffSeat) {
         var others = [];
         for (var oi = 0; oi < s.seats.length; oi++) {
-          if (s.seats[oi].alive && s.seats[oi].id !== sheriffSeat.id) others.push(s.seats[oi]);
+          if (s.seats[oi].alive && !isPhantomSeat(s.seats[oi]) && s.seats[oi].id !== sheriffSeat.id) others.push(s.seats[oi]);
         }
         if (others.length) {
           var pick = others[Math.floor(Math.random() * others.length)];
@@ -1524,6 +1551,7 @@
     if (!s.day) return false;
     var seat = seatById(seatId);
     if (!seat || seat.eliminationReason) return false;
+    if (isPhantomSeat(seat)) return false;
     if (s.day.nominees.indexOf(seatId) !== -1) return false;
     mutate(function (st) { st.day.nominees.push(seatId); });
     if (!opts || !opts.skipRender) renderAutoDayPlayers();
@@ -1551,6 +1579,7 @@
   function addAutoFoul(seatId) {
     var seat = seatById(seatId);
     if (!seat) return;
+    if (isPhantomSeat(seat)) return;
     if (seat.fouls >= 4) return;
     mutate(function (st) {
       seat.fouls++;
@@ -1571,6 +1600,7 @@
   function removeAutoFoul(seatId) {
     var seat = seatById(seatId);
     if (!seat || seat.fouls <= 0) return;
+    if (isPhantomSeat(seat)) return;
     mutate(function () { seat.fouls--; });
     renderAutoDayPlayers();
   }
@@ -1579,6 +1609,7 @@
     var s = app.autoState;
     var seat = seatById(seatId);
     if (!seat) return;
+    if (isPhantomSeat(seat)) return;
     pushHistory();
     if (seat.eliminationReason === reason) {
       seat.eliminationReason = null;
@@ -1645,6 +1676,7 @@
   app.showAutoPlayerActionsModal = function (seatId) {
     var seat = seatById(seatId);
     if (!seat) return;
+    if (isPhantomSeat(seat)) return;
     var modal = el('modal-auto-player-actions');
     if (!modal) return;
     var titleEl = el('modal-auto-player-actions-title');
