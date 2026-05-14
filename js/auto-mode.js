@@ -306,6 +306,16 @@
     app.autoState.history = [];
   }
 
+  // Wraps a state mutation in pushHistory/saveAuto bracketing.
+  // fn(s) gets the live state. Returning false rolls back the history push.
+  function mutate(fn) {
+    pushHistory();
+    var ret = fn(app.autoState);
+    if (ret === false) { popHistory(); return false; }
+    saveAuto();
+    return true;
+  }
+
   // ============ Helpers ============
 
   function escapeHtml(v) { return app.escapeHtml(String(v)); }
@@ -325,6 +335,25 @@
     var seats = app.autoState.seats;
     for (var i = 0; i < seats.length; i++) if (seats[i].id === id) return seats[i];
     return null;
+  }
+
+  // ============ Mutation helpers ============
+
+  function navAfter(screenId) {
+    saveAuto();
+    if (screenId) app.navigateToScreen(screenId);
+  }
+  function commit(fn) {
+    pushHistory();
+    var r = fn ? fn(app.autoState) : undefined;
+    saveAuto();
+    return r;
+  }
+  function commitNav(fn, screenId) {
+    pushHistory();
+    if (fn) fn(app.autoState);
+    saveAuto();
+    if (screenId) app.navigateToScreen(screenId);
   }
 
   function aliveSeats() { return app.autoState.seats.filter(function (s) { return s.alive; }); }
@@ -1153,9 +1182,9 @@
     if (s.night.donCheck && s.night.donCheck.by === seatId) return;
     var target = seatById(targetId);
     if (!target) return;
-    pushHistory();
-    s.night.donCheck = { by: seatId, target: targetId, isSheriff: target.role === 'sheriff' };
-    saveAuto();
+    mutate(function (st) {
+      st.night.donCheck = { by: seatId, target: targetId, isSheriff: target.role === 'sheriff' };
+    });
     app.renderAutoNightAction();
   };
 
@@ -1167,9 +1196,9 @@
     if (s.night.sheriffCheck && s.night.sheriffCheck.by === seatId) return;
     var target = seatById(targetId);
     if (!target) return;
-    pushHistory();
-    s.night.sheriffCheck = { by: seatId, target: targetId, isMafia: isMafiaSide(target.role) };
-    saveAuto();
+    mutate(function (st) {
+      st.night.sheriffCheck = { by: seatId, target: targetId, isMafia: isMafiaSide(target.role) };
+    });
     app.renderAutoNightAction();
   };
 
@@ -1188,7 +1217,7 @@
 
   function transitionToNightResult() {
     var s = app.autoState;
-    var isKasperAutoKill = !!(s.night && s.night.kasperKill);
+    var isKasperAutoKill = isKasperKillNight(s);
     var victimId;
     if (isKasperAutoKill) {
       victimId = 10;
@@ -1212,7 +1241,7 @@
   function playNightResultAudio() {
     var s = app.autoState;
     if (!s.night) return;
-    var isKasperAutoKill = !!s.night.kasperKill;
+    var isKasperAutoKill = isKasperKillNight(s);
     var victimId = s.night.victimId;
     var nightNum = s.night.nightNum;
     var realKill = (victimId !== null && victimId !== undefined);
@@ -1274,7 +1303,7 @@
     var bm = el('auto-night-result-bestmove');
     if (bm) bm.classList.add('hidden');
     if (!body) return;
-    if (s.night && s.night.kasperKill) {
+    if (isKasperKillNight(s)) {
       var seat10 = seatById(10);
       var nick10 = seat10 && seat10.nick && seat10.nick.trim() ? escapeHtml(seat10.nick.trim()) : '';
       body.innerHTML = '<p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Ночью убит</p>' +
@@ -1514,9 +1543,7 @@
     var seat = seatById(seatId);
     if (!seat || seat.eliminationReason) return false;
     if (s.day.nominees.indexOf(seatId) !== -1) return false;
-    pushHistory();
-    s.day.nominees.push(seatId);
-    saveAuto();
+    mutate(function (st) { st.day.nominees.push(seatId); });
     if (!opts || !opts.skipRender) renderAutoDayPlayers();
     refreshAutoDayNominees();
     return true;
@@ -1527,9 +1554,7 @@
     if (!s.day) return false;
     var ix = s.day.nominees.indexOf(seatId);
     if (ix === -1) return false;
-    pushHistory();
-    s.day.nominees.splice(ix, 1);
-    saveAuto();
+    mutate(function (st) { st.day.nominees.splice(ix, 1); });
     if (!opts || !opts.skipRender) renderAutoDayPlayers();
     refreshAutoDayNominees();
     return true;
@@ -1542,22 +1567,21 @@
   }
 
   function addAutoFoul(seatId) {
-    var s = app.autoState;
     var seat = seatById(seatId);
     if (!seat) return;
     if (seat.fouls >= 4) return;
-    pushHistory();
-    seat.fouls++;
-    if (seat.fouls >= 4 && !seat.eliminationReason) {
-      seat.fouls = 4;
-      seat.eliminationReason = 'disqual';
-      seat.alive = false;
-      if (s.day) {
-        var ix = s.day.nominees.indexOf(seatId);
-        if (ix !== -1) s.day.nominees.splice(ix, 1);
+    mutate(function (st) {
+      seat.fouls++;
+      if (seat.fouls >= 4 && !seat.eliminationReason) {
+        seat.fouls = 4;
+        seat.eliminationReason = 'disqual';
+        seat.alive = false;
+        if (st.day) {
+          var ix = st.day.nominees.indexOf(seatId);
+          if (ix !== -1) st.day.nominees.splice(ix, 1);
+        }
       }
-    }
-    saveAuto();
+    });
     renderAutoDayPlayers();
     refreshAutoDayNominees();
   }
@@ -1565,9 +1589,7 @@
   function removeAutoFoul(seatId) {
     var seat = seatById(seatId);
     if (!seat || seat.fouls <= 0) return;
-    pushHistory();
-    seat.fouls--;
-    saveAuto();
+    mutate(function () { seat.fouls--; });
     renderAutoDayPlayers();
   }
 
