@@ -913,16 +913,9 @@
       donCheck: null,
       donKillPicked: false,
       victimId: null,
-      phantom10Kill: false,
-      kasperKill: false,
       sheriffPredetermined: null,
     };
-    var cfg = getVariant();
-    if (cfg.firstNightKillsKasper && nightNum === 1) {
-      s.night.kasperKill = true;
-      if (cfg.firstNightSheriffRandom) {
-        s.night.donKillPicked = true;
-      }
+    if (isSheriffRandomCheckNight(s)) {
       var sheriffSeat = null;
       for (var si = 0; si < s.seats.length; si++) {
         if (s.seats[si].alive && s.seats[si].role === 'sheriff') { sheriffSeat = s.seats[si]; break; }
@@ -1031,7 +1024,7 @@
 
   function renderMafiaSection(seat, isDon) {
     var s = app.autoState;
-    if (s.night.kasperKill) {
+    if (isKasperKillNight(s)) {
       var heading0 = isDon ? 'Выстрел мафии (ты — Дон)' : 'Выстрел мафии';
       return '<div class="auto-night-section">' +
         '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">' + heading0 + '</h2>' +
@@ -1075,7 +1068,7 @@
 
   function renderSheriffSection(seat) {
     var s = app.autoState;
-    if (s.night.kasperKill && s.night.sheriffPredetermined) {
+    if (isSheriffRandomCheckNight(s) && s.night.sheriffPredetermined) {
       var pre = s.night.sheriffPredetermined;
       var preSeat = seatById(pre.target);
       var preNick = (preSeat && preSeat.nick && preSeat.nick.trim()) ? ' (' + escapeHtml(preSeat.nick.trim()) + ')' : '';
