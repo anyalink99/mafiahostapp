@@ -411,7 +411,7 @@
           b.setAttribute('data-action', 'prepare-variant-pick');
           b.setAttribute('data-variant', v);
           b.className = 'prepare-toggle-btn' + (app.prepareConfig.variant === v ? ' prepare-toggle-active' : '');
-          b.innerHTML = VARIANT_LABELS[v] + '<br><span class="text-xs font-normal text-mafia-cream/60 normal-case tracking-normal">10 игроков</span>';
+          b.textContent = VARIANT_LABELS[v];
           variantContainer.appendChild(b);
         });
       }
