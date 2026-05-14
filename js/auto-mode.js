@@ -517,7 +517,7 @@
       if (summ) {
         var v = app.experimentalModesEnabled ? app.prepareConfig.variant : 'standard';
         if (v === 'kasper') {
-          summ.innerHTML = '<strong class="text-mafia-gold">Каспер (10 игроков):</strong> 6 мирных, шериф, 2 мафии, дон. 10-й всегда мирный и автоматически убивается в первую активную ночь — день 1 проходит с обычным голосованием.';
+          summ.innerHTML = '<strong class="text-mafia-gold">Каспер (9 игроков):</strong> 5 мирных, шериф, 2 мафии, дон. 10-й — фантом-Каспер, своей раздачи и хода не имеет; его «голос» учитывается только в голосовании первого дня, ночью 1 он автоматически считается убитым.';
         } else if (v === 'merlin') {
           summ.innerHTML = '<strong class="text-mafia-gold">Мерлин (10 игроков):</strong> 5 мирных, шериф, Мерлин, 2 мафии, дон. В первую активную ночь Мерлин узнаёт тройку чёрных и шерифа.';
         } else {
@@ -1071,7 +1071,7 @@
         '<p class="text-mafia-cream/85 text-sm">В первую активную ночь мафия не стреляет — 10-й считается убитым. Просто передавай дальше.</p>' +
         '</div>';
     }
-    var alive = aliveSeats();
+    var alive = aliveActiveSeats();
     var candidates = alive;
     var sel = s.night.mafiaVotes[seat.id] || null;
     var heading = isDon ? 'Выстрел мафии (ты — Дон)' : 'Выстрел мафии';
@@ -1086,7 +1086,7 @@
   function renderDonCheckSection(seat) {
     var s = app.autoState;
     var locked = !s.night.donKillPicked;
-    var alive = aliveSeats();
+    var alive = aliveActiveSeats();
     var candidates = alive.filter(function (x) { return x.id !== seat.id; });
     var donCheck = s.night.donCheck;
     var resultBanner = '';
@@ -1120,7 +1120,7 @@
         '</div>' +
         '</div>';
     }
-    var alive = aliveSeats();
+    var alive = aliveActiveSeats();
     var candidates = alive.filter(function (x) { return x.id !== seat.id; });
     var check = s.night.sheriffCheck;
     var resultBanner = '';
@@ -1241,6 +1241,8 @@
       if (v) {
         v.alive = false;
         v.eliminationReason = 'shot';
+        // Каспер «материализуется» после автоубийства — дальше он просто обычный убитый.
+        if (v.phantom) v.phantom = false;
       }
     }
     s.phase = 'night-result';
@@ -1471,24 +1473,37 @@
       var seat = s.seats[idx];
       if (!seat) return;
       var out = !!seat.eliminationReason || seat.alive === false;
+      var phantom = isPhantomSeat(seat);
       var btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' + (out ? ' opacity-[0.55]' : '');
-      btn.setAttribute('data-action', 'auto-day-player-slot-open');
+      var phantomCls = phantom ? ' opacity-[0.4] cursor-not-allowed' : (out ? ' opacity-[0.55]' : '');
+      var hoverCls = phantom ? '' : ' hover:border-mafia-gold/35 active:scale-[0.98]';
+      btn.className = 'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' + hoverCls + phantomCls;
+      if (!phantom) btn.setAttribute('data-action', 'auto-day-player-slot-open');
       btn.setAttribute('data-player-id', String(seat.id));
       var nickTrim = seat.nick ? seat.nick.trim() : '';
       var foulPillClass = 'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' + (seat.fouls > 2 ? 'border-mafia-blood/55 bg-mafia-blood' : 'border-mafia-border/35 bg-black/25');
-      btn.innerHTML =
-        '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
-          '<div class="flex min-w-0 justify-start">' + autoPlayerStatusHtml(seat) + '</div>' +
-          '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl">№' + seat.id + '</span>' +
-          '<div class="flex min-w-0 justify-end">' +
-            '<div class="' + foulPillClass + '"><span class="font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95">ф: ' + seat.fouls + '</span></div>' +
+      if (phantom) {
+        btn.innerHTML =
+          '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
+            '<div class="flex min-w-0 justify-start"><div class="invisible h-8 w-8" aria-hidden="true"></div></div>' +
+            '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold/55 tabular-nums sm:text-4xl">№' + seat.id + '</span>' +
+            '<div class="flex min-w-0 justify-end"><div class="invisible h-8 w-8" aria-hidden="true"></div></div>' +
           '</div>' +
-        '</div>' +
-        '<div class="player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' + (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30') + '">' +
-          (nickTrim ? escapeHtml(nickTrim) : 'Псевдоним') +
-        '</div>';
+          '<div class="player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/40 bg-black/20 px-2 py-1 text-center font-sans text-sm leading-snug text-mafia-gold/75 italic">Каспер</div>';
+      } else {
+        btn.innerHTML =
+          '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
+            '<div class="flex min-w-0 justify-start">' + autoPlayerStatusHtml(seat) + '</div>' +
+            '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl">№' + seat.id + '</span>' +
+            '<div class="flex min-w-0 justify-end">' +
+              '<div class="' + foulPillClass + '"><span class="font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95">ф: ' + seat.fouls + '</span></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' + (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30') + '">' +
+            (nickTrim ? escapeHtml(nickTrim) : 'Псевдоним') +
+          '</div>';
+      }
       list.appendChild(btn);
     });
     refreshAutoDaySwitchHostButton();
