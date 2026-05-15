@@ -189,9 +189,8 @@
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Экспериментальные режимы</h2>
             <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
                 <input type="checkbox" id="setting-experimental-modes" class="mafia-checkbox">
-                <span>Включить (Каспер, Мерлин)</span>
+                <span>Включить</span>
             </label>
-            <p class="text-mafia-cream/60 text-xs mt-3 leading-relaxed">При выборе «Подготовка» появится выбор режима игры. <strong class="text-mafia-gold/85">Каспер</strong> — 9 игроков, 10-й считается фантом-мирным и автоматически убивается в первую активную ночь (его «голос» учитывается только в голосовании первого дня). <strong class="text-mafia-gold/85">Мерлин</strong> — кроме обычных ролей есть Мерлин (знает чёрных и шерифа).</p>
         </section>
     </div>
 </div>
@@ -208,7 +207,7 @@
         </section>
         <section id="prepare-variant-section" class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 hidden">
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Режим игры</h2>
-            <div id="prepare-variant-options" class="grid grid-cols-3 gap-2"></div>
+            <div id="prepare-variant-options" class="grid grid-cols-2 gap-2"></div>
             <p id="prepare-variant-hint" class="text-mafia-cream/65 text-xs mt-3"></p>
         </section>
         <button type="button" data-action="prepare-continue" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold text-base uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Продолжить</button>
@@ -888,31 +887,66 @@
 <audio id="music-preview" preload="none" playsinline></audio>
 
 <script src="js/vendor/jszip.min.js"></script>
-<script src="js/state.js"></script>
-<script src="js/shared-utils.js"></script>
-<script src="js/spotify-auth.js"></script>
-<script src="js/spotify-store.js"></script>
-<script src="js/spotify-player.js"></script>
-<script src="js/music-store.js"></script>
-<script src="js/music.js"></script>
-<script src="js/screens.js"></script>
-<script src="js/cards.js"></script>
-<script src="js/game.js"></script>
-<script src="js/game.players.js"></script>
-<script src="js/game.side.js"></script>
-<script src="js/game.voting.js"></script>
-<script src="js/game.voice.js"></script>
-<script src="js/summary.js"></script>
-<script src="js/export.js"></script>
-<script src="js/mu-export.js"></script>
-<script src="js/events.vote.js"></script>
-<script src="js/events.player.js"></script>
-<script src="js/events.music.js"></script>
-<script src="js/auto-mode.js"></script>
-<script src="js/auto-prepare-ui.js"></script>
-<script src="js/auto-migration.js"></script>
-<script src="js/host-tools.js"></script>
-<script src="js/events.js"></script>
+
+<!-- core: state, utils, navigation, dispatch -->
+<script src="js/core/state.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/core/screens.js"></script>
+
+<!-- audio: music + tts -->
+<script src="js/audio/spotify-auth.js"></script>
+<script src="js/audio/spotify-store.js"></script>
+<script src="js/audio/spotify-player.js"></script>
+<script src="js/audio/music-store.js"></script>
+<script src="js/audio/music.js"></script>
+<script src="js/audio/voice.js"></script>
+
+<!-- game rules: variant registry + per-variant definitions -->
+<script src="js/game/variants.js"></script>
+<script src="js/game/standard.js"></script>
+<script src="js/game/kasper.js"></script>
+<script src="js/game/merlin.js"></script>
+<script src="js/game/donskaya.js"></script>
+
+<!-- modes: host flow + auto flow -->
+<script src="js/modes/host/cards.js"></script>
+<script src="js/modes/host/timer.js"></script>
+<script src="js/modes/host/players.js"></script>
+<script src="js/modes/host/side.js"></script>
+<script src="js/modes/host/voting.js"></script>
+<script src="js/modes/host/tools.js"></script>
+<script src="js/modes/auto/mode.js"></script>
+<script src="js/modes/auto/migration.js"></script>
+
+<!-- shared UI screens -->
+<script src="js/ui/prepare-screen.js"></script>
+
+<!-- post-game -->
+<script src="js/summary/summary.js"></script>
+<script src="js/summary/export.js"></script>
+<script src="js/summary/mu-export.js"></script>
+
+<!-- event handlers (data-action → app.uiActionHandlers) -->
+<script src="js/events/menu.js"></script>
+<script src="js/events/prepare.js"></script>
+<script src="js/events/voice.js"></script>
+<script src="js/events/music.js"></script>
+<script src="js/events/summary.js"></script>
+<script src="js/events/host/timer.js"></script>
+<script src="js/events/host/tools.js"></script>
+<script src="js/events/host/side.js"></script>
+<script src="js/events/host/player.js"></script>
+<script src="js/events/host/vote.js"></script>
+<script src="js/events/auto/flow.js"></script>
+<script src="js/events/auto/intro.js"></script>
+<script src="js/events/auto/night.js"></script>
+<script src="js/events/auto/day.js"></script>
+<script src="js/events/auto/vote.js"></script>
+<script src="js/events/auto/player.js"></script>
+<script src="js/events/auto/merlin-guess.js"></script>
+
+<!-- dispatcher binds DOM → uiActionHandlers; must load after all handler files -->
+<script src="js/core/dispatch.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

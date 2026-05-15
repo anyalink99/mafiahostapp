@@ -2,8 +2,12 @@
  * Host-mode tools modal (game-screen → гаечный ключ).
  *
  * Contents depend on prepareConfig.variant:
- *   • standard / kasper / merlin — кнопка «Назвать роли» (раскладка ролей по местам).
- *   • kasper                     — добавляется «Рандомная проверка шерифа» (1–9, кроме шерифа).
+ *   • standard / kasper / merlin / donskaya — кнопка «Назвать роли» (раскладка ролей по местам).
+ *   • kasper                                — добавляется «Рандомная проверка шерифа» (1–9, кроме шерифа).
+ *
+ * Назначение мафии в донской живёт не здесь, а на prepare-screen: ведущий открывает
+ * слот игрока, выбирает «Мафия» в модалке player-actions; после второй пометки
+ * game/donskaya.js#donskayaReconcile фиксирует расклад в app.roles.
  *
  * Reads:
  *   app.roles                 — расклад колоды.
@@ -59,9 +63,11 @@
       resultEl.innerHTML = '<p class="text-mafia-cream/70 text-center">Сначала разложите карты на экране подготовки.</p>';
       return;
     }
+    var BLANK = app.DONSKAYA_BLANK_ROLE || 'Без роли';
     var groups = { 'Дон': [], 'Мафия': [], 'Шериф': [], 'Мерлин': [], 'Мирный': [] };
+    groups[BLANK] = [];
     dealt.forEach(function (d) { if (groups[d.role]) groups[d.role].push(d.seatId); });
-    var order = ['Дон', 'Мафия', 'Шериф', 'Мерлин', 'Мирный'];
+    var order = ['Дон', 'Мафия', 'Шериф', 'Мерлин', 'Мирный', BLANK];
     var html = '';
     for (var i = 0; i < order.length; i++) {
       var name = order[i];
@@ -109,11 +115,5 @@
         : '<span class="text-mafia-cream/85">не мафия</span>') + '</div>';
   };
 
-  // ============ Action handlers ============
-
-  app.uiActionHandlers = app.uiActionHandlers || {};
-  app.uiActionHandlers['host-tools-open'] = function () { app.showHostToolsModal(); };
-  app.uiActionHandlers['host-tools-close'] = function () { app.hideHostToolsModal(); };
-  app.uiActionHandlers['host-tools-roles'] = function () { app.toolsRevealRoles(); };
-  app.uiActionHandlers['host-tools-sheriff-random'] = function () { app.toolsKasperSheriffRandom(); };
+  // UI-обработчики живут в events/host/tools.js.
 })(window.MafiaApp);

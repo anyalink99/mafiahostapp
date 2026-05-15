@@ -1,3 +1,10 @@
+/**
+ * Центральный диспетчер DOM-событий. Не содержит прикладной логики:
+ * слушает body click/touch/pointer, находит [data-action] и вызывает
+ * соответствующий обработчик из app.uiActionHandlers (регистрируются в events/*).
+ * Также роутит data-goto, нажатия на карты, gesture-обработчики
+ * (long-press, swipe) — это инфраструктура UI, общая для всех экранов.
+ */
 (function (app) {
   app.bindUiEvents = function () {
     var voteTilePtr = { tile: null, id: null };
@@ -19,112 +26,6 @@
         var modal = document.getElementById('modal-player-actions');
         var pid = modal && modal.dataset.playerId ? parseInt(modal.dataset.playerId, 10) : NaN;
         if (!isNaN(pid)) cb(pid);
-      }
-    };
-    var localActionHandlers = {
-      'toggle-timer': function () {
-        app.toggleTimer();
-      },
-      'toggle-music': function () {
-        app.toggleMusicPlayback();
-      },
-      'timer-voice-modal-open': function () {
-        if (app.showTimerVoiceModal) app.showTimerVoiceModal();
-      },
-      'timer-voice-modal-close': function () {
-        if (app.hideTimerVoiceModal) app.hideTimerVoiceModal();
-      },
-      'night-actions-run': function () {
-        if (app.runNightActions) app.runNightActions();
-      },
-      'author-links-open': function () {
-        if (app.showAuthorLinksModal) app.showAuthorLinksModal();
-      },
-      'author-links-close': function () {
-        if (app.hideAuthorLinksModal) app.hideAuthorLinksModal();
-      },
-      'reset-game-confirm-open': function () {
-        if (app.showResetGameConfirmModal) app.showResetGameConfirmModal();
-      },
-      'reset-game-confirm-cancel': function () {
-        if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
-      },
-      'reset-game-confirm-apply': function () {
-        if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
-        if (app.resetGameState) app.resetGameState();
-      },
-      'reset-game-confirm-apply-with-nicks': function () {
-        if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
-        if (app.resetGameState) app.resetGameState({ resetNicknames: true });
-      },
-      'reset-timer': function (el) {
-        var sec = uiHelpers.getIntAttr(el, 'data-seconds');
-        if (sec !== null) app.resetTimer(sec);
-      },
-      'shuffle-seating': function () {
-        if (app.shufflePlayerNicks) {
-          var changed = app.shufflePlayerNicks();
-          if (app.showToast) {
-            app.showToast(changed ? 'Игроки пересажены случайно' : 'Для пересадки нужно минимум 2 ника');
-          }
-        }
-      },
-      'export-copy-text': function () {
-        if (!uiHelpers.isScreenActive('summary-screen')) return;
-        if (app.copyGameExportToClipboard) app.copyGameExportToClipboard();
-      },
-      'export-download-csv': function () {
-        if (!uiHelpers.isScreenActive('summary-screen')) return;
-        if (app.downloadGameExportCsv) app.downloadGameExportCsv();
-      },
-      'export-copy-mu-json': function () {
-        if (!uiHelpers.isScreenActive('summary-screen')) return;
-        if (app.copyMUJsonToClipboard) app.copyMUJsonToClipboard();
-      },
-      'summary-player-open': function (el) {
-        if (!uiHelpers.isScreenActive('summary-screen')) return;
-        var spid = uiHelpers.getIntAttr(el, 'data-player-id');
-        if (spid !== null && app.showSummaryPlayerModal) app.showSummaryPlayerModal(spid);
-      },
-      'summary-modal-save': function () {
-        if (app.applySummaryPlayerModal) app.applySummaryPlayerModal();
-      },
-      'summary-bonus-delta': function (el) {
-        if (!uiHelpers.isScreenActive('summary-screen')) return;
-        var dAttr = el.getAttribute('data-delta');
-        var d = dAttr !== null ? parseFloat(dAttr) : NaN;
-        if (!isNaN(d) && app.applySummaryBonusDelta) app.applySummaryBonusDelta(d);
-      },
-      'summary-log-open': function (el) {
-        if (!uiHelpers.isScreenActive('summary-screen')) return;
-        var lidx = el.getAttribute('data-summary-log-index');
-        var skipK = el.getAttribute('data-summary-skip-key');
-        var lidxNum = lidx !== null ? parseInt(lidx, 10) : NaN;
-        if ((skipK === null || skipK === '') && lidxNum === -1) skipK = 'lead';
-        if (skipK !== null && skipK !== '' && app.showSummaryLogModal) {
-          app.showSummaryLogModal(lidxNum, skipK);
-        } else if (lidx !== null && app.showSummaryLogModal) {
-          app.showSummaryLogModal(lidxNum, null);
-        }
-      },
-      'summary-modal-log-cancel': function () {
-        if (app.hideSummaryLogModal) app.hideSummaryLogModal();
-      },
-      'summary-modal-log-save': function () {
-        if (app.applySummaryLogModal) app.applySummaryLogModal();
-      },
-      'game-side-toggle-roles': function () {
-        if (!uiHelpers.isScreenActive('game-screen')) return;
-        if (app.toggleGameSideRoles) app.toggleGameSideRoles();
-      },
-      'game-side-toggle-notes': function () {
-        if (!uiHelpers.isScreenActive('game-screen')) return;
-        if (app.toggleGameSideNotes) app.toggleGameSideNotes();
-      },
-      'summary-player-open-from-game': function (el) {
-        if (!uiHelpers.isScreenActive('game-screen')) return;
-        var spid = uiHelpers.getIntAttr(el, 'data-player-id');
-        if (spid !== null && app.showSummaryPlayerModal) app.showSummaryPlayerModal(spid);
       }
     };
 
@@ -242,8 +143,7 @@
       if (t) {
         const action = t.getAttribute('data-action');
         e.preventDefault();
-        var delegatedHandler =
-          localActionHandlers[action] || (app.uiActionHandlers ? app.uiActionHandlers[action] : null);
+        var delegatedHandler = app.uiActionHandlers ? app.uiActionHandlers[action] : null;
         if (delegatedHandler) delegatedHandler(t, e, uiHelpers);
         return;
       }

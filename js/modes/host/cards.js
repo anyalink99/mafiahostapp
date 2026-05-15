@@ -1,4 +1,11 @@
 (function (app) {
+  // Цвет лица карты. «Без роли» (донская до назначения мафии) — нейтральный серый.
+  function cardFrontBgClass(role) {
+    if (role === 'Мафия' || role === 'Дон') return 'bg-mafia-black';
+    if (role === (app.DONSKAYA_BLANK_ROLE || 'Без роли')) return 'bg-mafia-border';
+    return 'bg-mafia-blood';
+  }
+
   app.getRoleIconId = function (role) {
     if (role === 'Мирный') return 'icon-peaceful';
     if (role === 'Мафия') return 'icon-mafia';
@@ -45,8 +52,7 @@
       const front = document.createElement('div');
       front.className = 'card-front absolute inset-0 flex flex-col items-center justify-center rounded text-center p-1';
       const role = app.roles[i];
-      const isMafia = role === 'Мафия' || role === 'Дон';
-      front.classList.add(isMafia ? 'bg-mafia-black' : 'bg-mafia-blood');
+      front.classList.add(cardFrontBgClass(role));
       const iconId = app.getRoleIconId(role);
       const iconHtml = iconId ? app.renderRoleIcon(iconId, 'role-icon--small') : '';
       front.innerHTML =
@@ -136,8 +142,7 @@
     if (!roleName || !bg) return;
 
     roleName.innerText = role;
-    const isMafia = role === 'Мафия' || role === 'Дон';
-    bg.className = 'absolute inset-0 ' + (isMafia ? 'bg-mafia-black' : 'bg-mafia-blood');
+    bg.className = 'absolute inset-0 ' + cardFrontBgClass(role);
     var iconWrap = document.getElementById('role-icon-wrap');
     if (iconWrap) {
       var iconId = app.getRoleIconId(role);

@@ -55,8 +55,33 @@
     merlin: 'Мерлин',
   };
 
-  function manualRolesForCurrentPrepare() {
+  function isDonskayaPreAssign() {
+    return !!(
+      app.prepareConfig &&
+      app.prepareConfig.variant === 'donskaya' &&
+      app.donskayaIsAwaitingAssignment &&
+      app.donskayaIsAwaitingAssignment()
+    );
+  }
+
+  function modalPlayerId() {
+    var m = document.getElementById('modal-player-actions');
+    if (!m || !m.dataset || m.dataset.playerId == null || m.dataset.playerId === '') return null;
+    var pid = parseInt(m.dataset.playerId, 10);
+    return isNaN(pid) ? null : pid;
+  }
+
+  function manualRolesForCurrentPrepare(playerId) {
     if (app.variantConfig && app.prepareConfig) {
+      if (isDonskayaPreAssign()) {
+        // Дон зафиксирован раздачей — его слоту никаких опций не даём.
+        if (playerId != null && app.donskayaGetDonSeat && app.donskayaGetDonSeat() === playerId) {
+          return [];
+        }
+        // Остальные — «Мафия» (пометить) + «Мирный» (снять). Шериф/мирные раздадутся
+        // автоматически после второй пометки. См. game/donskaya.js#donskayaReconcile.
+        return ['peaceful', 'mafia'];
+      }
       return app.variantConfig(app.prepareConfig.variant).manualRoles.slice();
     }
     return ['peaceful', 'mafia', 'don', 'sheriff'];
@@ -66,7 +91,7 @@
     var row = document.getElementById('modal-player-prepare-role-icons');
     if (!row) return;
     row.innerHTML = '';
-    var opts = manualRolesForCurrentPrepare().map(function (code) {
+    var opts = manualRolesForCurrentPrepare(modalPlayerId()).map(function (code) {
       return { value: code, label: ROLE_OPT_LABELS[code] || code };
     });
     for (var i = 0; i < opts.length; i++) {
@@ -123,7 +148,7 @@
   }
 
   app.pickPrepareModalRole = function (roleCode) {
-    if (manualRolesForCurrentPrepare().indexOf(roleCode) === -1) return;
+    if (manualRolesForCurrentPrepare(modalPlayerId()).indexOf(roleCode) === -1) return;
     var m = document.getElementById('modal-player-actions');
     if (!m || m.getAttribute('data-mode') !== 'prepare') return;
     renderPrepareModalRoleRadios(roleCode);
@@ -153,15 +178,26 @@
     var mode = m.dataset.mode || '';
     if (mode === 'prepare') {
       var seatIndex = app.players.indexOf(pl);
-      var roleCode = getPrepareModalSelectedRoleCode();
-      if (roleCode) {
-        if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') {
-          app.summaryRoleByPlayerId = {};
+      var availableRoles = manualRolesForCurrentPrepare(pid);
+      if (availableRoles.length > 0) {
+        var roleCode = getPrepareModalSelectedRoleCode();
+        if (roleCode && availableRoles.indexOf(roleCode) !== -1) {
+          if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') {
+            app.summaryRoleByPlayerId = {};
+          }
+          app.summaryRoleByPlayerId[String(pid)] = roleCode;
+        } else if (isDonskayaPreAssign()) {
+          // Донская: «снято» = убрать оверрайд (иначе зависает 'peaceful' и
+          // последующий reconcile видит мусор).
+          if (app.summaryRoleByPlayerId) delete app.summaryRoleByPlayerId[String(pid)];
+        } else if (app.summaryRoleByPlayerId && app.getEffectiveSummaryRoleCode) {
+          app.summaryRoleByPlayerId[String(pid)] = app.getEffectiveSummaryRoleCode(pid, seatIndex);
         }
-        app.summaryRoleByPlayerId[String(pid)] = roleCode;
-      } else if (app.summaryRoleByPlayerId && app.getEffectiveSummaryRoleCode) {
-        app.summaryRoleByPlayerId[String(pid)] = app.getEffectiveSummaryRoleCode(pid, seatIndex);
       }
+      // Донская: как только двойка мафии помечена — game/donskaya.js фиксирует
+      // расклад (мутирует app.roles, разыгрывает шерифа, заполняет мирных)
+      // и снимает временные mafia-оверрайды.
+      if (app.donskayaReconcile) app.donskayaReconcile();
     }
     app.saveState();
   };
@@ -200,6 +236,9 @@
     var inQueue = app.nomineeQueue.indexOf(id) !== -1;
     var out = !!p.eliminationReason;
     m.dataset.mode = nickOnlyMode ? 'prepare' : 'game';
+    // playerId должен быть установлен до renderPrepareModalRoleRadios — рендер опирается
+    // на m.dataset.playerId, чтобы спросить manualRolesForCurrentPrepare(playerId).
+    m.dataset.playerId = String(id);
     var prepRoleSection = document.getElementById('modal-player-prepare-role-section');
     if (prepRoleSection) prepRoleSection.classList.toggle('hidden', !nickOnlyMode);
     if (nickOnlyMode && app.getEffectiveSummaryRoleCode) {
@@ -261,7 +300,6 @@
         elimBtn.title = ELIM_REASON_TITLES[er] || '';
       }
     }
-    m.dataset.playerId = String(id);
     var nickInp = document.getElementById('modal-player-nick');
     if (nickInp) nickInp.value = p.nick != null ? String(p.nick) : '';
     app.modalSetOpen(m, true);

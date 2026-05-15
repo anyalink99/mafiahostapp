@@ -1,17 +1,13 @@
 /**
- * UI for the "Подготовка → выбор режима" screen.
+ * UI экрана «Подготовка → выбор режима» (prepare-mode-screen).
  *
- * This file owns rendering of `prepare-mode-screen` only. The data layer
- * (VARIANTS, app.prepareConfig, app.experimentalModesEnabled, persistence)
- * lives in auto-mode.js and is reached through these app.* contracts:
- *
- *   app.prepareConfig            — { mode: 'host'|'auto', variant: 'standard'|'kasper'|'merlin' }
+ * Этот файл рендерит только тогглеры. Данные тянутся через:
+ *   app.prepareConfig            — { mode: 'host'|'auto', variant: '<key>' }
  *   app.experimentalModesEnabled — bool
- *   app.SUPPORTED_VARIANTS       — array of variant keys
- *   app.variantConfig(name)      — variant definition object (with .label etc.)
+ *   app.SUPPORTED_VARIANTS       — список ключей вариантов (game/variants.js)
+ *   app.variantConfig(name)      — конфиг варианта (с .label, .hostOnly и т.д.)
  *
- * Action handlers for prepare-mode-pick / prepare-variant-pick / prepare-continue
- * remain in auto-mode.js (they mutate state which is co-located there).
+ * Обработчики prepare-* живут в events/prepare.js.
  */
 (function (app) {
   'use strict';
@@ -19,11 +15,28 @@
   function el(id) { return document.getElementById(id); }
 
   function availableVariants() {
+    if (!app.experimentalModesEnabled) return ['standard'];
     var all = (app.SUPPORTED_VARIANTS || ['standard']).slice();
-    return app.experimentalModesEnabled ? all : ['standard'];
+    // Варианты с hostOnly: true (донская) скрываются в автономном режиме.
+    if (app.prepareConfig && app.prepareConfig.mode === 'auto') {
+      return all.filter(function (v) {
+        var cfg = app.gameVariants && app.gameVariants[v];
+        return !cfg || !cfg.hostOnly;
+      });
+    }
+    return all;
   }
 
   app.renderPrepareModeScreen = function () {
+    // Если активный вариант недоступен для выбранного mode — сбрасываем на standard.
+    var allowed = availableVariants();
+    if (allowed.indexOf(app.prepareConfig.variant) === -1) {
+      app.prepareConfig.variant = 'standard';
+      if (app._autoInternals && app._autoInternals.savePrepareConfig) {
+        app._autoInternals.savePrepareConfig();
+      }
+    }
+
     var modeContainer = el('prepare-mode-options');
     if (modeContainer) {
       modeContainer.innerHTML = '';
@@ -50,7 +63,7 @@
     var variantContainer = el('prepare-variant-options');
     if (variantContainer) {
       variantContainer.innerHTML = '';
-      availableVariants().forEach(function (v) {
+      allowed.forEach(function (v) {
         var b = document.createElement('button');
         b.type = 'button';
         b.setAttribute('data-action', 'prepare-variant-pick');
@@ -69,6 +82,8 @@
         hint.textContent = 'Каспер: 9 игроков, 10-й — фантом. Раздача и ночные ходы только у девяти живых, но «голос» фантома учитывается в голосовании первого дня. Ночью 1 фантом автоматически считается убитым.';
       } else if (v === 'merlin') {
         hint.textContent = 'Мерлин: 10 игроков. Кроме обычных ролей есть Мерлин — в первую активную ночь он узнаёт тройку чёрных и шерифа. Если выиграли красные, последний повешенный чёрный может попробовать назвать Мерлина.';
+      } else if (v === 'donskaya') {
+        hint.textContent = 'Донская: 10 игроков, 1 Дон + 9 «без роли». После раздачи Дон называет двойку мафии, ведущий помечает их в слотах игроков на этом экране. Шериф разыгрывается случайно, остальные — мирные.';
       } else {
         hint.textContent = 'Стандартный состав: 10 игроков, 6 мирных, шериф, 2 мафии, дон.';
       }

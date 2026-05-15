@@ -53,68 +53,21 @@
 
   var DEFAULT_PLAYER_COUNT = 10;
 
-  var STANDARD_POOL = ['peaceful','peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
-  var KASPER_POOL_9 = ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','mafia','mafia','don'];
-  var MERLIN_POOL  = ['peaceful','peaceful','peaceful','peaceful','peaceful','sheriff','merlin','mafia','mafia','don'];
-
-  // Variant-specific behaviour lives here. To add/edit a mode, change this object
-  // and the rest of the code reads from it via getVariant() / getPrepareVariant().
-  var VARIANTS = {
-    standard: {
-      key: 'standard',
-      label: 'Стандарт',
-      rolePool: STANDARD_POOL,
-      dealRoles: function () { return shuffle(STANDARD_POOL); },
-      firstNightKillsKasper: false,
-      firstNightSheriffRandom: false,
-      introWakesMerlin: false,
-      bestMoveOnFirstKill: true,
-      postGameMerlinGuess: false,
-      manualRoles: ['peaceful', 'mafia', 'don', 'sheriff'],
-    },
-    kasper: {
-      key: 'kasper',
-      label: 'Каспер',
-      rolePool: STANDARD_POOL,
-      dealRoles: function () {
-        // Seat 10 is always peaceful — phantom Каспер killed on first active night.
-        var shuffled = shuffle(KASPER_POOL_9);
-        shuffled.push('peaceful');
-        return shuffled;
-      },
-      firstNightKillsKasper: true,
-      firstNightSheriffRandom: true,
-      introWakesMerlin: false,
-      bestMoveOnFirstKill: false,
-      postGameMerlinGuess: false,
-      manualRoles: ['peaceful', 'mafia', 'don', 'sheriff'],
-    },
-    merlin: {
-      key: 'merlin',
-      label: 'Мерлин',
-      rolePool: MERLIN_POOL,
-      dealRoles: function () { return shuffle(MERLIN_POOL); },
-      firstNightKillsKasper: false,
-      firstNightSheriffRandom: false,
-      introWakesMerlin: true,
-      bestMoveOnFirstKill: true,
-      postGameMerlinGuess: true,
-      manualRoles: ['peaceful', 'mafia', 'don', 'sheriff', 'merlin'],
-    },
-  };
-
-  var SUPPORTED_VARIANTS = Object.keys(VARIANTS);
-  var VARIANT_LABELS = (function () { var o = {}; SUPPORTED_VARIANTS.forEach(function (k) { o[k] = VARIANTS[k].label; }); return o; })();
-  var VARIANT_COUNTS = (function () { var o = {}; SUPPORTED_VARIANTS.forEach(function (k) { o[k] = DEFAULT_PLAYER_COUNT; }); return o; })();
-
-  function variantConfig(name) {
-    return (name && VARIANTS[name]) ? VARIANTS[name] : VARIANTS.standard;
-  }
+  // VARIANTS теперь живут в game/variants.js + game/{standard,kasper,merlin,donskaya}.js.
+  // Здесь — только тонкие обёртки, которые тянут конфиг из реестра по текущему стейту.
+  function variantConfig(name) { return app.variantConfig(name); }
   function getVariant() {
     return variantConfig(app.autoState && app.autoState.variant);
   }
   function getPrepareVariant() {
     return variantConfig(app.prepareConfig && app.prepareConfig.variant);
+  }
+  function isVariantSupported(name) {
+    return app.SUPPORTED_VARIANTS.indexOf(name) !== -1;
+  }
+  function isAutoSupportedVariant(name) {
+    var cfg = name && app.gameVariants ? app.gameVariants[name] : null;
+    return !!cfg && !cfg.hostOnly;
   }
   var NIGHT_TURN_SEC = 10;
   var INTRO_PRE_SEC = 10;
@@ -180,10 +133,8 @@
     return null;
   }
 
-  // Cross-file API for role pickers (game.players.js, summary.js).
-  app.variantConfig = variantConfig;
+  // Cross-file API for role pickers (modes/host/players.js, summary/summary.js).
   app.getPrepareVariant = getPrepareVariant;
-  app.SUPPORTED_VARIANTS = SUPPORTED_VARIANTS;
 
   function makeFreshState() {
     return {
@@ -222,7 +173,7 @@
       var d = JSON.parse(raw);
       if (!d || typeof d !== 'object') return;
       if (d.mode === 'host' || d.mode === 'auto') app.prepareConfig.mode = d.mode;
-      if (SUPPORTED_VARIANTS.indexOf(d.variant) !== -1) {
+      if (isVariantSupported(d.variant)) {
         app.prepareConfig.variant = d.variant;
       } else if (d.count === 9) {
         app.prepareConfig.variant = 'kasper';
@@ -316,7 +267,7 @@
       s.lastWords = d.lastWords && typeof d.lastWords === 'object' ? d.lastWords : null;
       s.result = d.result || null;
       s.dayNum = typeof d.dayNum === 'number' ? d.dayNum : 0;
-      if (SUPPORTED_VARIANTS.indexOf(d.variant) !== -1) {
+      if (isAutoSupportedVariant(d.variant)) {
         s.variant = d.variant;
       } else if (d.is9) {
         s.variant = 'kasper';
@@ -373,15 +324,7 @@
   function escapeHtml(v) { return app.escapeHtml(String(v)); }
   function el(id) { return document.getElementById(id); }
 
-  function shuffle(arr) {
-    var a = arr.slice();
-    for (var i = a.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
-    }
-    return a;
-  }
-
+  var shuffle = app.shuffleVariantPool;
 
   function seatById(id) {
     var seats = app.autoState.seats;
@@ -533,7 +476,7 @@
 
   app.startFreshAutoGame = function () {
     loadPrepareConfig();
-    var variant = app.experimentalModesEnabled && SUPPORTED_VARIANTS.indexOf(app.prepareConfig.variant) !== -1
+    var variant = app.experimentalModesEnabled && isAutoSupportedVariant(app.prepareConfig.variant)
       ? app.prepareConfig.variant
       : 'standard';
     var dealt = dealRolesForVariant(variant);
@@ -2516,199 +2459,8 @@
     }, { passive: true });
   }
 
-  // ============ Event handlers ============
-
-  app.uiActionHandlers = app.uiActionHandlers || {};
-
-  app.uiActionHandlers['prepare-enter'] = function () {
-    loadAuto();
-    loadPrepareConfig();
-    loadExperimentalModes();
-    bindRevealHoldGestures();
-    bindBackGestures();
-    bindAutoPlayerGestures();
-    var mode = app.prepareConfig.mode;
-    if (mode === 'auto') {
-      var s = app.autoState;
-      if (s.active && s.phase !== 'setup' && s.phase !== 'gameover') {
-        app.navigateToScreen('auto-setup-screen');
-        return;
-      }
-    } else if (mode === 'host') {
-      if (app.hasResettableState && app.hasResettableState()) {
-        app.navigateToScreen('prepare-screen');
-        return;
-      }
-    }
-    app.navigateToScreen('prepare-mode-screen');
-  };
-  app.uiActionHandlers['prepare-mode-pick'] = function (el2) {
-    var mode = el2.getAttribute('data-mode');
-    if (mode !== 'host' && mode !== 'auto') return;
-    app.prepareConfig.mode = mode;
-    savePrepareConfig();
-    app.renderPrepareModeScreen();
-  };
-  app.uiActionHandlers['prepare-variant-pick'] = function (el2) {
-    var v = el2.getAttribute('data-variant');
-    if (SUPPORTED_VARIANTS.indexOf(v) === -1) return;
-    app.prepareConfig.variant = v;
-    savePrepareConfig();
-    app.renderPrepareModeScreen();
-  };
-  app.uiActionHandlers['prepare-continue'] = function () {
-    if (app.prepareConfig.mode === 'host') {
-      maybeApplyHostVariantDeck();
-      app.navigateToScreen('prepare-screen');
-    } else {
-      app.navigateToScreen('auto-setup-screen');
-    }
-  };
-
-  function maybeApplyHostVariantDeck() {
-    if (!app.experimentalModesEnabled) return;
-    if (app.hasResettableState && app.hasResettableState()) return;
-    var variant = app.prepareConfig.variant;
-    if (variant === 'merlin') {
-      app.roles = ['Мирный','Мирный','Мирный','Мирный','Мирный','Шериф','Мафия','Мафия','Дон','Мерлин'];
-    } else if (variant === 'kasper') {
-      // 9 карт: 10-й — фантом, своей роли не получает.
-      app.roles = ['Мирный','Мирный','Мирный','Мирный','Мирный','Шериф','Мафия','Мафия','Дон'];
-    } else {
-      app.roles = ['Мирный','Мирный','Мирный','Мирный','Мирный','Мирный','Шериф','Мафия','Мафия','Дон'];
-    }
-    app.revealedIndices = [];
-    if (app.saveState) app.saveState();
-  }
-  app.uiActionHandlers['auto-begin'] = function () { app.startFreshAutoGame(); };
-  app.uiActionHandlers['auto-resume'] = function () { app.resumeAutoGame(); };
-  app.uiActionHandlers['auto-restart'] = function () { app.restartAutoGame(); };
-  app.uiActionHandlers['auto-reveal-confirm'] = function () { app.advanceReveal(); };
-  app.uiActionHandlers['auto-back-to-menu'] = function () {
-    clearAllAutoTimers();
-    hideRevealOverlay();
-    app.navigateToScreen('menu-screen');
-  };
-  app.uiActionHandlers['auto-intro-finish'] = function () { app.handleIntroFinish(); };
-  app.uiActionHandlers['auto-freesit-finish'] = function () { app.handleFreesitFinish(); };
-  app.uiActionHandlers['auto-merlin-pass-start'] = function () { app.handleMerlinPassStart(); };
-  app.uiActionHandlers['auto-merlin-action-done'] = function () { app.handleMerlinActionDone(); };
-  app.uiActionHandlers['auto-merlin-guess-pick'] = function (el2) {
-    var sid = parseInt(el2.getAttribute('data-seat-id'), 10);
-    if (!isNaN(sid) && app.handleMerlinGuessPick) app.handleMerlinGuessPick(sid);
-  };
-  app.uiActionHandlers['auto-merlin-guess-skip'] = function () {
-    if (app.handleMerlinGuessSkip) app.handleMerlinGuessSkip();
-  };
-  app.uiActionHandlers['auto-night-turn-start'] = function () { app.startNightTurn(); };
-  app.uiActionHandlers['auto-night-turn-done'] = function () { app.handleNightTurnDone(); };
-  app.uiActionHandlers['auto-mafia-pick'] = function (el2) {
-    var s = app.autoState;
-    if (!s.night) return;
-    var seatId = s.night.turnOrder[s.night.cursor];
-    var targetId = parseInt(el2.getAttribute('data-target-id'), 10);
-    if (!isNaN(targetId)) app.handleMafiaPick(seatId, targetId);
-  };
-  app.uiActionHandlers['auto-don-check'] = function (el2) {
-    var s = app.autoState;
-    if (!s.night) return;
-    var seatId = s.night.turnOrder[s.night.cursor];
-    var targetId = parseInt(el2.getAttribute('data-target-id'), 10);
-    if (!isNaN(targetId)) app.handleDonCheck(seatId, targetId);
-  };
-  app.uiActionHandlers['auto-sheriff-check'] = function (el2) {
-    var s = app.autoState;
-    if (!s.night) return;
-    var seatId = s.night.turnOrder[s.night.cursor];
-    var targetId = parseInt(el2.getAttribute('data-target-id'), 10);
-    if (!isNaN(targetId)) app.handleSheriffCheck(seatId, targetId);
-  };
-  app.uiActionHandlers['auto-night-result-continue'] = function () { app.continueAfterNightResult(); };
-  app.uiActionHandlers['auto-merlin-guess-pick'] = function (el2) {
-    var tid = parseInt(el2.getAttribute('data-target-id'), 10);
-    if (!isNaN(tid)) app.handleMerlinGuessPick(tid);
-  };
-  app.uiActionHandlers['auto-merlin-guess-finish'] = function () { app.handleMerlinGuessFinish(); };
-  app.uiActionHandlers['auto-merlin-guess-skip'] = function () { app.handleMerlinGuessSkip(); };
-  app.uiActionHandlers['auto-day-toggle-timer'] = function () { app.toggleAutoDayTimer(); };
-  app.uiActionHandlers['auto-day-reset-timer'] = function (el2) {
-    var sec = parseInt(el2.getAttribute('data-seconds'), 10);
-    if (!isNaN(sec)) app.resetAutoDayTimer(sec);
-  };
-  app.uiActionHandlers['auto-day-player-slot-open'] = function (el2) {
-    if (app._autoLastGestureTs && Date.now() - app._autoLastGestureTs < 400) return;
-    var pid = parseInt(el2.getAttribute('data-player-id'), 10);
-    if (!isNaN(pid)) app.showAutoPlayerActionsModal(pid);
-  };
-  app.uiActionHandlers['auto-player-modal-save'] = function () { app.hideAutoPlayerActionsModal(); };
-  app.uiActionHandlers['auto-player-modal-foul'] = function () {
-    withAutoModalSeatId(function (pid) {
-      var seat = seatById(pid);
-      if (!seat) return;
-      app.hideAutoPlayerActionsModal();
-      addAutoFoul(pid);
-    });
-  };
-  app.uiActionHandlers['auto-player-modal-vote'] = function () {
-    withAutoModalSeatId(function (pid) {
-      var seat = seatById(pid);
-      if (!seat || seat.eliminationReason) return;
-      app.hideAutoPlayerActionsModal();
-      toggleAutoNominee(pid);
-    });
-  };
-  app.uiActionHandlers['auto-player-modal-elim'] = function (el2) {
-    var reason = el2.getAttribute('data-elim');
-    withAutoModalSeatId(function (pid) {
-      if (!reason) return;
-      var s = app.autoState;
-      if (reason === 'hang' && s.day && s.day.nominees.indexOf(pid) === -1) return;
-      app.hideAutoPlayerActionsModal();
-      setAutoElim(pid, reason);
-    });
-  };
-  app.uiActionHandlers['auto-player-modal-revive'] = function () {
-    withAutoModalSeatId(function (pid) {
-      var seat = seatById(pid);
-      if (!seat || !seat.eliminationReason) return;
-      var reason = seat.eliminationReason;
-      app.hideAutoPlayerActionsModal();
-      setAutoElim(pid, reason);
-    });
-  };
-  app.uiActionHandlers['auto-switch-host-open'] = function () { app.showAutoSwitchHostModal(); };
-  app.uiActionHandlers['auto-switch-host-cancel'] = function () { app.hideAutoSwitchHostModal(); };
-  app.uiActionHandlers['auto-switch-host-primary'] = function () { app.handleAutoSwitchHostPrimary(); };
-  app.uiActionHandlers['auto-day-go-vote'] = function () { app.startAutoVote(); };
-  app.uiActionHandlers['auto-day-skip-vote'] = function () { app.skipAutoVote(); };
-  app.uiActionHandlers['auto-vote-back-to-day'] = function () {
-    var s = app.autoState;
-    pushHistory();
-    if (s.day && s.vote && s.vote.candidateIds) s.day.nominees = s.vote.candidateIds.slice();
-    s.phase = 'day';
-    s.vote = null;
-    saveAuto();
-    app.navigateToScreen('auto-day-screen');
-  };
-  app.uiActionHandlers['auto-vote-open-count'] = function (el2) {
-    var idx = parseInt(el2.getAttribute('data-candidate-index'), 10);
-    if (!isNaN(idx)) app.showAutoVoteCountModal(idx);
-  };
-  app.uiActionHandlers['auto-vote-count-cancel'] = function () { app.hideAutoVoteCountModal(); };
-  app.uiActionHandlers['auto-vote-pick-count'] = function (el2) {
-    var c = parseInt(el2.getAttribute('data-vote-count'), 10);
-    if (!isNaN(c)) app.applyAutoVoteCount(c);
-  };
-  app.uiActionHandlers['auto-vote-raise-pick'] = function (el2) {
-    var v = parseInt(el2.getAttribute('data-value'), 10);
-    if (!isNaN(v)) app.applyAutoRaisePick(v);
-  };
-  app.uiActionHandlers['auto-last-words-finish'] = function () { app.handleLastWordsFinish(); };
-  app.uiActionHandlers['auto-last-words-toggle-timer'] = function () { app.toggleAutoLastWordsTimer(); };
-  app.uiActionHandlers['auto-last-words-reset-timer'] = function (el2) {
-    var sec = parseInt(el2.getAttribute('data-seconds'), 10);
-    if (!isNaN(sec)) app.resetAutoLastWordsTimer(sec);
-  };
+  // UI-обработчики (data-action) перенесены в events/prepare.js и events/auto/*.js.
+  // mode.js теперь хранит только логику автономного режима.
 
   // ============ Init hook ============
 
@@ -2730,12 +2482,26 @@
     bindAutoPlayerGestures();
   };
 
-  // Internals exposed for siblings (auto-migration.js).
+  // Internals exposed for sibling files (events/auto/*.js, modes/auto/migration.js).
+  // These are private to the mode.js IIFE but needed by event handlers and migration.
   app._autoInternals = {
     clearAllAutoTimers: clearAllAutoTimers,
+    hideRevealOverlay: hideRevealOverlay,
     makeFreshState: makeFreshState,
     saveAuto: saveAuto,
+    pushHistory: pushHistory,
+    loadAuto: loadAuto,
+    loadPrepareConfig: loadPrepareConfig,
     savePrepareConfig: savePrepareConfig,
+    loadExperimentalModes: loadExperimentalModes,
+    seatById: seatById,
+    withAutoModalSeatId: withAutoModalSeatId,
+    addAutoFoul: addAutoFoul,
+    toggleAutoNominee: toggleAutoNominee,
+    setAutoElim: setAutoElim,
+    bindRevealHoldGestures: bindRevealHoldGestures,
+    bindBackGestures: bindBackGestures,
+    bindAutoPlayerGestures: bindAutoPlayerGestures,
     el: el,
   };
 
