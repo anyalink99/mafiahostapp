@@ -145,6 +145,25 @@ body {
 
 .player-cell.player-slot {
   touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Нажатие карточки игрока — управляем классом из координатора жестов, а не :active
+   (тот залипал после свайпа/удержания без перерендера). */
+#players-list .player-cell.player-slot.is-pressed {
+  transform: scale(0.98);
+}
+
+/* Жесты таймера (перетаскивание) — Pointer Events в JS; отдаём элементу касания. */
+#game-screen #timer-pill {
+  touch-action: none;
+}
+
+/* vote-плитки открываются по click; manipulation убирает задержку тапа на телефоне. */
+#vote-candidates [data-action="vote-open-count"] {
+  touch-action: manipulation;
 }
 
 .player-slot__row {

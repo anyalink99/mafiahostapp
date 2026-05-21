@@ -24,7 +24,6 @@
   }
 
   app.bindUiEvents = function () {
-    var voteTilePtr = { tile: null, id: null };
     var ROLE_CLOSE_EDGE_GUARD_PX = 56;
     var roleCloseEdgeTouchBlockedAt = 0;
     var uiHelpers = {
@@ -59,75 +58,170 @@
       );
     }
 
-    function voteCandidateTileFromTarget(target) {
-      return target && target.closest ? target.closest('[data-action="vote-open-count"]') : null;
-    }
+    // Мобильные браузеры применяют CSS :active (нажатые карточки, active:scale-...)
+    // только при наличии слушателя touchstart. Раньше его давали touch-жесты игроков;
+    // теперь всё на Pointer Events, поэтому держим пустой passive-слушатель — иначе
+    // :active залипает/срабатывает хаотично.
+    document.addEventListener('touchstart', function () {}, { passive: true });
 
-    if (window.PointerEvent) {
-      document.body.addEventListener(
+    // Доступность: Enter/Space по vote-плитке открывает подсчёт голосов.
+    // Сам тап/клик по плитке обрабатывает click-делегат (vote-open-count);
+    // CSS touch-action: manipulation убирает задержку тапа на телефоне.
+    document.body.addEventListener(
+      'keydown',
+      function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        var t = e.target.closest && e.target.closest('[data-action="vote-open-count"]');
+        if (!t) return;
+        if (!uiHelpers.isScreenActive('vote-screen')) return;
+        e.preventDefault();
+        var cixK = t.getAttribute('data-candidate-index');
+        if (cixK !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cixK, 10));
+      },
+      true
+    );
+
+    // ── Единый слой жестов на Pointer Events ──
+    // Игроки (game-screen): палец — удержание=выставление, вертикальный свайп=±фол,
+    // тап открывает модалку (через click). Мышь — ПКМ=выставление, колесо=±фол, ЛКМ=модалка.
+    // Таймер (#timer-pill): перетаскивание пальцем меняет время; мышь — колесом.
+    // Прокрутку во время жеста гасит CSS touch-action на самих элементах, поэтому ВСЕ
+    // слушатели passive — нет глобальных тормозов прокрутки/касаний.
+    (function initPointerInput() {
+      if (!window.PointerEvent) return;
+      var LONG_PRESS_MS = 450,
+        SWIPE_Y_MIN = 30,
+        MOVE_CANCEL_PX = 15,
+        TIMER_DRAG_PX = 9;
+      var cur = null; // одно активное взаимодействие за раз, по pointerId
+      var pressedEl = null; // карточка с визуальным «нажатием» (.is-pressed)
+
+      // Нажатое состояние ведём сами (класс .is-pressed), а не через CSS :active:
+      // :active не сбрасывается после свайпа без перерендера и «залипал».
+      // Pointer Events гарантируют ровно один pointerup/pointercancel — класс всегда снимется.
+      function setPressed(el) {
+        if (pressedEl === el) return;
+        clearPressed();
+        pressedEl = el;
+        if (el) el.classList.add('is-pressed');
+      }
+      function clearPressed() {
+        if (pressedEl) {
+          pressedEl.classList.remove('is-pressed');
+          pressedEl = null;
+        }
+      }
+      function toggleNominee(pid, opts) {
+        var inQ = app.nomineeQueue && app.nomineeQueue.indexOf(pid) !== -1;
+        return inQ
+          ? app.removePlayerFromNomineeQueue(pid, opts)
+          : app.addPlayerToNomineeQueue(pid, opts);
+      }
+      function clearLp() {
+        if (cur && cur.lpTimer) {
+          clearTimeout(cur.lpTimer);
+          cur.lpTimer = null;
+        }
+      }
+
+      document.addEventListener(
         'pointerdown',
         function (e) {
-          var tile = voteCandidateTileFromTarget(e.target);
-          if (!tile) {
-            voteTilePtr.tile = null;
-            voteTilePtr.id = null;
+          if (cur || !gameScreenActive()) return;
+          var pill = e.target.closest && e.target.closest('#timer-pill');
+          if (pill && e.pointerType !== 'mouse') {
+            cur = { kind: 'timer', id: e.pointerId, y0: e.clientY, base: app.timeLeft };
             return;
           }
-          var vs = document.getElementById('vote-screen');
-          if (!vs || !vs.classList.contains('active')) {
-            voteTilePtr.tile = null;
-            voteTilePtr.id = null;
+          var slot = e.target.closest && e.target.closest('[data-action="player-slot-open"]');
+          if (!slot) return;
+          var pid = parseInt(slot.getAttribute('data-player-id'), 10);
+          if (isNaN(pid)) return;
+          setPressed(slot);
+          if (e.pointerType === 'mouse') {
+            // ПКМ — выставить/снять (аналог удержания). ЛКМ — модалка через click.
+            if (e.button === 2) {
+              toggleNominee(pid);
+              app._lastGestureTs = Date.now();
+            }
             return;
           }
-          voteTilePtr.tile = tile;
-          voteTilePtr.id = e.pointerId;
-          if (e.pointerType === 'touch') e.preventDefault();
+          cur = {
+            kind: 'player', id: e.pointerId, pid: pid,
+            x0: e.clientX, y0: e.clientY, fired: false, moved: false, lpTimer: null,
+          };
+          cur.lpTimer = setTimeout(function () {
+            if (!cur || cur.kind !== 'player' || cur.fired || cur.moved) return;
+            cur.lpTimer = null;
+            var changed = toggleNominee(cur.pid, { skipRender: true });
+            if (!changed) return;
+            cur.fired = true;
+            if (app.patchPlayerSlotVoteIndicator) app.patchPlayerSlotVoteIndicator(cur.pid);
+            if (navigator.vibrate) { try { navigator.vibrate(40); } catch (_e) {} }
+          }, LONG_PRESS_MS);
         },
-        { capture: true, passive: false }
+        { passive: true }
       );
 
-      document.body.addEventListener(
+      document.addEventListener(
+        'pointermove',
+        function (e) {
+          if (!cur || e.pointerId !== cur.id) return;
+          if (cur.kind === 'timer') {
+            if (app.setTimer) app.setTimer(cur.base + Math.round((cur.y0 - e.clientY) / TIMER_DRAG_PX));
+            return;
+          }
+          if (
+            cur.kind === 'player' && !cur.moved &&
+            (Math.abs(e.clientX - cur.x0) > MOVE_CANCEL_PX || Math.abs(e.clientY - cur.y0) > MOVE_CANCEL_PX)
+          ) {
+            cur.moved = true;
+            clearLp();
+          }
+        },
+        { passive: true }
+      );
+
+      document.addEventListener(
         'pointerup',
         function (e) {
-          var tile = voteCandidateTileFromTarget(e.target);
-          var downTile = voteTilePtr.tile;
-          var downId = voteTilePtr.id;
-          voteTilePtr.tile = null;
-          voteTilePtr.id = null;
-          if (!downTile || !tile || downTile !== tile || e.pointerId !== downId) return;
-          var vs = document.getElementById('vote-screen');
-          if (!vs || !vs.classList.contains('active')) return;
-          if (e.pointerType === 'touch') e.preventDefault();
-          var cix = tile.getAttribute('data-candidate-index');
-          if (cix !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cix, 10));
+          clearPressed();
+          if (!cur || e.pointerId !== cur.id) return;
+          var g = cur;
+          if (g.kind === 'timer') { cur = null; return; }
+          clearLp();
+          cur = null;
+          if (g.fired) {
+            // Индикатор и очередь уже обновлены точечно при срабатывании удержания;
+            // полный renderPlayers не нужен — он бы пересоздал карточку и оборвал
+            // плавный возврат из «нажатого» состояния (резкий скачок размера).
+            app._lastGestureTs = Date.now();
+            return;
+          }
+          var dy = e.clientY - g.y0,
+            dx = e.clientX - g.x0;
+          if (Math.abs(dy) >= SWIPE_Y_MIN && Math.abs(dy) > Math.abs(dx)) {
+            app._lastGestureTs = Date.now();
+            if (dy < 0) app.addFoul(g.pid);
+            else app.removeFoul(g.pid);
+            if (navigator.vibrate) { try { navigator.vibrate(25); } catch (_e) {} }
+          }
+          // чистый тап — модалку откроет click-обработчик (player-slot-open)
         },
-        { capture: true, passive: false }
+        { passive: true }
       );
 
-      document.body.addEventListener(
+      document.addEventListener(
         'pointercancel',
-        function () {
-          voteTilePtr.tile = null;
-          voteTilePtr.id = null;
-        },
-        true
-      );
-
-      document.body.addEventListener(
-        'keydown',
         function (e) {
-          if (e.key !== 'Enter' && e.key !== ' ') return;
-          var t = e.target.closest('[data-action="vote-open-count"]');
-          if (!t) return;
-          var vs = document.getElementById('vote-screen');
-          if (!vs || !vs.classList.contains('active')) return;
-          e.preventDefault();
-          var cixK = t.getAttribute('data-candidate-index');
-          if (cixK !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cixK, 10));
+          clearPressed();
+          if (!cur || e.pointerId !== cur.id) return;
+          clearLp();
+          cur = null;
         },
-        true
+        { passive: true }
       );
-    }
+    })();
 
     document.body.addEventListener('click', function (e) {
       let t = e.target.closest('[data-goto]');
@@ -183,113 +277,6 @@
       },
       { passive: false }
     );
-
-    (function initPlayerGestures() {
-      var LONG_PRESS_MS = 450;
-      var SWIPE_Y_MIN = 30;
-      var TAP_MOVE_MAX = 15;
-
-      var g = { active: false, pid: null, touchId: -1, x0: 0, y0: 0, timer: null, fired: false };
-
-      function pidFromEl(el) {
-        var btn = el && el.closest ? el.closest('[data-action="player-slot-open"]') : null;
-        if (!btn) return null;
-        var v = btn.getAttribute('data-player-id');
-        return v ? parseInt(v, 10) : null;
-      }
-
-      function reset() {
-        if (g.timer) { clearTimeout(g.timer); g.timer = null; }
-        g.active = false;
-        g.pid = null;
-        g.touchId = -1;
-        g.fired = false;
-      }
-
-      function findTouch(list, id) {
-        for (var i = 0; i < list.length; i++) {
-          if (list[i].identifier === id) return list[i];
-        }
-        return null;
-      }
-
-      document.body.addEventListener('touchstart', function (e) {
-        if (g.active) return;
-        var gs = document.getElementById('game-screen');
-        if (!gs || !gs.classList.contains('active')) return;
-        var pid = pidFromEl(e.target);
-        if (pid === null) return;
-        var t = e.changedTouches && e.changedTouches[0];
-        if (!t) return;
-        g.active = true;
-        g.pid = pid;
-        g.touchId = t.identifier;
-        g.x0 = t.clientX;
-        g.y0 = t.clientY;
-        g.fired = false;
-        var capturedPid = pid;
-        g.timer = setTimeout(function () {
-          g.timer = null;
-          if (!g.active || g.fired) return;
-          var inQ = app.nomineeQueue.indexOf(capturedPid) !== -1;
-          var changed = inQ
-            ? app.removePlayerFromNomineeQueue(capturedPid, { skipRender: true })
-            : app.addPlayerToNomineeQueue(capturedPid, { skipRender: true });
-          if (!changed) return;
-          g.fired = true;
-          if (app.patchPlayerSlotVoteIndicator) app.patchPlayerSlotVoteIndicator(capturedPid);
-          if (navigator.vibrate) navigator.vibrate(40);
-        }, LONG_PRESS_MS);
-      }, { passive: true });
-
-      document.body.addEventListener('touchmove', function (e) {
-        if (!g.active || g.fired) return;
-        var t = findTouch(e.touches, g.touchId);
-        if (!t) { reset(); return; }
-        var dy = t.clientY - g.y0;
-        var dx = t.clientX - g.x0;
-        if (Math.abs(dy) > TAP_MOVE_MAX || Math.abs(dx) > TAP_MOVE_MAX) {
-          if (g.timer) { clearTimeout(g.timer); g.timer = null; }
-        }
-      }, { passive: true });
-
-      document.body.addEventListener('touchend', function (e) {
-        if (!g.active) return;
-        var t = findTouch(e.changedTouches, g.touchId);
-        if (!t) {
-          var wasFired = g.fired;
-          reset();
-          if (wasFired && app.renderPlayers) app.renderPlayers();
-          return;
-        }
-        if (g.timer) { clearTimeout(g.timer); g.timer = null; }
-        var pid = g.pid;
-        var fired = g.fired;
-        var dy = t.clientY - g.y0;
-        var dx = t.clientX - g.x0;
-        reset();
-        if (fired) {
-          app._lastGestureTs = Date.now();
-          if (app.renderPlayers) app.renderPlayers();
-          e.preventDefault();
-          return;
-        }
-        if (Math.abs(dy) >= SWIPE_Y_MIN && Math.abs(dy) > Math.abs(dx)) {
-          app._lastGestureTs = Date.now();
-          e.preventDefault();
-          if (dy < 0) app.addFoul(pid);
-          else app.removeFoul(pid);
-          if (navigator.vibrate) navigator.vibrate(25);
-          return;
-        }
-      }, { passive: false });
-
-      document.body.addEventListener('touchcancel', function () {
-        var wasFired = g.fired;
-        reset();
-        if (wasFired && app.renderPlayers) app.renderPlayers();
-      }, { passive: true });
-    })();
 
     function bindMusicFileInputs() {
       function addFromSettings(slot, inputEl) {
@@ -536,57 +523,14 @@
       { passive: false }
     );
 
-    // ПКМ по игроку — выставить/убрать с голосования (аналог удержания на телефоне).
+    // ПКМ по игроку обрабатывается в pointerdown (button===2). Здесь только гасим
+    // нативное контекстное меню над слотом (и callout долгого нажатия на телефоне).
     document.body.addEventListener('contextmenu', function (e) {
-      if (!e.target || !e.target.closest) return;
       if (!gameScreenActive()) return;
-      var slot = e.target.closest('[data-action="player-slot-open"]');
-      if (!slot) return;
-      e.preventDefault();
-      var pidC = parseInt(slot.getAttribute('data-player-id'), 10);
-      if (isNaN(pidC)) return;
-      var inQ = app.nomineeQueue && app.nomineeQueue.indexOf(pidC) !== -1;
-      if (inQ) {
-        if (app.removePlayerFromNomineeQueue) app.removePlayerFromNomineeQueue(pidC);
-      } else if (app.addPlayerToNomineeQueue) {
-        app.addPlayerToNomineeQueue(pidC);
-      }
-      if (navigator.vibrate) { try { navigator.vibrate(40); } catch (_e) {} }
-    });
-
-    // Перетаскивание по вертикали на «таблетке» таймера (телефон) — подкрутка времени.
-    (function initTimerDragGesture() {
-      var STEP_PX = 9;
-      var d = { active: false, id: -1, y0: 0, base: 0 };
-      function findT(list, id) {
-        for (var i = 0; i < list.length; i++) if (list[i].identifier === id) return list[i];
-        return null;
-      }
-      document.body.addEventListener('touchstart', function (e) {
-        if (d.active || !gameScreenActive()) return;
-        if (!e.target || !e.target.closest || !e.target.closest('#timer-pill')) return;
-        var t = e.changedTouches && e.changedTouches[0];
-        if (!t) return;
-        d.active = true;
-        d.id = t.identifier;
-        d.y0 = t.clientY;
-        d.base = app.timeLeft;
-      }, { passive: true });
-      document.body.addEventListener('touchmove', function (e) {
-        if (!d.active) return;
-        var t = findT(e.touches, d.id);
-        if (!t) return;
-        var deltaSec = Math.round((d.y0 - t.clientY) / STEP_PX);
-        if (app.setTimer) app.setTimer(d.base + deltaSec);
+      if (e.target && e.target.closest && e.target.closest('[data-action="player-slot-open"]')) {
         e.preventDefault();
-      }, { passive: false });
-      function endDrag() {
-        d.active = false;
-        d.id = -1;
       }
-      document.body.addEventListener('touchend', endDrag, { passive: true });
-      document.body.addEventListener('touchcancel', endDrag, { passive: true });
-    })();
+    });
 
     // Возврат вкладки/приложения из фона — мгновенно пересчитать таймер по часам.
     document.addEventListener('visibilitychange', function () {
