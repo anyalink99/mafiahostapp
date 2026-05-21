@@ -1877,6 +1877,16 @@
   function tryFinalizeAutoVote() {
     var s = app.autoState;
     if (!s.vote || s.vote.phase !== 'counting') return;
+    // Пул исчерпан (0 голосов осталось) → оставшимся кандидатам 0, раунд завершается.
+    var used = 0;
+    for (var u = 0; u < s.vote.votes.length; u++) {
+      if (s.vote.votes[u] !== null && s.vote.votes[u] !== undefined) used += s.vote.votes[u];
+    }
+    if (used >= s.vote.poolTotal) {
+      for (var z = 0; z < s.vote.votes.length; z++) {
+        if (s.vote.votes[z] === null || s.vote.votes[z] === undefined) s.vote.votes[z] = 0;
+      }
+    }
     for (var i = 0; i < s.vote.votes.length; i++) {
       if (s.vote.votes[i] === null || s.vote.votes[i] === undefined) return;
     }

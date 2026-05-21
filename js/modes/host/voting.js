@@ -187,6 +187,17 @@
   app.tryFinalizeVoteRound = function () {
     var s = app.activeVoteRound;
     if (!s || s.phase !== 'counting') return;
+    // Если пул голосов исчерпан (0 осталось) — оставшимся кандидатам ставим 0
+    // (за них уже некому голосовать) и завершаем раунд, не требуя ручных нулей.
+    var used = 0;
+    for (var u = 0; u < s.votes.length; u++) {
+      if (s.votes[u] !== null && s.votes[u] !== undefined) used += s.votes[u];
+    }
+    if (used >= s.poolTotal) {
+      for (var z = 0; z < s.votes.length; z++) {
+        if (s.votes[z] === null || s.votes[z] === undefined) s.votes[z] = 0;
+      }
+    }
     for (var i = 0; i < s.votes.length; i++) {
       if (s.votes[i] === null || s.votes[i] === undefined) return;
     }
