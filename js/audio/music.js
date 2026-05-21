@@ -325,7 +325,7 @@
       var plVol = typeof item.volumeMul === 'number' ? item.volumeMul : 1;
       var trVol = typeof tr.volumeMul === 'number' ? tr.volumeMul : 1;
       var effVol = plVol * trVol;
-      if (effVol > 2) effVol = 2;
+      if (effVol > 4) effVol = 4;
       item = {
         id: itemId + ':' + trackId,
         name: tr.name || item.name,
@@ -976,7 +976,7 @@
         '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Громкость × <span class="text-mafia-gold/85 tabular-nums" data-music-vol-label>' +
         vol.toFixed(2) +
         '</span>' +
-        '<input type="range" min="0.25" max="2" step="0.05" data-music-field="volume" value="' +
+        '<input type="range" min="0.25" max="4" step="0.05" data-music-field="volume" value="' +
         vol +
         '" class="mt-2 w-full accent-mafia-gold">' +
         '</label>' +
@@ -1130,7 +1130,7 @@
       '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider pt-3">Громкость плейлиста × <span class="text-mafia-gold/85 tabular-nums" data-music-vol-label>' +
       plVol.toFixed(2) +
       '</span>' +
-      '<input type="range" min="0.25" max="2" step="0.05" data-music-field="volume" value="' +
+      '<input type="range" min="0.25" max="4" step="0.05" data-music-field="volume" value="' +
       plVol +
       '" class="mt-2 w-full accent-mafia-gold">' +
       '</label>' +
@@ -1258,7 +1258,7 @@
         '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Громкость × <span class="text-mafia-gold/85 tabular-nums" data-music-vol-label>' +
         (typeof it.volumeMul === 'number' ? it.volumeMul : 1).toFixed(2) +
         '</span>' +
-        '<input type="range" min="0.25" max="2" step="0.05" data-music-field="volume" value="' +
+        '<input type="range" min="0.25" max="4" step="0.05" data-music-field="volume" value="' +
         (typeof it.volumeMul === 'number' ? it.volumeMul : 1) +
         '" class="mt-2 w-full accent-mafia-gold">' +
         '</label>' +

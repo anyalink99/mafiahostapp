@@ -115,7 +115,7 @@ window.MafiaApp = window.MafiaApp || {};
     var offset = typeof row.offsetSec === 'number' && !isNaN(row.offsetSec) ? row.offsetSec : 0;
     var vol = typeof row.volumeMul === 'number' && !isNaN(row.volumeMul) ? row.volumeMul : 1;
     if (vol < 0.25) vol = 0.25;
-    if (vol > 2) vol = 2;
+    if (vol > 4) vol = 4;
     return {
       id: row.id || newId(),
       name: String(row.name || 'Трек'),
@@ -129,7 +129,7 @@ window.MafiaApp = window.MafiaApp || {};
   function clampVol(v) {
     if (typeof v !== 'number' || isNaN(v)) return 1;
     if (v < 0.25) return 0.25;
-    if (v > 2) return 2;
+    if (v > 4) return 4;
     return v;
   }
 
@@ -350,9 +350,9 @@ window.MafiaApp = window.MafiaApp || {};
           if (tr.enabled === false) continue;
           var trVol = typeof tr.volumeMul === 'number' ? tr.volumeMul : 1;
           // Итоговая громкость = громкость плейлиста × громкость трека, но не выше
-          // одиночного максимума (x2), чтобы не было чрезмерного усиления/клиппинга.
+          // одиночного максимума (x4), чтобы не было чрезмерного усиления/клиппинга.
           var effVol = plVol * trVol;
-          if (effVol > 2) effVol = 2;
+          if (effVol > 4) effVol = 4;
           pool.push({
             id: it.id + ':' + tr.id,
             name: tr.name || it.name,
@@ -381,7 +381,7 @@ window.MafiaApp = window.MafiaApp || {};
       if (typeof patch.volumeMul === 'number') {
         list[i].volumeMul = patch.volumeMul;
         if (list[i].volumeMul < 0.25) list[i].volumeMul = 0.25;
-        if (list[i].volumeMul > 2) list[i].volumeMul = 2;
+        if (list[i].volumeMul > 4) list[i].volumeMul = 4;
       }
       if (typeof patch.enabled === 'boolean') list[i].enabled = patch.enabled;
       app.saveMusicMeta(meta);
