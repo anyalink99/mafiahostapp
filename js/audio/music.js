@@ -6,6 +6,116 @@
   var duckedForTimerVoice = false;
   var _spotifyActiveSlot = null;
   var sessionVolumeMul = null;
+  var duckFactor = 1;
+
+  // ── Реальное усиление громкости (>100%) через Web Audio ──
+  // HTMLAudio.volume жёстко ограничен 1.0, поэтому x2 раньше «упирался» в потолок.
+  // Маршрутизируем элемент через GainNode ТОЛЬКО когда нужно усиление (target>1) —
+  // обычный случай (≤100%) идёт нативным element.volume и работает везде.
+  // Любой сбой Web Audio → _webAudioBroken и откат на element.volume (cap 1.0).
+  var _audioCtx = null;
+  var _gainNodes = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+  // Под file:// Web Audio глушит медиа (непрозрачный origin → cross-origin taint),
+  // поэтому усиление там невозможно — отключаем граф и играем нативно (cap 1.0).
+  // По http(s)/localhost и в собранном приложении усиление работает.
+  var _webAudioBroken =
+    typeof location !== 'undefined' && location.protocol === 'file:';
+
+  function getAudioCtx() {
+    if (_webAudioBroken) return null;
+    if (_audioCtx) return _audioCtx;
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) {
+        _webAudioBroken = true;
+        return null;
+      }
+      _audioCtx = new Ctx();
+    } catch (e) {
+      _webAudioBroken = true;
+      return null;
+    }
+    return _audioCtx;
+  }
+
+  function resumeAudioCtx() {
+    if (!_audioCtx || _audioCtx.state !== 'suspended' || !_audioCtx.resume) return;
+    try {
+      var p = _audioCtx.resume();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+  app.resumeMusicAudioCtx = resumeAudioCtx;
+
+  // Создаёт и «разогревает» AudioContext синхронно в рамках пользовательского жеста
+  // (клик «играть»/превью). Без этого resume() в асинхронном колбэке отклоняется
+  // (жест уже истёк), и усиленный трек уходит в suspended-граф → тишина до перезагрузки.
+  app.primeMusicAudio = function () {
+    var ctx = getAudioCtx();
+    if (ctx) resumeAudioCtx();
+  };
+
+  function getGainForEl(a) {
+    if (!_gainNodes || !a) return null;
+    if (_gainNodes.has(a)) return _gainNodes.get(a);
+    if (_webAudioBroken) return null;
+    var ctx = getAudioCtx();
+    if (!ctx) return null;
+    try {
+      var src = ctx.createMediaElementSource(a);
+      var g = ctx.createGain();
+      src.connect(g);
+      g.connect(ctx.destination);
+      var rec = { gain: g };
+      _gainNodes.set(a, rec);
+      return rec;
+    } catch (e) {
+      _webAudioBroken = true;
+      return null;
+    }
+  }
+
+  function setElementGainVolume(a, mul) {
+    if (!a) return;
+    var target = BASE_VOLUME * mul;
+    if (target < 0) target = 0;
+    var routed = _gainNodes && _gainNodes.has(a);
+    // Обычный случай (≤100% и ещё не маршрутизирован) — нативно, без Web Audio.
+    if (!routed && target <= 1) {
+      a.volume = target;
+      return;
+    }
+    var ctx = getAudioCtx();
+    if (ctx && ctx.state === 'suspended') resumeAudioCtx();
+    if (routed) {
+      var rec0 = getGainForEl(a);
+      if (rec0) {
+        a.volume = 1;
+        try {
+          rec0.gain.gain.value = target;
+        } catch (e) {}
+        return;
+      }
+      a.volume = target > 1 ? 1 : target;
+      return;
+    }
+    // Нужно усиление. Маршрутизируем элемент в граф ТОЛЬКО если контекст реально
+    // играет — иначе звук уходит в неактивный граф и пропадает до перезагрузки.
+    // Если контекст не запущен — безопасный откат на нативную громкость (cap 1.0).
+    if (!ctx || ctx.state !== 'running') {
+      a.volume = target > 1 ? 1 : target;
+      return;
+    }
+    var rec = getGainForEl(a);
+    if (rec) {
+      a.volume = 1;
+      try {
+        rec.gain.gain.value = target;
+      } catch (e) {}
+    } else {
+      a.volume = target > 1 ? 1 : target;
+    }
+  }
 
   function getAudio() {
     return document.getElementById('bg-music');
@@ -53,9 +163,11 @@
     }
     var a = getAudio();
     if (duckedForTimerVoice && a && currentPlayItem) {
+      duckFactor = 1;
       applyVolume(a, currentPlayItem);
     }
     duckedForTimerVoice = false;
+    duckFactor = 1;
     currentPlayItem = null;
     revokeCurrentUrl();
     currentSlot = null;
@@ -90,6 +202,7 @@
     }
     var a = getAudio();
     if (a && a.paused && a.src) {
+      resumeAudioCtx();
       var p = a.play();
       if (p && typeof p.then === 'function') p.catch(function () {});
     }
@@ -121,10 +234,7 @@
     } else {
       mul = item && typeof item.volumeMul === 'number' ? item.volumeMul : 1;
     }
-    var v = BASE_VOLUME * mul;
-    if (v < 0) v = 0;
-    if (v > 1) v = 1;
-    a.volume = v;
+    setElementGainVolume(a, mul * duckFactor);
   }
 
   app.musicSetSessionVolumeMul = function (mul) {
@@ -169,7 +279,8 @@
       var b = btns[i];
       var sid = b.getAttribute('data-slot');
       var iid = b.getAttribute('data-item-id');
-      var key = (sid === '2' ? '2' : '1') + ':' + iid;
+      var tid = b.getAttribute('data-track-id');
+      var key = (sid === '2' ? '2' : '1') + ':' + iid + (tid ? ':' + tid : '');
       b.classList.toggle('is-playing', previewPlayingKey !== null && previewPlayingKey === key);
     }
   }
@@ -191,9 +302,10 @@
     syncMusicPreviewButtons();
   };
 
-  app.musicPreviewToggle = function (slot, itemId) {
+  app.musicPreviewToggle = function (slot, itemId, trackId) {
+    app.primeMusicAudio();
     var k = String(slot) === '2' ? '2' : '1';
-    var key = k + ':' + itemId;
+    var key = k + ':' + itemId + (trackId ? ':' + trackId : '');
     var items = app.getMusicSlotItems(slot);
     var item = null;
     for (var ii = 0; ii < items.length; ii++) {
@@ -203,6 +315,25 @@
       }
     }
     if (!item) return;
+    if (trackId) {
+      if (item.type !== 'playlist' || !Array.isArray(item.tracks)) return;
+      var tr = null;
+      for (var ti = 0; ti < item.tracks.length; ti++) {
+        if (item.tracks[ti] && item.tracks[ti].id === trackId) { tr = item.tracks[ti]; break; }
+      }
+      if (!tr || !tr.blobId) return;
+      var plVol = typeof item.volumeMul === 'number' ? item.volumeMul : 1;
+      var trVol = typeof tr.volumeMul === 'number' ? tr.volumeMul : 1;
+      var effVol = plVol * trVol;
+      if (effVol > 2) effVol = 2;
+      item = {
+        id: itemId + ':' + trackId,
+        name: tr.name || item.name,
+        offsetSec: typeof tr.offsetSec === 'number' ? tr.offsetSec : 0,
+        volumeMul: effVol,
+        source: { type: 'idb', blobId: tr.blobId },
+      };
+    }
     var a = getPreviewAudio();
     if (!a) return;
     if (previewPlayingKey === key && !a.paused) {
@@ -336,12 +467,15 @@
     var a = getAudio();
     if (!a || a.paused || duckedForTimerVoice) return;
     duckedForTimerVoice = true;
-    a.volume = Math.max(0, a.volume * mul);
+    duckFactor = mul;
+    if (currentPlayItem) applyVolume(a, currentPlayItem);
+    else setElementGainVolume(a, mul);
   };
 
   app.restoreBackgroundMusicVolumeAfterTimerVoice = function () {
     if (!duckedForTimerVoice) return;
     duckedForTimerVoice = false;
+    duckFactor = 1;
     if (_spotifyActiveSlot) {
       var v = sessionVolumeMul !== null ? BASE_VOLUME * sessionVolumeMul : BASE_VOLUME;
       if (app.spotifySetVolume) app.spotifySetVolume(Math.max(0, Math.min(1, v))).catch(function () {});
@@ -588,6 +722,7 @@
   }
 
   app.musicStartSlot = function (slot) {
+    app.primeMusicAudio();
     app.hideMusicSlotModal();
 
     var spotifyPlaylist = app.spotifyGetSlotPlaylist ? app.spotifyGetSlotPlaylist(slot) : null;
@@ -608,6 +743,7 @@
 
   app.musicOnEmptyFilesSelected = function (slot, fileList) {
     if (!fileList || !fileList.length) return;
+    app.primeMusicAudio();
     app.musicAddFilesToSlot(slot, fileList).then(function () {
       app.hideMusicEmptyModal();
       var item = pickRandomItem(slot);
@@ -618,6 +754,10 @@
   var escapeHtml = app.escapeHtml;
 
   app.expandedMusicItemIdBySlot = { '1': '', '2': '' };
+  // id плейлиста, у которого сейчас включён режим «Редактировать» (потрековые настройки).
+  app.musicPlaylistEditId = '';
+  // id развёрнутого трека внутри редактируемого плейлиста (открыт только один за раз).
+  app.musicPlaylistTrackOpenId = '';
 
   app.getMusicExpandedItemId = function (slot) {
     var k = String(slot) === '2' ? '2' : '1';
@@ -716,6 +856,15 @@
     var other = k === '2' ? '1' : '2';
     var openHere = app.expandedMusicItemIdBySlot[k];
     var openOther = app.expandedMusicItemIdBySlot[other];
+    // Сворачивание/переключение плейлиста сбрасывает режим редактирования.
+    if (app.musicPlaylistEditId && app.musicPlaylistEditId !== itemId) {
+      app.musicPlaylistEditId = '';
+      app.musicPlaylistTrackOpenId = '';
+    }
+    if (openHere === itemId) {
+      app.musicPlaylistEditId = '';
+      app.musicPlaylistTrackOpenId = '';
+    }
 
     if (openHere === itemId) {
       app.expandedMusicItemIdBySlot['1'] = '';
@@ -742,6 +891,10 @@
 
   app.setMusicExpandedToItem = function (slot, itemId) {
     var k = String(slot) === '2' ? '2' : '1';
+    if (app.musicPlaylistEditId && app.musicPlaylistEditId !== itemId) {
+      app.musicPlaylistEditId = '';
+      app.musicPlaylistTrackOpenId = '';
+    }
     var oldId = app.expandedMusicItemIdBySlot['1'] || app.expandedMusicItemIdBySlot['2'];
     var had = !!oldId;
     app.expandedMusicItemIdBySlot['1'] = '';
@@ -797,26 +950,145 @@
     }
   };
 
+  // Один потрековый блок (режим «Редактировать»): сворачиваемый, открыт только один за раз.
+  // Шапка (имя + превью) всегда видна; настройки (участие, старт, громкость) — у раскрытого.
+  function buildPlaylistTrackEditRow(slot, it, tr) {
+    var off = tr.enabled === false;
+    var isOpen = app.musicPlaylistTrackOpenId === tr.id;
+    var vol = typeof tr.volumeMul === 'number' ? tr.volumeMul : 1;
+    var offset = typeof tr.offsetSec === 'number' ? tr.offsetSec : 0;
+    var body = '';
+    if (isOpen) {
+      body =
+        '<div class="px-2 pb-2 border-t border-mafia-border/40">' +
+        '<label class="flex items-center gap-2 cursor-pointer text-xs text-mafia-cream/70 pt-2 select-none">' +
+        '<input type="checkbox" data-music-field="enabled" class="mafia-checkbox" ' +
+        (off ? '' : 'checked') +
+        '>' +
+        '<span>Участвует в случайном выборе</span>' +
+        '</label>' +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">' +
+        '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Секунда старта' +
+        '<input type="number" min="0" step="0.1" data-music-field="offset" value="' +
+        offset +
+        '" class="mt-1 w-full px-2 py-1.5 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">' +
+        '</label>' +
+        '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Громкость × <span class="text-mafia-gold/85 tabular-nums" data-music-vol-label>' +
+        vol.toFixed(2) +
+        '</span>' +
+        '<input type="range" min="0.25" max="2" step="0.05" data-music-field="volume" value="' +
+        vol +
+        '" class="mt-2 w-full accent-mafia-gold">' +
+        '</label>' +
+        '</div>' +
+        '</div>';
+    }
+    return (
+      '<div class="rounded border border-mafia-border/50 bg-mafia-black/30' +
+      (off ? ' opacity-55' : '') +
+      '" data-music-track-id="' +
+      escapeHtml(tr.id) +
+      '">' +
+      '<div class="flex items-center gap-2 p-2">' +
+      '<button type="button" data-action="music-playlist-track-toggle" data-slot="' +
+      escapeHtml(slot) +
+      '" data-item-id="' +
+      escapeHtml(it.id) +
+      '" data-track-id="' +
+      escapeHtml(tr.id) +
+      '" class="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer">' +
+      '<span class="text-mafia-gold/70 text-xs leading-none">' +
+      (isOpen ? '▼' : '▶') +
+      '</span>' +
+      '<span class="text-mafia-cream/85 text-xs font-medium truncate min-w-0" title="' +
+      escapeHtml(tr.name || '') +
+      '">' +
+      escapeHtml(tr.name || '') +
+      '</span>' +
+      '</button>' +
+      '<button type="button" data-action="music-preview" data-slot="' +
+      escapeHtml(slot) +
+      '" data-item-id="' +
+      escapeHtml(it.id) +
+      '" data-track-id="' +
+      escapeHtml(tr.id) +
+      '" class="music-preview-btn flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-border/50 bg-mafia-black/30 text-mafia-gold/90 text-sm transition-colors hover:border-mafia-gold/40 hover:bg-mafia-card/40" title="Прослушать" aria-label="Прослушать">▶</button>' +
+      '</div>' +
+      body +
+      '</div>'
+    );
+  }
+
+  // Перестраивает блок треков плейлиста на месте и плавно подгоняет высоту панели.
+  function rebuildPlaylistTracksInPlace(slot, itemId, mutateBtn) {
+    var li = musicSettingsFindLiByItemId(itemId);
+    var screen = document.getElementById('settings-screen');
+    if (!li || !screen || !screen.classList.contains('active')) {
+      if (app.renderMusicSettings) app.renderMusicSettings();
+      return;
+    }
+    var items = app.getMusicSlotItems(slot);
+    var it = null;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].id === itemId) { it = items[i]; break; }
+    }
+    var container = li.querySelector('[data-music-tracks]');
+    var inner = li.querySelector('.music-item-settings-inner');
+    if (!it || !container) {
+      if (app.renderMusicSettings) app.renderMusicSettings();
+      return;
+    }
+    var oldH = inner ? inner.scrollHeight : 0;
+    container.innerHTML = app.buildMusicPlaylistTracksHtml(slot, it, app.musicPlaylistEditId === itemId);
+    if (mutateBtn) mutateBtn(li);
+    if (inner) {
+      var newH = inner.scrollHeight;
+      inner.style.maxHeight = oldH + 'px';
+      void inner.offsetHeight;
+      inner.style.maxHeight = newH + 'px';
+    }
+  }
+
+  // Содержимое блока «Треки» внутри плейлиста: компактный список или потрековые настройки.
+  app.buildMusicPlaylistTracksHtml = function (slot, it, editing) {
+    var tracks = Array.isArray(it.tracks) ? it.tracks : [];
+    if (!tracks.length) {
+      return '<p class="mt-1 text-mafia-cream/50 text-xs">Плейлист пуст.</p>';
+    }
+    if (editing) {
+      var rows = '<div class="mt-2 space-y-2">';
+      for (var e = 0; e < tracks.length; e++) {
+        if (!tracks[e]) continue;
+        rows += buildPlaylistTrackEditRow(slot, it, tracks[e]);
+      }
+      rows += '</div>';
+      return rows;
+    }
+    var ol = '<ol class="mt-1 space-y-1 text-mafia-cream/80 text-xs list-decimal list-inside marker:text-mafia-gold/55">';
+    for (var t = 0; t < tracks.length; t++) {
+      var tr = tracks[t];
+      if (!tr) continue;
+      var muted = tr.enabled === false;
+      ol +=
+        '<li class="truncate' +
+        (muted ? ' opacity-50' : '') +
+        '" title="' +
+        escapeHtml(tr.name || '') +
+        '">' +
+        escapeHtml(tr.name || '') +
+        (muted ? ' <span class="uppercase tracking-wider text-mafia-cream/40">· выкл.</span>' : '') +
+        '</li>';
+    }
+    ol += '</ol>';
+    return ol;
+  };
+
   app.buildMusicPlaylistRowHtml = function (slot, it, isOpen) {
     var offPool = it.enabled === false;
     var trackCount = Array.isArray(it.tracks) ? it.tracks.length : 0;
-    var tracksHtml = '';
-    if (trackCount) {
-      tracksHtml += '<ol class="mt-1 space-y-1 text-mafia-cream/80 text-xs list-decimal list-inside marker:text-mafia-gold/55">';
-      for (var t = 0; t < it.tracks.length; t++) {
-        var tr = it.tracks[t];
-        if (!tr) continue;
-        tracksHtml +=
-          '<li class="truncate" title="' +
-          escapeHtml(tr.name || '') +
-          '">' +
-          escapeHtml(tr.name || '') +
-          '</li>';
-      }
-      tracksHtml += '</ol>';
-    } else {
-      tracksHtml += '<p class="mt-1 text-mafia-cream/50 text-xs">Плейлист пуст.</p>';
-    }
+    var editing = app.musicPlaylistEditId === it.id;
+    var plVol = typeof it.volumeMul === 'number' ? it.volumeMul : 1;
+    var tracksHtml = app.buildMusicPlaylistTracksHtml(slot, it, editing);
     return (
       '<li class="bg-mafia-black/40 border border-mafia-border rounded overflow-hidden text-left' +
       (offPool ? ' opacity-60' : '') +
@@ -855,8 +1127,28 @@
       '>' +
       '<span>Участвует в случайном выборе</span>' +
       '</label>' +
-      '<div class="pt-3">' +
+      '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider pt-3">Громкость плейлиста × <span class="text-mafia-gold/85 tabular-nums" data-music-vol-label>' +
+      plVol.toFixed(2) +
+      '</span>' +
+      '<input type="range" min="0.25" max="2" step="0.05" data-music-field="volume" value="' +
+      plVol +
+      '" class="mt-2 w-full accent-mafia-gold">' +
+      '</label>' +
+      '<div class="flex items-center justify-between gap-2 pt-3">' +
       '<div class="text-xs text-mafia-cream/60 uppercase tracking-wider">Треки</div>' +
+      (trackCount
+        ? '<button type="button" data-action="music-playlist-edit-toggle" data-slot="' +
+          escapeHtml(slot) +
+          '" data-item-id="' +
+          escapeHtml(it.id) +
+          '" data-music-edit-btn class="text-xs uppercase tracking-wider cursor-pointer ' +
+          (editing ? 'text-mafia-gold' : 'text-mafia-cream/70 hover:text-mafia-cream') +
+          '">' +
+          (editing ? 'Готово' : 'Редактировать') +
+          '</button>'
+        : '') +
+      '</div>' +
+      '<div data-music-tracks>' +
       tracksHtml +
       '</div>' +
       '<div class="flex justify-end mt-2">' +
@@ -871,6 +1163,30 @@
       '</div>' +
       '</li>'
     );
+  };
+
+  // Переключает режим «Редактировать» у плейлиста, перестраивая только блок треков
+  // (без сворачивания/повторного раскрытия панели — плавно меняет высоту).
+  app.toggleMusicPlaylistEdit = function (slot, itemId) {
+    app.musicPlaylistEditId = app.musicPlaylistEditId === itemId ? '' : itemId;
+    app.musicPlaylistTrackOpenId = '';
+    if (app.stopMusicPreview) app.stopMusicPreview();
+    var editing = app.musicPlaylistEditId === itemId;
+    rebuildPlaylistTracksInPlace(slot, itemId, function (li) {
+      var btn = li.querySelector('[data-music-edit-btn]');
+      if (!btn) return;
+      btn.textContent = editing ? 'Готово' : 'Редактировать';
+      btn.classList.toggle('text-mafia-gold', editing);
+      btn.classList.toggle('text-mafia-cream/70', !editing);
+      btn.classList.toggle('hover:text-mafia-cream', !editing);
+    });
+  };
+
+  // Разворачивает/сворачивает один трек в режиме редактирования (открыт только один).
+  app.toggleMusicPlaylistTrack = function (slot, playlistId, trackId) {
+    app.musicPlaylistTrackOpenId = app.musicPlaylistTrackOpenId === trackId ? '' : trackId;
+    if (app.stopMusicPreview) app.stopMusicPreview();
+    rebuildPlaylistTracksInPlace(slot, playlistId, null);
   };
 
   app.buildMusicSlotListHtml = function (slot) {
@@ -994,16 +1310,35 @@
     var id = li.getAttribute('data-music-item-id');
     var slot = li.getAttribute('data-music-slot');
     if (!id || !slot) return;
+    var trackEl = el.closest('[data-music-track-id]');
+    var trackId = trackEl ? trackEl.getAttribute('data-music-track-id') : null;
+
+    var patch = {};
     if (field === 'offset') {
       var off = parseFloat(el.value);
       if (isNaN(off)) off = 0;
-      app.musicUpdateItem(slot, id, { offsetSec: off });
+      patch.offsetSec = off;
     } else if (field === 'volume') {
       var v = parseFloat(el.value);
       if (isNaN(v)) v = 1;
-      app.musicUpdateItem(slot, id, { volumeMul: v });
-      var label = li.querySelector('[data-music-vol-label]');
+      patch.volumeMul = v;
+      var labelWrap = el.closest('label');
+      var label = labelWrap ? labelWrap.querySelector('[data-music-vol-label]') : null;
       if (label) label.textContent = v.toFixed(2);
+    } else if (field === 'enabled') {
+      patch.enabled = !!el.checked;
+    } else {
+      return;
+    }
+
+    if (trackId) {
+      if (app.musicUpdatePlaylistTrack) app.musicUpdatePlaylistTrack(slot, id, trackId, patch);
+      if (field === 'enabled' && trackEl) trackEl.classList.toggle('opacity-55', !el.checked);
+    } else {
+      app.musicUpdateItem(slot, id, patch);
+      if (field === 'enabled' && app.musicSyncEnabledRowAppearance) {
+        app.musicSyncEnabledRowAppearance(li, el.checked);
+      }
     }
   };
 

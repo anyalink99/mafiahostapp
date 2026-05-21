@@ -106,6 +106,27 @@
         }
       }
     });
+    app.updateCardDealerHint();
+  };
+
+  // Пока не все карты разданы — показываем ник игрока, который тянет следующим
+  // (по порядку: 1-й игрок берёт первую карту и т.д.).
+  app.updateCardDealerHint = function () {
+    const hint = document.getElementById('card-dealer-hint');
+    const nameEl = document.getElementById('card-dealer-name');
+    if (!hint || !nameEl) return;
+    const total = app.getAvailableCount();
+    const dealt = app.revealedIndices.length;
+    if (dealt >= total) {
+      hint.classList.add('hidden');
+      return;
+    }
+    const seatIndex = dealt; // следующий тянущий — игрок №(dealt+1)
+    const player = app.players[seatIndex];
+    const nick = player && player.nick != null ? String(player.nick).trim() : '';
+    const num = player ? player.id : seatIndex + 1;
+    nameEl.textContent = nick ? '№' + num + ' — ' + nick : '№' + num;
+    hint.classList.remove('hidden');
   };
 
   app.sortCardsByRevealOrder = function () {

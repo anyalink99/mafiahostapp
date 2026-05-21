@@ -137,15 +137,10 @@
   };
 
   app.showSummaryBestMoveField = function (playerId) {
+    // Лучший ход — только у первого убитого. Пока никого не убили — поле скрыто у всех.
     var firstShot = app.getFirstShotPlayerIdFromLog();
-    if (firstShot != null) {
-      return playerId === firstShot;
-    }
-    if (app.countCompleteBestMoves() >= 1) {
-      var key = String(playerId);
-      return app.isBestMoveTripleComplete(app.bestMoveByPlayerId[key]);
-    }
-    return true;
+    if (firstShot == null) return false;
+    return playerId === firstShot;
   };
 
   app.serializeBestMoveTriple = function (a, b, c) {
@@ -155,6 +150,29 @@
     if (!x && !y && !z) return '';
     return [x, y, z].join(',');
   };
+
+  /** Раскладывает группу {sheriff,mafia,peaceful} по трём полям ввода с общим префиксом id. */
+  function fillNumGroupFields(idPrefix, group) {
+    var keys = ['sheriff', 'mafia', 'peaceful'];
+    for (var i = 0; i < keys.length; i++) {
+      var el = document.getElementById(idPrefix + keys[i]);
+      if (el) el.value = app.normalizeNumberListText(group[keys[i]]);
+    }
+  }
+
+  /** Собирает группу {sheriff,mafia,peaceful} из трёх полей ввода с общим префиксом id. */
+  function readNumGroupFields(idPrefix) {
+    var keys = ['sheriff', 'mafia', 'peaceful'];
+    var out = {};
+    for (var i = 0; i < keys.length; i++) {
+      var el = document.getElementById(idPrefix + keys[i]);
+      out[keys[i]] = el ? el.value : '';
+    }
+    return out;
+  }
+
+  app.fillNumGroupFields = fillNumGroupFields;
+  app.readNumGroupFields = readNumGroupFields;
 
   app.applySummaryBonusDelta = function (delta) {
     var inp = document.getElementById('modal-summary-bonus');
@@ -803,7 +821,7 @@
     var title = document.getElementById('modal-summary-player-title');
     var nickInp = document.getElementById('modal-summary-nick');
     var bonusInp = document.getElementById('modal-summary-bonus');
-    var noteTa = document.getElementById('modal-summary-bonus-note');
+    var noteTa = document.getElementById('modal-summary-note');
     var hint = document.getElementById('modal-summary-locked-hint');
     var unlocked = app.summaryWinnerChosen();
     if (title) title.textContent = 'Игрок №' + playerId;
@@ -814,19 +832,18 @@
     if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object') app.bonusNoteByPlayerId = {};
     if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') app.summaryRoleByPlayerId = {};
     if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
+    if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object') app.protocolByPlayerId = {};
+    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object') app.opinionByPlayerId = {};
     var bmWrap = document.getElementById('modal-summary-bestmove-wrap');
-    var bm1 = document.getElementById('modal-summary-bestmove-1');
-    var bm2 = document.getElementById('modal-summary-bestmove-2');
-    var bm3 = document.getElementById('modal-summary-bestmove-3');
+    var bm = document.getElementById('modal-summary-bestmove');
     var showBm = app.showSummaryBestMoveField(playerId);
     if (bmWrap) bmWrap.style.display = showBm ? 'flex' : 'none';
-    var triple = app.parseBestMoveTriple(app.bestMoveByPlayerId[bk]);
-    if (bm1) bm1.value = triple[0];
-    if (bm2) bm2.value = triple[1];
-    if (bm3) bm3.value = triple[2];
-    if (bm1) bm1.disabled = !showBm;
-    if (bm2) bm2.disabled = !showBm;
-    if (bm3) bm3.disabled = !showBm;
+    if (bm) {
+      bm.value = app.normalizeNumberListText(app.bestMoveByPlayerId[bk]);
+      bm.disabled = !showBm;
+    }
+    fillNumGroupFields('modal-summary-protocol-', app.getPlayerNumGroup(app.protocolByPlayerId, playerId));
+    fillNumGroupFields('modal-summary-opinion-', app.getPlayerNumGroup(app.opinionByPlayerId, playerId));
     var braw = app.bonusPointsByPlayerId[bk];
     var bnum = parseBonusFloat(braw);
     if (bonusInp) {
@@ -838,9 +855,9 @@
     }
     if (noteTa) noteTa.value = app.bonusNoteByPlayerId[bk] != null ? String(app.bonusNoteByPlayerId[bk]) : '';
     var bonusSection = document.getElementById('modal-summary-bonus-section');
-    var noteSection = document.getElementById('modal-summary-bonus-note-section');
     if (bonusSection) bonusSection.style.display = unlocked ? '' : 'none';
-    if (noteSection) noteSection.style.display = unlocked ? '' : 'none';
+    // Примечание, лучший ход, протокол и мнение доступны всегда (в т.ч. во время игры).
+    // За победителем заперты только допы и роль.
     var roleSection = document.getElementById('modal-summary-role-section');
     if (roleSection) roleSection.style.display = unlocked ? '' : 'none';
     if (unlocked) {
@@ -850,7 +867,7 @@
       if (roleRow) roleRow.innerHTML = '';
     }
     if (bonusInp) bonusInp.disabled = !unlocked;
-    if (noteTa) noteTa.disabled = !unlocked;
+    if (noteTa) noteTa.disabled = false;
     if (hint) hint.style.display = unlocked ? 'none' : '';
     app.modalSetOpen(m, true);
   };
@@ -867,49 +884,44 @@
     var nickInp = document.getElementById('modal-summary-nick');
     if (nickInp) pl.nick = nickInp.value.slice(0, 32);
     var unlocked = app.summaryWinnerChosen();
-    var showBm = app.showSummaryBestMoveField(pid);
-    var bm1 = document.getElementById('modal-summary-bestmove-1');
-    var bm2 = document.getElementById('modal-summary-bestmove-2');
-    var bm3 = document.getElementById('modal-summary-bestmove-3');
-    var tripleStr =
-      showBm && bm1 && bm2 && bm3 ? app.serializeBestMoveTriple(bm1.value, bm2.value, bm3.value) : '';
-    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
-    if (!unlocked) {
-      if (!showBm) {
-        app.saveState();
-        app.hideSummaryPlayerModal();
-        app.renderSummary();
-        if (app.renderGameSidePanels) app.renderGameSidePanels();
-        return;
+    app.savePlayerGameExtras('modal-summary-', pid);
+    // Допы и роль — только после выбора победителя.
+    if (unlocked) {
+      var bonusInp = document.getElementById('modal-summary-bonus');
+      var v = bonusInp ? parseBonusFloat(bonusInp.value) : 0;
+      if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object') app.bonusPointsByPlayerId = {};
+      if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') app.summaryRoleByPlayerId = {};
+      app.bonusPointsByPlayerId[String(pid)] = v;
+      var roleCode = getModalSummarySelectedRoleCode();
+      if (roleCode) {
+        app.summaryRoleByPlayerId[String(pid)] = roleCode;
       }
-      if (bm1 && bm2 && bm3) {
-        app.bestMoveByPlayerId[String(pid)] = tripleStr;
-      }
-      app.saveState();
-      app.hideSummaryPlayerModal();
-      app.renderSummary();
-      if (app.renderGameSidePanels) app.renderGameSidePanels();
-      return;
-    }
-    if (showBm && bm1 && bm2 && bm3) {
-      app.bestMoveByPlayerId[String(pid)] = tripleStr;
-    }
-    var bonusInp = document.getElementById('modal-summary-bonus');
-    var noteTa = document.getElementById('modal-summary-bonus-note');
-    var v = bonusInp ? parseBonusFloat(bonusInp.value) : 0;
-    if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object') app.bonusPointsByPlayerId = {};
-    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object') app.bonusNoteByPlayerId = {};
-    if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') app.summaryRoleByPlayerId = {};
-    app.bonusPointsByPlayerId[String(pid)] = v;
-    app.bonusNoteByPlayerId[String(pid)] = noteTa ? noteTa.value : '';
-    var roleCode = getModalSummarySelectedRoleCode();
-    if (roleCode) {
-      app.summaryRoleByPlayerId[String(pid)] = roleCode;
     }
     app.saveState();
     app.hideSummaryPlayerModal();
     app.renderSummary();
     if (app.renderGameSidePanels) app.renderGameSidePanels();
+  };
+
+  /**
+   * Сохраняет общие игровые данные игрока (лучший ход, протокол, мнение, примечание)
+   * из полей модалки с заданным префиксом id. Используется и модалкой итогов
+   * (`modal-summary-`), и модалкой игрового стола (`modal-player-`) — данные общие.
+   */
+  app.savePlayerGameExtras = function (idPrefix, pid) {
+    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
+    if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object') app.protocolByPlayerId = {};
+    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object') app.opinionByPlayerId = {};
+    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object') app.bonusNoteByPlayerId = {};
+    var key = String(pid);
+    var bm = document.getElementById(idPrefix + 'bestmove');
+    if (bm && app.showSummaryBestMoveField(pid)) {
+      app.bestMoveByPlayerId[key] = app.normalizeNumberListText(bm.value);
+    }
+    app.setPlayerNumGroup(app.protocolByPlayerId, pid, readNumGroupFields(idPrefix + 'protocol-'));
+    app.setPlayerNumGroup(app.opinionByPlayerId, pid, readNumGroupFields(idPrefix + 'opinion-'));
+    var noteTa = document.getElementById(idPrefix + 'note');
+    if (noteTa) app.bonusNoteByPlayerId[key] = noteTa.value;
   };
 
   app.renderSummary = function () {

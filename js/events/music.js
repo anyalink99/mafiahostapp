@@ -50,7 +50,21 @@
   app.uiActionHandlers['music-preview'] = function (el) {
     var sid = el.getAttribute('data-slot');
     var iid = el.getAttribute('data-item-id');
-    if (sid && iid && app.musicPreviewToggle) app.musicPreviewToggle(sid, iid);
+    var tid = el.getAttribute('data-track-id');
+    if (sid && iid && app.musicPreviewToggle) app.musicPreviewToggle(sid, iid, tid || null);
+  };
+
+  app.uiActionHandlers['music-playlist-edit-toggle'] = function (el) {
+    var sid = el.getAttribute('data-slot');
+    var iid = el.getAttribute('data-item-id');
+    if (sid && iid && app.toggleMusicPlaylistEdit) app.toggleMusicPlaylistEdit(sid, iid);
+  };
+
+  app.uiActionHandlers['music-playlist-track-toggle'] = function (el) {
+    var sid = el.getAttribute('data-slot');
+    var iid = el.getAttribute('data-item-id');
+    var tid = el.getAttribute('data-track-id');
+    if (sid && iid && tid && app.toggleMusicPlaylistTrack) app.toggleMusicPlaylistTrack(sid, iid, tid);
   };
 
   app.uiActionHandlers['music-remove-item'] = function (el) {

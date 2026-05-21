@@ -205,7 +205,10 @@
   app.hidePlayerActionsModal = function () {
     var m = document.getElementById('modal-player-actions');
     var wasOpen = m && m.hasAttribute('data-open');
-    if (wasOpen) app.syncPlayerNickFromModal();
+    if (wasOpen) {
+      app.syncPlayerNickFromModal();
+      app.syncPlayerExtrasFromModal();
+    }
     if (m) app.modalSetOpen(m, false);
     if (wasOpen) {
       var gs = document.getElementById('game-screen');
@@ -302,7 +305,53 @@
     }
     var nickInp = document.getElementById('modal-player-nick');
     if (nickInp) nickInp.value = p.nick != null ? String(p.nick) : '';
+    var extras = document.getElementById('modal-player-game-extras');
+    if (extras) extras.classList.toggle('hidden', nickOnlyMode);
+    if (!nickOnlyMode && gameTableExtrasActive()) populatePlayerExtras(id);
     app.modalSetOpen(m, true);
+  };
+
+  /**
+   * На ПК (видна левая панель) поля «лучший ход / протокол / мнение / примечание»
+   * живут только в модалке итогов из левой панели, а в модалке игрового стола скрыты
+   * (lg:hidden) и не читаются/не пишутся. На мобилке левой панели нет — поля здесь.
+   */
+  function gameTableExtrasActive() {
+    var left = document.getElementById('game-side-left');
+    if (!left) return true;
+    return window.getComputedStyle(left).display === 'none';
+  }
+
+  function populatePlayerExtras(id) {
+    if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object') app.protocolByPlayerId = {};
+    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object') app.opinionByPlayerId = {};
+    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
+    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object') app.bonusNoteByPlayerId = {};
+    var key = String(id);
+    var bmWrap = document.getElementById('modal-player-bestmove-wrap');
+    var bm = document.getElementById('modal-player-bestmove');
+    var showBm = app.showSummaryBestMoveField ? app.showSummaryBestMoveField(id) : true;
+    if (bmWrap) bmWrap.style.display = showBm ? 'flex' : 'none';
+    if (bm) {
+      bm.value = app.normalizeNumberListText ? app.normalizeNumberListText(app.bestMoveByPlayerId[key]) : (app.bestMoveByPlayerId[key] || '');
+      bm.disabled = !showBm;
+    }
+    if (app.fillNumGroupFields && app.getPlayerNumGroup) {
+      app.fillNumGroupFields('modal-player-protocol-', app.getPlayerNumGroup(app.protocolByPlayerId, id));
+      app.fillNumGroupFields('modal-player-opinion-', app.getPlayerNumGroup(app.opinionByPlayerId, id));
+    }
+    var noteTa = document.getElementById('modal-player-note');
+    if (noteTa) noteTa.value = app.bonusNoteByPlayerId[key] != null ? String(app.bonusNoteByPlayerId[key]) : '';
+  }
+
+  app.syncPlayerExtrasFromModal = function () {
+    var m = document.getElementById('modal-player-actions');
+    if (!m || m.dataset.mode !== 'game') return;
+    if (!gameTableExtrasActive()) return;
+    var pid = parseInt(m.dataset.playerId, 10);
+    if (isNaN(pid) || !app.savePlayerGameExtras) return;
+    app.savePlayerGameExtras('modal-player-', pid);
+    app.saveState();
   };
 
   app.pruneGameLogOnRevive = function (playerId, reason) {
@@ -366,6 +415,36 @@
       app.renderVoteScreen();
     }
     app.saveState();
+  };
+
+  // Точечно обновляет «таблетку» фолов без полного перерендера списка — так окошко
+  // не дёргается по вертикали при смене числа. Анимация — только при росте (animate).
+  app.patchPlayerSlotFoul = function (id, animate) {
+    var list = document.getElementById('players-list');
+    if (!list) return;
+    var btn = list.querySelector('[data-player-id="' + id + '"]');
+    if (!btn) return;
+    var p = app.players.find(function (x) {
+      return x.id === id;
+    });
+    if (!p) return;
+    var pill = btn.querySelector('.player-slot__foul-pill');
+    if (!pill) return;
+    var span = pill.querySelector('span');
+    if (span) span.textContent = 'ф: ' + p.fouls;
+    var hot = p.fouls > 2;
+    pill.classList.toggle('border-mafia-blood/55', hot);
+    pill.classList.toggle('bg-mafia-blood', hot);
+    pill.classList.toggle('border-mafia-border/35', !hot);
+    pill.classList.toggle('bg-black/25', !hot);
+    if (animate) {
+      pill.classList.remove('foul-bump');
+      void pill.offsetWidth;
+      pill.classList.add('foul-bump');
+      window.setTimeout(function () {
+        pill.classList.remove('foul-bump');
+      }, 520);
+    }
   };
 
   app.patchPlayerSlotVoteIndicator = function (id) {
@@ -536,7 +615,9 @@
     });
     if (!p || p.eliminationReason) return;
     p.fouls++;
+    var disqualified = false;
     if (p.fouls >= 4) {
+      disqualified = true;
       p.fouls = 4;
       p.eliminationReason = 'disqual';
       app.gameLog.push({ type: 'elimination', ts: Date.now(), playerId: id, reason: 'disqual' });
@@ -550,7 +631,11 @@
         vs.poolTotal = app.getActivePlayerCount();
       }
     }
-    app.renderPlayers();
+    if (disqualified) {
+      app.renderPlayers();
+    } else {
+      app.patchPlayerSlotFoul(id, true);
+    }
     var voteScr = document.getElementById('vote-screen');
     if (voteScr && voteScr.classList.contains('active') && app.renderVoteScreen) {
       app.renderVoteScreen();
@@ -564,7 +649,7 @@
     });
     if (!p || p.eliminationReason || p.fouls <= 0) return;
     p.fouls--;
-    app.renderPlayers();
+    app.patchPlayerSlotFoul(id, false);
     app.saveState();
   };
 

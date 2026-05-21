@@ -204,6 +204,31 @@ body {
   animation: timer-pill-shake 0.38s ease-in-out;
 }
 
+/* ВАЖНО: у .player-slot__foul-pill базовый transform: translateY(0.1875rem).
+   Поэтому каждый кадр должен сохранять этот сдвиг — иначе scale «съедает» его
+   и пилюля подскакивает вверх на ~3px. (Ср. timer-pill-shake выше.) */
+@keyframes foul-bump {
+  0% {
+    transform: translateY(0.1875rem) scale(1);
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+  28% {
+    transform: translateY(0.1875rem) scale(1.42);
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.55);
+  }
+  60% {
+    transform: translateY(0.1875rem) scale(0.94);
+  }
+  100% {
+    transform: translateY(0.1875rem) scale(1);
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+}
+
+.player-slot__foul-pill.foul-bump {
+  animation: foul-bump 0.5s ease-out;
+}
+
 #game-screen #voting-order.voting-order-queue {
   font-size: clamp(1.125rem, 4.2vmin, 1.5rem);
   line-height: 1.45;

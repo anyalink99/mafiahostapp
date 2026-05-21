@@ -6,6 +6,23 @@
  * (long-press, swipe) — это инфраструктура UI, общая для всех экранов.
  */
 (function (app) {
+  /**
+   * Живое форматирование полей-списков номеров (лучший ход, протокол, мнение):
+   * оставляет только цифры, разделители превращает в «, ». Пробел/запятая в конце
+   * при вводе (не при удалении) добавляют «, », чтобы следующий номер шёл через запятую.
+   */
+  function formatNumListField(el, e) {
+    var deleting = !!(e && e.inputType && e.inputType.indexOf('delete') === 0);
+    var raw = el.value;
+    var endsWithSep = !deleting && /[\s,;]$/.test(raw);
+    var parts = raw.split(/[^0-9]+/).filter(function (x) {
+      return x !== '';
+    });
+    var out = parts.join(', ');
+    if (endsWithSep && out !== '') out += ', ';
+    if (el.value !== out) el.value = out;
+  }
+
   app.bindUiEvents = function () {
     var voteTilePtr = { tile: null, id: null };
     var ROLE_CLOSE_EDGE_GUARD_PX = 56;
@@ -367,8 +384,19 @@
 
     document.body.addEventListener('input', function (e) {
       var el = e.target;
+      if (el && el.getAttribute && el.hasAttribute('data-numlist')) {
+        formatNumListField(el, e);
+        return;
+      }
       if (el && el.id === 'game-side-notes') {
         if (app.applyGameSideNotesInput) app.applyGameSideNotesInput(el.value);
+        return;
+      }
+      if (el && (el.id === 'setting-timer-main' || el.id === 'setting-timer-short')) {
+        var dsec = parseInt(el.value, 10);
+        if (!isNaN(dsec) && app.setTimerDuration) {
+          app.setTimerDuration(el.id === 'setting-timer-short' ? 'short' : 'main', dsec);
+        }
         return;
       }
       if (el && el.id === 'setting-timer-voice-duck-mul') {
@@ -465,16 +493,104 @@
         return;
       }
       if (field === 'enabled') {
-        var li = el.closest('[data-music-item-id]');
-        if (!li) return;
-        var settings = document.getElementById('settings-screen');
-        if (!settings || !settings.classList.contains('active')) return;
-        var id = li.getAttribute('data-music-item-id');
-        var slot = li.getAttribute('data-music-slot');
-        if (!id || !slot) return;
-        app.musicUpdateItem(slot, id, { enabled: el.checked });
-        if (app.musicSyncEnabledRowAppearance) app.musicSyncEnabledRowAppearance(li, el.checked);
+        if (app.applyMusicFieldChange) app.applyMusicFieldChange(el);
       }
+    });
+
+    function gameScreenActive() {
+      var gs = document.getElementById('game-screen');
+      return !!(gs && gs.classList.contains('active'));
+    }
+
+    // ПК-шорткаты на game-screen: колесо над таймером — подкрутка времени (±5 с),
+    // колесо над игроком — ±фол (аналог свайпа на телефоне). Лёгкий троттлинг.
+    var TIMER_WHEEL_STEP = 5;
+    var lastTimerWheelTs = 0;
+    var lastFoulWheelTs = 0;
+    document.body.addEventListener(
+      'wheel',
+      function (e) {
+        if (!e.target || !e.target.closest) return;
+        if (!gameScreenActive()) return;
+        if (e.target.closest('#timer-pill')) {
+          if (!app.adjustTimer) return;
+          var nowT = Date.now();
+          if (nowT - lastTimerWheelTs < 45) { e.preventDefault(); return; }
+          lastTimerWheelTs = nowT;
+          e.preventDefault();
+          app.adjustTimer(e.deltaY < 0 ? TIMER_WHEEL_STEP : -TIMER_WHEEL_STEP);
+          return;
+        }
+        var slot = e.target.closest('[data-action="player-slot-open"]');
+        if (slot) {
+          var pidW = parseInt(slot.getAttribute('data-player-id'), 10);
+          if (isNaN(pidW)) return;
+          e.preventDefault();
+          var nowF = Date.now();
+          if (nowF - lastFoulWheelTs < 140) return;
+          lastFoulWheelTs = nowF;
+          if (e.deltaY < 0) app.addFoul(pidW);
+          else app.removeFoul(pidW);
+        }
+      },
+      { passive: false }
+    );
+
+    // ПКМ по игроку — выставить/убрать с голосования (аналог удержания на телефоне).
+    document.body.addEventListener('contextmenu', function (e) {
+      if (!e.target || !e.target.closest) return;
+      if (!gameScreenActive()) return;
+      var slot = e.target.closest('[data-action="player-slot-open"]');
+      if (!slot) return;
+      e.preventDefault();
+      var pidC = parseInt(slot.getAttribute('data-player-id'), 10);
+      if (isNaN(pidC)) return;
+      var inQ = app.nomineeQueue && app.nomineeQueue.indexOf(pidC) !== -1;
+      if (inQ) {
+        if (app.removePlayerFromNomineeQueue) app.removePlayerFromNomineeQueue(pidC);
+      } else if (app.addPlayerToNomineeQueue) {
+        app.addPlayerToNomineeQueue(pidC);
+      }
+      if (navigator.vibrate) { try { navigator.vibrate(40); } catch (_e) {} }
+    });
+
+    // Перетаскивание по вертикали на «таблетке» таймера (телефон) — подкрутка времени.
+    (function initTimerDragGesture() {
+      var STEP_PX = 9;
+      var d = { active: false, id: -1, y0: 0, base: 0 };
+      function findT(list, id) {
+        for (var i = 0; i < list.length; i++) if (list[i].identifier === id) return list[i];
+        return null;
+      }
+      document.body.addEventListener('touchstart', function (e) {
+        if (d.active || !gameScreenActive()) return;
+        if (!e.target || !e.target.closest || !e.target.closest('#timer-pill')) return;
+        var t = e.changedTouches && e.changedTouches[0];
+        if (!t) return;
+        d.active = true;
+        d.id = t.identifier;
+        d.y0 = t.clientY;
+        d.base = app.timeLeft;
+      }, { passive: true });
+      document.body.addEventListener('touchmove', function (e) {
+        if (!d.active) return;
+        var t = findT(e.touches, d.id);
+        if (!t) return;
+        var deltaSec = Math.round((d.y0 - t.clientY) / STEP_PX);
+        if (app.setTimer) app.setTimer(d.base + deltaSec);
+        e.preventDefault();
+      }, { passive: false });
+      function endDrag() {
+        d.active = false;
+        d.id = -1;
+      }
+      document.body.addEventListener('touchend', endDrag, { passive: true });
+      document.body.addEventListener('touchcancel', endDrag, { passive: true });
+    })();
+
+    // Возврат вкладки/приложения из фона — мгновенно пересчитать таймер по часам.
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && app.timerRunning && app.tickTimer) app.tickTimer();
     });
   };
 })(window.MafiaApp);

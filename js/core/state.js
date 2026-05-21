@@ -39,6 +39,10 @@ window.MafiaApp = window.MafiaApp || {};
   app.revealedIndices = [];
   app.timerInterval = null;
   app.timeLeft = 60;
+  app.timerRunning = false;
+  app.timerEndsAt = null;
+  app.timerMainSec = 60;
+  app.timerShortSec = 30;
   app.timerVoiceEnabled = false;
   app.timerVoiceDuckEnabled = true;
   app.timerVoiceDuckMul = 0.38;
@@ -63,6 +67,10 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.bestMoveByPlayerId = {};
 
+  app.protocolByPlayerId = {};
+
+  app.opinionByPlayerId = {};
+
   app.summaryHostName = '';
 
   app.summarySyntheticFirstDayLine = null;
@@ -84,6 +92,8 @@ window.MafiaApp = window.MafiaApp || {};
         activeVoteRound: app.activeVoteRound,
         revealedIndices: app.revealedIndices,
         timeLeft: app.timeLeft,
+        timerRunning: app.timerRunning,
+        timerEndsAt: app.timerEndsAt,
         gameLog: app.gameLog,
         playerRoleOverrides: app.playerRoleOverrides,
         winningTeam: app.winningTeam,
@@ -91,6 +101,8 @@ window.MafiaApp = window.MafiaApp || {};
         summaryRoleByPlayerId: app.summaryRoleByPlayerId,
         bonusNoteByPlayerId: app.bonusNoteByPlayerId,
         bestMoveByPlayerId: app.bestMoveByPlayerId,
+        protocolByPlayerId: app.protocolByPlayerId,
+        opinionByPlayerId: app.opinionByPlayerId,
         summaryHostName: app.summaryHostName,
         summarySyntheticFirstDayLine: app.summarySyntheticFirstDayLine,
         summarySkipLineOverrides: app.summarySkipLineOverrides,
@@ -135,6 +147,8 @@ window.MafiaApp = window.MafiaApp || {};
       }
       if (data.revealedIndices && Array.isArray(data.revealedIndices)) app.revealedIndices = data.revealedIndices;
       if (typeof data.timeLeft === 'number') app.timeLeft = data.timeLeft;
+      app.timerRunning = !!data.timerRunning;
+      app.timerEndsAt = typeof data.timerEndsAt === 'number' ? data.timerEndsAt : null;
       if (data.gameLog && Array.isArray(data.gameLog)) app.gameLog = data.gameLog;
       else app.gameLog = [];
       app.gameLog = app.gameLog.filter(function (ev) {
@@ -165,6 +179,12 @@ window.MafiaApp = window.MafiaApp || {};
       if (data.bestMoveByPlayerId && typeof data.bestMoveByPlayerId === 'object' && !Array.isArray(data.bestMoveByPlayerId)) {
         app.bestMoveByPlayerId = data.bestMoveByPlayerId;
       } else app.bestMoveByPlayerId = {};
+      if (data.protocolByPlayerId && typeof data.protocolByPlayerId === 'object' && !Array.isArray(data.protocolByPlayerId)) {
+        app.protocolByPlayerId = data.protocolByPlayerId;
+      } else app.protocolByPlayerId = {};
+      if (data.opinionByPlayerId && typeof data.opinionByPlayerId === 'object' && !Array.isArray(data.opinionByPlayerId)) {
+        app.opinionByPlayerId = data.opinionByPlayerId;
+      } else app.opinionByPlayerId = {};
       if (typeof data.summaryHostName === 'string') app.summaryHostName = data.summaryHostName;
       else app.summaryHostName = '';
       if (typeof data.summarySyntheticFirstDayLine === 'string') app.summarySyntheticFirstDayLine = data.summarySyntheticFirstDayLine;
@@ -211,7 +231,9 @@ window.MafiaApp = window.MafiaApp || {};
     app.nomineeQueue = [];
     app.activeVoteRound = null;
     app.revealedIndices = [];
-    app.timeLeft = 60;
+    app.timeLeft = typeof app.timerMainSec === 'number' && app.timerMainSec > 0 ? app.timerMainSec : 60;
+    app.timerRunning = false;
+    app.timerEndsAt = null;
     app.gameLog = [];
     app.playerRoleOverrides = {};
     app.winningTeam = null;
@@ -219,6 +241,8 @@ window.MafiaApp = window.MafiaApp || {};
     app.summaryRoleByPlayerId = {};
     app.bonusNoteByPlayerId = {};
     app.bestMoveByPlayerId = {};
+    app.protocolByPlayerId = {};
+    app.opinionByPlayerId = {};
     app.summaryHostName = '';
     app.summarySyntheticFirstDayLine = null;
     app.summarySkipLineOverrides = {};
@@ -251,6 +275,8 @@ window.MafiaApp = window.MafiaApp || {};
     if (app.summaryRoleByPlayerId && Object.keys(app.summaryRoleByPlayerId).length > 0) return true;
     if (app.bonusNoteByPlayerId && Object.keys(app.bonusNoteByPlayerId).length > 0) return true;
     if (app.bestMoveByPlayerId && Object.keys(app.bestMoveByPlayerId).length > 0) return true;
+    if (app.protocolByPlayerId && Object.keys(app.protocolByPlayerId).length > 0) return true;
+    if (app.opinionByPlayerId && Object.keys(app.opinionByPlayerId).length > 0) return true;
     if (app.summaryHostName && app.summaryHostName.trim() !== '') return true;
     if (app.summarySyntheticFirstDayLine !== null) return true;
     if (app.summarySkipLineOverrides && Object.keys(app.summarySkipLineOverrides).length > 0) return true;

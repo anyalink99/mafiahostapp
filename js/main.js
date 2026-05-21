@@ -73,6 +73,8 @@
     app.loadState();
     if (app.spotifyLoadClientId) app.spotifyLoadClientId();
     if (app.loadTimerVoicePref) app.loadTimerVoicePref();
+    if (app.loadTimerDurationPrefs) app.loadTimerDurationPrefs();
+    if (app.resumeTimerIfRunning) app.resumeTimerIfRunning();
     if (app.musicSeedDefaultBundledTracks) app.musicSeedDefaultBundledTracks();
     if (app.initMusic) app.initMusic();
     app.bindUiEvents();

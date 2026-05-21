@@ -3,6 +3,26 @@
   var roleLabelRu = app.roleLabelRu;
   var DASH = '—';
 
+  /** «Протокол — шериф: 5; мафия: 3, 8; мирный: 1, 2, 4» (только непустые части). */
+  function formatNumGroupLine(label, group) {
+    var inner = numGroupInner(group, 'шериф', 'мафия', 'мирный');
+    return inner ? '  ' + label + ' — ' + inner : '';
+  }
+
+  /** «Ш: 5; М: 3, 8; Г: 1, 2, 4» для ячейки CSV (только непустые части). */
+  function numGroupCsvCell(group) {
+    return numGroupInner(group, 'Ш', 'М', 'Г');
+  }
+
+  function numGroupInner(group, sLabel, mLabel, gLabel) {
+    if (!group) return '';
+    var segs = [];
+    if (group.sheriff) segs.push(sLabel + ': ' + group.sheriff);
+    if (group.mafia) segs.push(mLabel + ': ' + group.mafia);
+    if (group.peaceful) segs.push(gLabel + ': ' + group.peaceful);
+    return segs.join('; ');
+  }
+
   function formatCompactVotes(candidateIds, votes) {
     if (!candidateIds || !candidateIds.length) return '';
     var parts = [];
@@ -122,6 +142,10 @@
       }
       var rest = parts.length ? parts.join(', ') : DASH;
       lines.push('Игрок ' + sid + ': ' + rest);
+      var protoLine = formatNumGroupLine('Протокол', app.getPlayerNumGroup(app.protocolByPlayerId, sid));
+      if (protoLine) lines.push(protoLine);
+      var opinLine = formatNumGroupLine('Мнение', app.getPlayerNumGroup(app.opinionByPlayerId, sid));
+      if (opinLine) lines.push(opinLine);
     }
 
     var mafiaNums = [];
@@ -170,7 +194,7 @@
     return { plus: '', minus: app.formatBonusForDisplay(Math.abs(v)) };
   }
 
-  var STAT_COLS = 7;
+  var STAT_COLS = 9;
   var VOTE_SLOT_COLS = 10;
   var CSV_ROW_COLS = STAT_COLS + 1 + VOTE_SLOT_COLS;
 
@@ -270,7 +294,7 @@
     else if (app.winningTeam === 'peaceful') winCell = 'Мирные';
     rows.push(padStatRow(['Победа', winCell, '', '', '', '', '']));
     rows.push(emptyPaddedRow());
-    rows.push(padStatRow(['#', 'Игрок', 'Роль', 'ПУ', 'Доп +', 'Доп −', '∑']));
+    rows.push(padStatRow(['#', 'Игрок', 'Роль', 'ПУ', 'Доп +', 'Доп −', '∑', 'Протокол', 'Мнение']));
 
     var n = app.players.length;
     for (var p = 0; p < n; p++) {
@@ -288,6 +312,8 @@
       var sum = (didPlayerWin(sid, p) ? 1 : 0) + bonusVal;
       sum = Math.round(sum * 10) / 10;
       var sumStr = app.formatBonusForDisplay(String(sum));
+      var protoCell = numGroupCsvCell(app.getPlayerNumGroup(app.protocolByPlayerId, sid));
+      var opinCell = numGroupCsvCell(app.getPlayerNumGroup(app.opinionByPlayerId, sid));
       rows.push(
         padStatRow([
           String(sid),
@@ -297,6 +323,8 @@
           split.plus,
           split.minus,
           sumStr,
+          protoCell,
+          opinCell,
         ])
       );
     }

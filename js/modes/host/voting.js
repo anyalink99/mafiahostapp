@@ -151,7 +151,7 @@
         app.nomineeQueue = tied.slice();
         app.saveState();
         app.navigateToScreen('game-screen');
-        app.resetTimer(30);
+        app.resetTimer(typeof app.timerShortSec === 'number' && app.timerShortSec > 0 ? app.timerShortSec : 30);
         return;
       }
       app.gameLog.push({

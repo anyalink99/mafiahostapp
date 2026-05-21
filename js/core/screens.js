@@ -104,9 +104,13 @@
     if (screenId === 'setup-screen') app.initCards(app.revealedIndices.length > 0);
     if (screenId === 'game-screen') {
       app.renderPlayers();
-      const timerEl = document.getElementById('timer');
-      if (timerEl) timerEl.textContent = app.timeLeft;
-      if (app.syncTimerAppearance) app.syncTimerAppearance();
+      if (app.syncTimerPresetButtons) app.syncTimerPresetButtons();
+      if (app.syncTimerControls) app.syncTimerControls();
+      else {
+        const timerEl = document.getElementById('timer');
+        if (timerEl) timerEl.textContent = app.timeLeft;
+        if (app.syncTimerAppearance) app.syncTimerAppearance();
+      }
       app.refreshNomineeQueueUi();
       if (app.renderGameSidePanels) app.renderGameSidePanels();
     }
@@ -119,6 +123,7 @@
       if (app.renderMusicSettings) app.renderMusicSettings();
       if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
       if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
+      if (app.syncTimerDurationInputs) app.syncTimerDurationInputs();
       if (app.syncExperimentalModesCheckbox) app.syncExperimentalModesCheckbox();
     }
     if (screenId === 'prepare-mode-screen' && app.renderPrepareModeScreen) app.renderPrepareModeScreen();

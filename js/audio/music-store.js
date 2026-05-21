@@ -126,16 +126,27 @@ window.MafiaApp = window.MafiaApp || {};
     };
   }
 
+  function clampVol(v) {
+    if (typeof v !== 'number' || isNaN(v)) return 1;
+    if (v < 0.25) return 0.25;
+    if (v > 2) return 2;
+    return v;
+  }
+
   function normalizePlaylist(row) {
     var rawTracks = Array.isArray(row.tracks) ? row.tracks : [];
     var tracks = [];
     for (var i = 0; i < rawTracks.length; i++) {
       var t = rawTracks[i];
       if (!t || !t.blobId) continue;
+      var tOff = typeof t.offsetSec === 'number' && !isNaN(t.offsetSec) ? Math.max(0, t.offsetSec) : 0;
       tracks.push({
         id: t.id || newId(),
         name: String(t.name || 'Трек ' + (i + 1)),
         blobId: t.blobId,
+        offsetSec: tOff,
+        volumeMul: clampVol(t.volumeMul),
+        enabled: t.enabled === false ? false : true,
       });
     }
     return {
@@ -143,6 +154,7 @@ window.MafiaApp = window.MafiaApp || {};
       type: 'playlist',
       name: String(row.name || 'Плейлист'),
       enabled: row.enabled === false ? false : true,
+      volumeMul: clampVol(row.volumeMul),
       tracks: tracks,
     };
   }
@@ -330,15 +342,22 @@ window.MafiaApp = window.MafiaApp || {};
       if (!it) continue;
       if (it.type === 'playlist') {
         if (it.enabled === false) continue;
+        var plVol = typeof it.volumeMul === 'number' ? it.volumeMul : 1;
         var tracks = Array.isArray(it.tracks) ? it.tracks : [];
         for (var j = 0; j < tracks.length; j++) {
           var tr = tracks[j];
           if (!tr || !tr.blobId) continue;
+          if (tr.enabled === false) continue;
+          var trVol = typeof tr.volumeMul === 'number' ? tr.volumeMul : 1;
+          // Итоговая громкость = громкость плейлиста × громкость трека, но не выше
+          // одиночного максимума (x2), чтобы не было чрезмерного усиления/клиппинга.
+          var effVol = plVol * trVol;
+          if (effVol > 2) effVol = 2;
           pool.push({
             id: it.id + ':' + tr.id,
             name: tr.name || it.name,
-            offsetSec: 0,
-            volumeMul: 1,
+            offsetSec: typeof tr.offsetSec === 'number' ? tr.offsetSec : 0,
+            volumeMul: effVol,
             enabled: true,
             source: { type: 'idb', blobId: tr.blobId },
             playlistId: it.id,
@@ -367,6 +386,25 @@ window.MafiaApp = window.MafiaApp || {};
       if (typeof patch.enabled === 'boolean') list[i].enabled = patch.enabled;
       app.saveMusicMeta(meta);
       return true;
+    }
+    return false;
+  };
+
+  app.musicUpdatePlaylistTrack = function (slot, playlistId, trackId, patch) {
+    var key = String(slot) === '2' ? '2' : '1';
+    var meta = app.loadMusicMeta();
+    var list = meta.slots[key];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id !== playlistId || list[i].type !== 'playlist') continue;
+      var tracks = Array.isArray(list[i].tracks) ? list[i].tracks : [];
+      for (var j = 0; j < tracks.length; j++) {
+        if (!tracks[j] || tracks[j].id !== trackId) continue;
+        if (typeof patch.offsetSec === 'number') tracks[j].offsetSec = Math.max(0, patch.offsetSec);
+        if (typeof patch.volumeMul === 'number') tracks[j].volumeMul = clampVol(patch.volumeMul);
+        if (typeof patch.enabled === 'boolean') tracks[j].enabled = patch.enabled;
+        app.saveMusicMeta(meta);
+        return true;
+      }
     }
     return false;
   };

@@ -15,9 +15,9 @@
   function roleIconWrapClass(code) {
     var isMafiaSide = code === 'mafia' || code === 'don';
     if (isMafiaSide) {
-      return 'flex h-7 w-7 shrink-0 items-center justify-center rounded border border-mafia-border bg-mafia-black text-mafia-gold';
+      return 'flex h-12 w-12 shrink-0 items-center justify-center rounded border border-mafia-border bg-mafia-black text-mafia-gold';
     }
-    return 'flex h-7 w-7 shrink-0 items-center justify-center rounded border border-mafia-gold/40 bg-mafia-blood text-mafia-gold';
+    return 'flex h-12 w-12 shrink-0 items-center justify-center rounded border border-mafia-gold/40 bg-mafia-blood text-mafia-gold';
   }
 
   function parseBonus(raw) {
@@ -64,14 +64,6 @@
       var sid = pl.id;
       var nickTrim = pl.nick != null ? String(pl.nick).trim() : '';
       var out = !!pl.eliminationReason;
-      var bk = String(sid);
-      var braw = app.bonusPointsByPlayerId ? app.bonusPointsByPlayerId[bk] : 0;
-      var bnum = parseBonus(braw);
-      var bonusText =
-        typeof app.formatBonusForDisplay === 'function'
-          ? app.formatBonusForDisplay(braw)
-          : (bnum % 1 === 0 ? String(Math.round(bnum)) : String(bnum).replace('.', ','));
-
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.setAttribute('data-action', 'summary-player-open-from-game');
@@ -86,53 +78,33 @@
 
       var topRow = document.createElement('div');
       topRow.className =
-        'player-slot__row grid w-full min-h-0 shrink-0 grid-cols-3 items-center gap-x-1';
+        'player-slot__row flex w-full min-h-0 shrink-0 items-center justify-center gap-2';
 
       var iconWrap = document.createElement('div');
       iconWrap.setAttribute('aria-hidden', 'true');
       if (!show) {
         iconWrap.className =
-          'flex h-7 w-7 shrink-0 items-center justify-center rounded border border-mafia-border/80 bg-black/25 text-mafia-gold/90';
+          'flex h-12 w-12 shrink-0 items-center justify-center rounded border border-mafia-border/80 bg-black/25 text-mafia-gold/90';
         iconWrap.innerHTML =
-          '<span class="font-display text-base font-bold leading-none text-mafia-gold/95">?</span>';
+          '<span class="font-display text-[1.7rem] font-bold leading-none text-mafia-gold/95">?</span>';
       } else {
         var code = app.getEffectiveSummaryRoleCode
           ? app.getEffectiveSummaryRoleCode(sid, seatIndex)
           : 'peaceful';
         iconWrap.className = roleIconWrapClass(code);
         iconWrap.innerHTML =
-          '<svg class="h-[1.05rem] w-[1.05rem] pointer-events-none" aria-hidden="true"><use href="#' +
+          '<svg class="h-[1.8rem] w-[1.8rem] pointer-events-none" aria-hidden="true"><use href="#' +
           roleIconId(code) +
           '"/></svg>';
       }
 
-      var leftCol = document.createElement('div');
-      leftCol.className = 'flex min-w-0 justify-start';
-      leftCol.appendChild(iconWrap);
-
       var numSpan = document.createElement('span');
       numSpan.className =
-        'font-display text-xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums text-center';
+        'font-display text-[2.1rem] font-bold leading-none tracking-wide text-mafia-gold tabular-nums text-center';
       numSpan.textContent = '№' + sid;
 
-      var bonusInner = document.createElement('span');
-      bonusInner.className =
-        'font-sans font-semibold leading-none tabular-nums text-xs text-mafia-cream/95';
-      bonusInner.textContent = 'д: ' + bonusText;
-
-      var pillWrap = document.createElement('div');
-      pillWrap.className =
-        'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-1.5 py-1 ' +
-        (bnum > 2 ? 'border-mafia-blood/55 bg-mafia-blood' : 'border-mafia-border/35 bg-black/25');
-      pillWrap.appendChild(bonusInner);
-
-      var rightCol = document.createElement('div');
-      rightCol.className = 'flex min-w-0 justify-end';
-      rightCol.appendChild(pillWrap);
-
-      topRow.appendChild(leftCol);
+      topRow.appendChild(iconWrap);
       topRow.appendChild(numSpan);
-      topRow.appendChild(rightCol);
 
       var nickRow = document.createElement('div');
       nickRow.className =
