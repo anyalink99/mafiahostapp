@@ -957,35 +957,35 @@
     var isOpen = app.musicPlaylistTrackOpenId === tr.id;
     var vol = typeof tr.volumeMul === 'number' ? tr.volumeMul : 1;
     var offset = typeof tr.offsetSec === 'number' ? tr.offsetSec : 0;
-    var body = '';
-    if (isOpen) {
-      body =
-        '<div class="px-2 pb-2 border-t border-mafia-border/40">' +
-        '<label class="flex items-center gap-2 cursor-pointer text-xs text-mafia-cream/70 pt-2 select-none">' +
-        '<input type="checkbox" data-music-field="enabled" class="mafia-checkbox" ' +
-        (off ? '' : 'checked') +
-        '>' +
-        '<span>Участвует в случайном выборе</span>' +
-        '</label>' +
-        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">' +
-        '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Секунда старта' +
-        '<input type="number" min="0" step="0.1" data-music-field="offset" value="' +
-        offset +
-        '" class="mt-1 w-full px-2 py-1.5 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">' +
-        '</label>' +
-        '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Громкость × <span class="text-mafia-gold/85 tabular-nums" data-music-vol-label>' +
-        vol.toFixed(2) +
-        '</span>' +
-        '<input type="range" min="0.25" max="4" step="0.05" data-music-field="volume" value="' +
-        vol +
-        '" class="mt-2 w-full accent-mafia-gold">' +
-        '</label>' +
-        '</div>' +
-        '</div>';
-    }
+    // Тело трека рендерим всегда (для всех треков) в сворачиваемой обёртке — чтобы
+    // разворот/сворачивание анимировались (по аналогии с обычным разворотом песни).
+    var bodyInner =
+      '<div class="music-track-settings-panel px-2 pb-2 border-t border-mafia-border/40">' +
+      '<label class="flex items-center gap-2 cursor-pointer text-xs text-mafia-cream/70 pt-2 select-none">' +
+      '<input type="checkbox" data-music-field="enabled" class="mafia-checkbox" ' +
+      (off ? '' : 'checked') +
+      '>' +
+      '<span>Участвует в случайном выборе</span>' +
+      '</label>' +
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">' +
+      '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Секунда старта' +
+      '<input type="number" min="0" step="0.1" data-music-field="offset" value="' +
+      offset +
+      '" class="mt-1 w-full px-2 py-1.5 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">' +
+      '</label>' +
+      '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Громкость × <span class="text-mafia-gold/85 tabular-nums" data-music-vol-label>' +
+      vol.toFixed(2) +
+      '</span>' +
+      '<input type="range" min="0.25" max="4" step="0.05" data-music-field="volume" value="' +
+      vol +
+      '" class="mt-2 w-full accent-mafia-gold">' +
+      '</label>' +
+      '</div>' +
+      '</div>';
     return (
       '<div class="rounded border border-mafia-border/50 bg-mafia-black/30' +
       (off ? ' opacity-55' : '') +
+      (isOpen ? ' is-open' : '') +
       '" data-music-track-id="' +
       escapeHtml(tr.id) +
       '">' +
@@ -997,9 +997,7 @@
       '" data-track-id="' +
       escapeHtml(tr.id) +
       '" class="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer">' +
-      '<span class="text-mafia-gold/70 text-xs leading-none">' +
-      (isOpen ? '▼' : '▶') +
-      '</span>' +
+      '<span class="music-track-chevron" aria-hidden="true">▶</span>' +
       '<span class="text-mafia-cream/85 text-xs font-medium truncate min-w-0" title="' +
       escapeHtml(tr.name || '') +
       '">' +
@@ -1014,9 +1012,41 @@
       escapeHtml(tr.id) +
       '" class="music-preview-btn flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-border/50 bg-mafia-black/30 text-mafia-gold/90 text-sm transition-colors hover:border-mafia-gold/40 hover:bg-mafia-card/40" title="Прослушать" aria-label="Прослушать">▶</button>' +
       '</div>' +
-      body +
+      '<div class="music-track-settings-wrap"' +
+      (isOpen ? ' style="max-height:none"' : '') +
+      '>' +
+      bodyInner +
+      '</div>' +
       '</div>'
     );
+  }
+
+  // Разворот/сворачивание одного трека (анимация max-height обёртки; внешняя панель
+  // в режиме редактирования держится auto-высотой и тянется следом).
+  function openTrackRow(row) {
+    if (!row) return;
+    var wrap = row.querySelector('.music-track-settings-wrap');
+    var panel = row.querySelector('.music-track-settings-panel');
+    if (!wrap || !panel) return;
+    row.classList.add('is-open');
+    wrap.style.maxHeight = '0px';
+    void wrap.offsetHeight;
+    wrap.style.maxHeight = panel.scrollHeight + 'px';
+    var onEnd = function (e) {
+      if (e.propertyName !== 'max-height') return;
+      wrap.removeEventListener('transitionend', onEnd);
+      if (row.classList.contains('is-open')) wrap.style.maxHeight = 'none';
+    };
+    wrap.addEventListener('transitionend', onEnd);
+  }
+  function closeTrackRow(row) {
+    if (!row) return;
+    var wrap = row.querySelector('.music-track-settings-wrap');
+    if (!wrap) return;
+    row.classList.remove('is-open');
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';
+    void wrap.offsetHeight;
+    wrap.style.maxHeight = '0px';
   }
 
   // Перестраивает блок треков плейлиста на месте и плавно подгоняет высоту панели.
@@ -1039,13 +1069,24 @@
       return;
     }
     var oldH = inner ? inner.scrollHeight : 0;
+    container.style.opacity = '0';
     container.innerHTML = app.buildMusicPlaylistTracksHtml(slot, it, app.musicPlaylistEditId === itemId);
     if (mutateBtn) mutateBtn(li);
+    requestAnimationFrame(function () {
+      container.style.opacity = '1';
+    });
     if (inner) {
       var newH = inner.scrollHeight;
       inner.style.maxHeight = oldH + 'px';
       void inner.offsetHeight;
       inner.style.maxHeight = newH + 'px';
+      // После анимации высоты — auto, чтобы потрековый разворот мог растягивать панель.
+      var onEnd = function (e) {
+        if (e.propertyName !== 'max-height') return;
+        inner.removeEventListener('transitionend', onEnd);
+        inner.style.maxHeight = 'none';
+      };
+      inner.addEventListener('transitionend', onEnd);
     }
   }
 
@@ -1182,11 +1223,28 @@
     });
   };
 
-  // Разворачивает/сворачивает один трек в режиме редактирования (открыт только один).
+  // Разворачивает/сворачивает один трек в режиме редактирования (открыт только один) —
+  // анимированно, без перестроения списка (по аналогии с обычным разворотом песни).
   app.toggleMusicPlaylistTrack = function (slot, playlistId, trackId) {
-    app.musicPlaylistTrackOpenId = app.musicPlaylistTrackOpenId === trackId ? '' : trackId;
+    var li = musicSettingsFindLiByItemId(playlistId);
+    var screen = document.getElementById('settings-screen');
+    var prevId = app.musicPlaylistTrackOpenId;
+    var newId = prevId === trackId ? '' : trackId;
+    app.musicPlaylistTrackOpenId = newId;
     if (app.stopMusicPreview) app.stopMusicPreview();
-    rebuildPlaylistTracksInPlace(slot, playlistId, null);
+    if (!li || !screen || !screen.classList.contains('active')) {
+      if (app.renderMusicSettings) app.renderMusicSettings();
+      return;
+    }
+    // Внешняя панель плейлиста — auto-высота, чтобы тянуться за разворотом трека.
+    var outerInner = li.querySelector('.music-item-settings-inner');
+    if (outerInner) outerInner.style.maxHeight = 'none';
+    if (prevId && prevId !== newId) {
+      closeTrackRow(li.querySelector('[data-music-track-id="' + prevId + '"]'));
+    }
+    if (newId) {
+      openTrackRow(li.querySelector('[data-music-track-id="' + newId + '"]'));
+    }
   };
 
   app.buildMusicSlotListHtml = function (slot) {

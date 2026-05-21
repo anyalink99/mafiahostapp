@@ -253,6 +253,66 @@ body {
   line-height: 1.45;
 }
 
+/* ПК: голосование прямо на игровом столе (без перехода на отдельную страницу).
+   Класс .game-voting ставится только на широком экране (см. enterPcVoting).
+   Анимируем раскладку: боковые панели и нижние контролы схлопываются (ширина/высота
+   + прозрачность), панель голосования раскрывается; центр едет влево сам (flex-1
+   перетекает по мере изменения ширины соседей). display:none не используем — он не
+   анимируется; панели остаются в потоке с нулевой шириной. */
+#game-side-left,
+#game-side-right {
+  min-width: 0;
+  transition:
+    width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease;
+}
+#game-bottom-controls {
+  overflow: hidden;
+  max-height: 12rem;
+  transition:
+    max-height 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.18s ease,
+    padding 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#game-vote-slot {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
+}
+
+#game-screen.game-voting #game-side-left,
+#game-screen.game-voting #game-side-right {
+  width: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+}
+#game-screen.game-voting #game-bottom-controls {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+}
+#game-screen.game-voting #game-vote-slot {
+  display: flex;
+  flex-direction: column;
+}
+#game-screen.game-voting #game-vote-slot.vote-slot-open {
+  width: 20rem;
+  opacity: 1;
+}
+@media (min-width: 1280px) {
+  #game-screen.game-voting #game-vote-slot.vote-slot-open {
+    width: 22rem;
+  }
+}
+
 input.mafia-checkbox {
   -webkit-appearance: none;
   appearance: none;
@@ -332,6 +392,49 @@ input.mafia-checkbox:active:not(:disabled) {
 
 .music-item-expanded .music-item-chevron {
   transform: rotate(90deg);
+}
+
+/* Плавная смена содержимого блока треков (компактный список ⇆ режим редактирования). */
+[data-music-tracks] {
+  transition: opacity 0.18s ease;
+}
+
+/* Потрековый разворот в режиме редактирования — по аналогии с обычным разворотом песни. */
+.music-track-settings-wrap {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.music-track-settings-panel {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-music-track-id].is-open .music-track-settings-panel {
+  opacity: 1;
+  transform: translateY(0);
+}
+.music-track-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.85rem;
+  flex-shrink: 0;
+  font-size: 0.55rem;
+  line-height: 1;
+  color: rgba(212, 175, 55, 0.7);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-music-track-id].is-open .music-track-chevron {
+  transform: rotate(90deg);
+}
+
+/* Плавный разворот блока заметок ведущего (правая панель игрового стола). */
+#game-side-notes-body {
+  overflow: hidden;
+  transition: max-height 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .music-preview-btn.is-playing {

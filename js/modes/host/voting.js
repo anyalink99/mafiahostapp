@@ -22,6 +22,72 @@
     app.saveState();
   };
 
+  // Широкий экран (ПК) — голосование показываем прямо на игровом столе, без перехода
+  // на отдельную страницу. Признак ПК берём по видимости левой панели (она lg:flex),
+  // проверяя ДО входа в режим (пока класс .game-voting ещё не скрыл её).
+  function isPcWideLayout() {
+    var left = document.getElementById('game-side-left');
+    return !!(left && window.getComputedStyle(left).display !== 'none');
+  }
+
+  // Активен ли UI голосования (для гейтов рендера/модалки): либо открыт vote-screen
+  // (мобилка), либо включён встроенный режим на игровом столе (ПК).
+  app.isVotingUiActive = function () {
+    var vs = document.getElementById('vote-screen');
+    if (vs && vs.classList.contains('active')) return true;
+    if (!app._pcVotingActive) return false;
+    var gs = document.getElementById('game-screen');
+    return !!(gs && gs.classList.contains('active'));
+  };
+
+  // Куда вести по кнопке «Голосование»: ПК — встроенно, мобилка — на vote-screen.
+  app.goToVoting = function () {
+    if (isPcWideLayout()) app.enterPcVoting();
+    else app.navigateToScreen('vote-screen');
+  };
+
+  // Вход во встроенный режим голосования (ПК): переносим vote-body в панель стола,
+  // включаем раскладку и готовим/рисуем раунд (как делает navigateToScreen('vote-screen')).
+  app.enterPcVoting = function () {
+    var gs = document.getElementById('game-screen');
+    var slot = document.getElementById('game-vote-slot');
+    var body = document.getElementById('vote-body');
+    if (!gs || !slot || !body) {
+      app.navigateToScreen('vote-screen');
+      return;
+    }
+    app._pcVotingActive = true;
+    gs.classList.add('game-voting');
+    slot.appendChild(body);
+    if (app.prepareVoteRoundScreen) app.prepareVoteRoundScreen();
+    // prepareVoteRoundScreen мог завершить раунд и выйти (navigateToScreen → exitPcVoting).
+    if (app._pcVotingActive && app.renderVoteScreen) app.renderVoteScreen();
+    // Раскрытие панели голосования — следующим кадром, чтобы width/opacity
+    // анимировались от 0 (иначе display:none→flex срабатывает мгновенно, без анимации).
+    if (app._pcVotingActive) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (app._pcVotingActive) slot.classList.add('vote-slot-open');
+        });
+      });
+    }
+  };
+
+  // Возврат к обычной раскладке стола: вернуть vote-body в vote-screen, снять режим.
+  // Вызывается из navigateToScreen на любой переход, так что режим всегда самоснимается.
+  app.exitPcVoting = function () {
+    if (!app._pcVotingActive) return;
+    app._pcVotingActive = false;
+    var gs = document.getElementById('game-screen');
+    var slot = document.getElementById('game-vote-slot');
+    if (slot) slot.classList.remove('vote-slot-open');
+    // Снятие .game-voting анимирует возврат боковых панелей и нижних контролов.
+    if (gs) gs.classList.remove('game-voting');
+    var body = document.getElementById('vote-body');
+    var voteScreen = document.getElementById('vote-screen');
+    if (body && voteScreen && body.parentNode !== voteScreen) voteScreen.appendChild(body);
+  };
+
   app.prepareVoteRoundScreen = function () {
     var s0 = app.activeVoteRound;
     if (s0 && s0.phase === 'done' && s0.winnerId != null) {
@@ -220,8 +286,7 @@
     app._voteModalIndex = candidateIndex;
     var m = document.getElementById('modal-vote-count');
     if (!m) return;
-    var vs = document.getElementById('vote-screen');
-    if (!vs || !vs.classList.contains('active')) return;
+    if (!app.isVotingUiActive()) return;
     var sess = app.activeVoteRound;
     if (!sess || sess.phase !== 'counting') return;
     app._voteModalOpenedAt = Date.now();

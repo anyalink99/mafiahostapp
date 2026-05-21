@@ -73,7 +73,7 @@
         if (e.key !== 'Enter' && e.key !== ' ') return;
         var t = e.target.closest && e.target.closest('[data-action="vote-open-count"]');
         if (!t) return;
-        if (!uiHelpers.isScreenActive('vote-screen')) return;
+        if (!(app.isVotingUiActive && app.isVotingUiActive())) return;
         e.preventDefault();
         var cixK = t.getAttribute('data-candidate-index');
         if (cixK !== null && app.showVoteCountModal) app.showVoteCountModal(parseInt(cixK, 10));

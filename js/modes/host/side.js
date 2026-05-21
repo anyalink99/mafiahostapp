@@ -149,7 +149,8 @@
       if (document.activeElement !== ta) ta.value = typeof app.gameSideNotes === 'string' ? app.gameSideNotes : '';
     }
     var collapsed = !!app.gameSideNotesCollapsed;
-    if (body) body.style.display = collapsed ? 'none' : '';
+    // Без анимации (рендер/возврат на экран): сразу финальное состояние.
+    if (body) body.style.maxHeight = collapsed ? '0px' : 'none';
     if (toggle) toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     if (chev) chev.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
   };
@@ -157,7 +158,28 @@
   app.toggleGameSideNotes = function () {
     app.gameSideNotesCollapsed = !app.gameSideNotesCollapsed;
     app.saveState();
-    app.syncGameSideNotesUi();
+    var body = document.getElementById('game-side-notes-body');
+    var toggle = document.getElementById('game-side-notes-toggle');
+    var chev = document.getElementById('game-side-notes-chevron');
+    var collapsed = !!app.gameSideNotesCollapsed;
+    if (toggle) toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (chev) chev.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+    if (!body) return;
+    if (collapsed) {
+      // разворот → схлопывание: фиксируем текущую высоту, затем 0 (анимируется).
+      body.style.maxHeight = body.scrollHeight + 'px';
+      void body.offsetHeight;
+      body.style.maxHeight = '0px';
+    } else {
+      // схлопнуто → разворот: 0 → высота контента, после — none (чтобы textarea тянулся).
+      body.style.maxHeight = body.scrollHeight + 'px';
+      var onEnd = function (e) {
+        if (e.propertyName !== 'max-height') return;
+        body.removeEventListener('transitionend', onEnd);
+        if (!app.gameSideNotesCollapsed) body.style.maxHeight = 'none';
+      };
+      body.addEventListener('transitionend', onEnd);
+    }
   };
 
   app.applyGameSideNotesInput = function (value) {

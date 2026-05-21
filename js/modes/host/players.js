@@ -410,8 +410,7 @@
       vs.poolTotal = app.getActivePlayerCount();
     }
     app.renderPlayers();
-    var voteScr = document.getElementById('vote-screen');
-    if (voteScr && voteScr.classList.contains('active') && app.renderVoteScreen) {
+    if (app.isVotingUiActive && app.isVotingUiActive() && app.renderVoteScreen) {
       app.renderVoteScreen();
     }
     app.saveState();
@@ -636,8 +635,7 @@
     } else {
       app.patchPlayerSlotFoul(id, true);
     }
-    var voteScr = document.getElementById('vote-screen');
-    if (voteScr && voteScr.classList.contains('active') && app.renderVoteScreen) {
+    if (app.isVotingUiActive && app.isVotingUiActive() && app.renderVoteScreen) {
       app.renderVoteScreen();
     }
     app.saveState();
@@ -680,8 +678,7 @@
     app.nomineeQueue.splice(vix, 1);
     app.refreshNomineeQueueUi();
     if (!opts.skipRender) app.renderPlayers();
-    var voteScr = document.getElementById('vote-screen');
-    if (voteScr && voteScr.classList.contains('active') && app.renderVoteScreen) {
+    if (app.isVotingUiActive && app.isVotingUiActive() && app.renderVoteScreen) {
       app.renderVoteScreen();
     }
     app.saveState();

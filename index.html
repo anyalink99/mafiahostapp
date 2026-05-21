@@ -316,13 +316,20 @@
             <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div id="players-list" class="grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden"></div>
             </div>
-            <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
+            <div id="game-bottom-controls" class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
                 <div id="voting-order" class="voting-order-queue text-mafia-cream/80 min-h-[1.5rem] mb-3 font-mono tabular-nums">—</div>
                 <div class="flex flex-col gap-2">
-                    <button type="button" id="btn-go-voting" data-goto="vote-screen" disabled class="w-full py-2.5 bg-mafia-blood/50 border border-mafia-gold/40 text-mafia-gold/50 font-semibold rounded text-sm uppercase tracking-wider cursor-not-allowed transition-all">Голосование</button>
+                    <button type="button" id="btn-go-voting" data-action="go-voting" disabled class="w-full py-2.5 bg-mafia-blood/50 border border-mafia-gold/40 text-mafia-gold/50 font-semibold rounded text-sm uppercase tracking-wider cursor-not-allowed transition-all">Голосование</button>
                 </div>
             </div>
         </div>
+
+        <aside id="game-vote-slot" class="hidden min-h-0 gap-3 overflow-hidden">
+            <div class="flex items-center justify-between flex-shrink-0">
+                <button type="button" data-goto="game-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm uppercase tracking-wider cursor-pointer">← Стол</button>
+                <span class="font-display text-mafia-gold/80 text-sm tracking-widest">Голосование</span>
+            </div>
+        </aside>
 
         <aside id="game-side-right" class="hidden lg:flex lg:flex-col lg:w-[20rem] xl:w-[22rem] min-h-0 gap-3 overflow-hidden">
             <div class="bg-mafia-coal border border-mafia-border rounded-lg flex-shrink-0 px-3 py-2">
@@ -350,9 +357,12 @@
         <button type="button" data-goto="game-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Игровой стол</button>
         <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Голосование</span>
     </div>
-    <div id="vote-revote-banner" class="hidden flex-shrink-0 rounded-lg border border-mafia-gold/40 bg-mafia-blood/20 px-3 py-2 text-center text-sm text-mafia-gold/90"></div>
-    <div id="vote-pool-hint" class="flex-shrink-0 text-center text-mafia-cream/60 text-xs sm:text-sm"></div>
-    <div id="vote-candidates" class="flex-1 min-h-0 overflow-auto flex flex-wrap content-start justify-center gap-3 sm:gap-4 py-2"></div>
+    <!-- vote-body переезжает во встроенную панель игрового стола на ПК (см. enterPcVoting). -->
+    <div id="vote-body" class="flex-1 min-h-0 flex flex-col gap-4">
+        <div id="vote-revote-banner" class="hidden flex-shrink-0 rounded-lg border border-mafia-gold/40 bg-mafia-blood/20 px-3 py-2 text-center text-sm text-mafia-gold/90"></div>
+        <div id="vote-pool-hint" class="flex-shrink-0 text-center text-mafia-cream/60 text-xs sm:text-sm"></div>
+        <div id="vote-candidates" class="flex-1 min-h-0 overflow-auto flex flex-wrap content-start justify-center gap-3 sm:gap-4 py-2"></div>
+    </div>
 </div>
 
 <div id="summary-screen" class="screen flex flex-col min-h-0 p-4 sm:p-6 overflow-hidden">

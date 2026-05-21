@@ -1,6 +1,10 @@
 (function (app) {
   app.uiActionHandlers = app.uiActionHandlers || {};
 
+  app.uiActionHandlers['go-voting'] = function () {
+    if (app.goToVoting) app.goToVoting();
+  };
+
   app.uiActionHandlers['vote-open-count'] = function (el, _event, ui) {
     var cix = ui.getIntAttr(el, 'data-candidate-index');
     if (cix !== null && app.showVoteCountModal) app.showVoteCountModal(cix);

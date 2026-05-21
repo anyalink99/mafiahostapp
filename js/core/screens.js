@@ -81,6 +81,9 @@
 
 
   app.navigateToScreen = function (screenId) {
+    // Любой переход выходит из встроенного режима голосования (ПК) — раскладка стола
+    // восстанавливается, vote-body возвращается на vote-screen.
+    if (app.exitPcVoting) app.exitPcVoting();
     if (screenId !== 'settings-screen' && app.stopMusicPreview) app.stopMusicPreview();
     if (screenId !== 'vote-screen' && app.hideVoteCountModal) app.hideVoteCountModal();
     if (screenId !== 'game-screen' && screenId !== 'prepare-screen' && app.hidePlayerActionsModal) {
