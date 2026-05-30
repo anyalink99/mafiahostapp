@@ -55,10 +55,13 @@
 
   function findSlot() {
     var s = activeScreen();
-    return s ? s.querySelector('.player-detail-slot') : null;
+    // Селектор .unified-player-slot — чтобы не зацепить специализированные
+    // боковые слоты (#vote-count-slot, #setup-slot), которые тоже имеют
+    // класс .player-detail-slot ради переиспользования анимации.
+    return s ? s.querySelector('.unified-player-slot') : null;
   }
   function closeAllSlots() {
-    var slots = document.querySelectorAll('.player-detail-slot.slot-open');
+    var slots = document.querySelectorAll('.unified-player-slot.slot-open');
     for (var i = 0; i < slots.length; i++) slots[i].classList.remove('slot-open');
   }
 
@@ -74,7 +77,7 @@
     return null;
   }
   function panelIsCurrentlyOpen() {
-    return !!document.querySelector('.player-detail-slot.slot-open');
+    return !!document.querySelector('.unified-player-slot.slot-open');
   }
 
   // Прочитать выбранную роль из ARIA-radio группы (Подготовка / Итоги).
@@ -661,6 +664,15 @@
   function init() {
     if (!isLg()) return;
     buildUnified();
+    // Прицепить unified к первому unified-player-slot СРАЗУ, иначе содержимое
+    // (включая #modal-player-prepare-role-section) живёт в detached-дереве и
+    // `document.getElementById` его не находит. Это ломает render-функции
+    // (showPlayerActionsModal → renderPrepareModalRoleRadios), которые
+    // выполняются ДО того, как openForPlayer успеет attach'нуть panel в slot.
+    // Слот в закрытом состоянии имеет width:0/opacity:0, так что unified
+    // не виден, пока его не раскроют через .slot-open.
+    var initSlot = document.querySelector('.unified-player-slot');
+    if (initSlot && unified) initSlot.appendChild(unified);
     hideAllOverlays();
     hookModalSetOpen();
     hookNavigateToScreen();

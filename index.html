@@ -263,7 +263,8 @@
                 </div>
             </div>
         </div>
-        <aside class="player-detail-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative"></aside>
+        <aside class="player-detail-slot unified-player-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative"></aside>
+        <aside id="setup-slot" class="player-detail-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative"></aside>
     </div>
 </div>
 
@@ -339,7 +340,7 @@
             </div>
         </div>
 
-        <aside class="player-detail-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative"></aside>
+        <aside class="player-detail-slot unified-player-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative"></aside>
 
         <aside id="game-vote-slot" class="hidden min-h-0 gap-3 overflow-hidden">
             <div class="flex items-center justify-between flex-shrink-0">
@@ -409,7 +410,7 @@
             </section>
         </div>
         <!-- Панель игрока — между колонками (открывается inline) -->
-        <aside class="player-detail-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative order-2 lg:order-none"></aside>
+        <aside class="player-detail-slot unified-player-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative order-2 lg:order-none"></aside>
         <!-- Колонка 2: экспорт + ход игры -->
         <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-4 lg:overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0 order-3 lg:order-none">
             <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
@@ -1034,6 +1035,7 @@
 <script src="js/ui/desktop-shell.js"></script>
 <script src="js/ui/desktop-player-panel.js"></script>
 <script src="js/ui/desktop-vote-count.js"></script>
+<script src="js/ui/desktop-setup-slot.js"></script>
 
 <!-- post-game -->
 <script src="js/summary/summary.js"></script>

@@ -769,6 +769,21 @@ input.mafia-checkbox:active:not(:disabled) {
     width: 24rem;
   }
 }
+/* setup-slot шире — там сетка карт (max-w-md = 28rem). */
+#setup-slot.slot-open {
+  width: 28rem;
+}
+@media (min-width: 1280px) {
+  #setup-slot.slot-open {
+    width: 30rem;
+  }
+}
+/* На lg+ полноэкранный показ роли не нужен — карточка уже flip'ается
+   inline и показывает роль на своей лицевой стороне. role-screen
+   всё ещё получает .active внутри showRole, но visually скрыт. */
+@media (min-width: 1024px) {
+  #role-screen { display: none !important; }
+}
 .player-detail-slot > .modal-panel,
 .player-detail-slot > .unified-player-panel {
   width: 100%;
