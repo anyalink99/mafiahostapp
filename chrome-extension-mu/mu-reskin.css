@@ -557,12 +557,16 @@ a.btn { text-decoration: none !important; }
   color: rgba(250, 248, 245, 0.45) !important;
 }
 
-/* ───────────────────── Пагинация ───────────────────── */
+/* ───────────────────── Пагинация ─────────────────────
+ * MU задаёт прямо на .page-link `--bs-pagination-bg: var(--bs-primary)`
+ * и `--bs-pagination-color: var(--bs-white)`. Поверх — устанавливаем явные
+ * правила на .page-link (не только переменные), потому что MU-вариант
+ * перекрывает наш каскад через специфичность. */
 .pagination {
   --bs-pagination-bg: #1c1917;
   --bs-pagination-color: #d4af37;
   --bs-pagination-border-color: #44403c;
-  --bs-pagination-hover-bg: #292524;
+  --bs-pagination-hover-bg: rgba(212, 175, 55, 0.12);
   --bs-pagination-hover-color: #f0d875;
   --bs-pagination-hover-border-color: rgba(212, 175, 55, 0.45);
   --bs-pagination-active-bg: #7f1d1d;
@@ -571,6 +575,40 @@ a.btn { text-decoration: none !important; }
   --bs-pagination-disabled-bg: #1c1917;
   --bs-pagination-disabled-color: rgba(250, 248, 245, 0.3);
   --bs-pagination-disabled-border-color: rgba(68, 64, 60, 0.4);
+}
+.page-link {
+  background-color: #1c1917 !important;
+  color: #faf8f5 !important;
+  border: 1px solid #44403c !important;
+  -webkit-text-fill-color: #faf8f5 !important;
+  background-image: none !important;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.page-link:hover {
+  background-color: rgba(212, 175, 55, 0.15) !important;
+  color: #f0d875 !important;
+  -webkit-text-fill-color: #f0d875 !important;
+  border-color: rgba(212, 175, 55, 0.5) !important;
+  z-index: 2;
+}
+.page-link:focus,
+.page-link:focus-visible {
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25) !important;
+  outline: none !important;
+}
+.page-item.active .page-link,
+.page-item .page-link.active {
+  background-color: #7f1d1d !important;
+  color: #d4af37 !important;
+  -webkit-text-fill-color: #d4af37 !important;
+  border-color: #d4af37 !important;
+  font-weight: 700;
+}
+.page-item.disabled .page-link {
+  background-color: #1c1917 !important;
+  color: rgba(250, 248, 245, 0.3) !important;
+  -webkit-text-fill-color: rgba(250, 248, 245, 0.3) !important;
+  border-color: rgba(68, 64, 60, 0.4) !important;
 }
 
 /* ───────────────────── Прятки: реклама / куки ───────────────────── */

@@ -935,6 +935,12 @@ input.mafia-checkbox:active:not(:disabled) {
 .unified-section #modal-summary-role-section {
   display: none !important;
 }
+/* Поле «Псевдоним» в секции «Итоги» дублирует header'ный input unified-панели —
+ * прячем. distributeSummaryPlayerContent() ставит inline display:none, но
+ * подстраховываемся CSS'ом на случай динамических ре-рендеров. */
+.unified-section .modal-panel :has(> #modal-summary-nick) {
+  display: none !important;
+}
 
 /* Подвал унифицированной панели с универсальным Save. Стиль самой кнопки
    приходит через Tailwind-классы из JS — как у оригинальных Save в модалках. */
