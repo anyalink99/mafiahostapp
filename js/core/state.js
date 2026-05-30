@@ -251,12 +251,18 @@ window.MafiaApp = window.MafiaApp || {};
     if (app.timerInterval) clearInterval(app.timerInterval);
     app.timerInterval = null;
     app.saveState();
-    // Остаёмся на текущем экране (на мобилке reset обычно жмут из menu — и
-    // навигация туда же = no-op; на десктопе menu закрыт, и принудительно
-    // выкидывать пользователя оттуда некуда). navigateToScreen всё равно
-    // запускает рендеры активного экрана — нужный side-effect.
-    var current = (document.querySelector('.screen.active') || {}).id || 'menu-screen';
-    app.navigateToScreen(current);
+    // После сброса возвращаем пользователя в начало флоу подготовки.
+    // prepare-enter сам решает, куда роутить: prepare-mode-screen (если
+    // включены эксперименты + игра пустая) или прямо prepare-screen.
+    var enter = app.uiActionHandlers && app.uiActionHandlers['prepare-enter'];
+    if (enter) {
+      enter();
+    } else {
+      // Fallback на случай если handler ещё не зарегистрирован —
+      // остаёмся на текущем экране (хотя бы перерендерится).
+      var current = (document.querySelector('.screen.active') || {}).id || 'menu-screen';
+      app.navigateToScreen(current);
+    }
     app.updateResetButtonVisibility();
   };
 

@@ -28,6 +28,14 @@
       return;
     }
 
+    // На десктопе автономный ведущий недоступен — сбрасываем застрявший
+    // mode=auto на host (могло остаться от предыдущей mobile-сессии).
+    var isLg = window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
+    if (isLg && app.prepareConfig.mode === 'auto') {
+      app.prepareConfig.mode = 'host';
+      I.savePrepareConfig();
+    }
+
     var mode = app.prepareConfig.mode;
     if (mode === 'auto') {
       var s = app.autoState;

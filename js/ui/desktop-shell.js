@@ -18,12 +18,23 @@
     return el ? el.id : null;
   }
 
+  // Кнопка «Подготовка» использует data-action="prepare-enter" (а не data-goto),
+  // чтобы пройти через handler — он умеет роутить в prepare-mode-screen при
+  // включённых экспериментах. Для highlighting помечаем её активной также на
+  // промежуточных prepare-/setup-экранах.
+  var PREPARE_RELATED_SCREENS = { 'prepare-screen': 1, 'prepare-mode-screen': 1, 'setup-screen': 1 };
+
   function syncNavActive() {
     var active = activeScreenId();
     var btns = document.querySelectorAll('.screen-nav-vert__btn');
     for (var i = 0; i < btns.length; i++) {
-      var t = btns[i].getAttribute('data-goto');
-      btns[i].classList.toggle('is-active', t === active);
+      var btn = btns[i];
+      var matches = false;
+      var goto = btn.getAttribute('data-goto');
+      if (goto && goto === active) matches = true;
+      var action = btn.getAttribute('data-action');
+      if (action === 'prepare-enter' && PREPARE_RELATED_SCREENS[active]) matches = true;
+      btn.classList.toggle('is-active', matches);
     }
   }
 

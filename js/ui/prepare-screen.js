@@ -41,8 +41,11 @@
     if (modeContainer) {
       modeContainer.innerHTML = '';
       var modes = [{ value: 'host', label: 'Обычный ведущий' }];
-      // Автономный ведущий считается экспериментальным режимом.
-      if (app.experimentalModesEnabled) modes.push({ value: 'auto', label: 'Автономный ведущий' });
+      // Автономный ведущий — экспериментальный, плюс не показывается на десктопе
+      // (даже с включёнными экспериментами): целевой UX там — стол на ведущего,
+      // а не «один игрок передаёт телефон по кругу».
+      var isLg = window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
+      if (app.experimentalModesEnabled && !isLg) modes.push({ value: 'auto', label: 'Автономный ведущий' });
       modes.forEach(function (m) {
         var b = document.createElement('button');
         b.type = 'button';
