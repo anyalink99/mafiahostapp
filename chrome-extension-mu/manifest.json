@@ -1,15 +1,31 @@
 {
   "manifest_version": 3,
   "name": "Mafia Host on MafiaUniverse",
-  "version": "0.2.0",
-  "description": "Заменяет интерфейс /Games/Edit на mafiauniverse.org на UI приложения Mafia Host. Автокомплит игроков, ввод игры, заполнение их формы по кнопке.",
-  "permissions": ["activeTab", "scripting"],
+  "version": "0.3.0",
+  "description": "Заменяет интерфейс /Games/Edit на mafiauniverse.org на UI приложения Mafia Host + reskin всех остальных страниц MU под тему Mafia Host (золото/уголь/кровь).",
+  "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["https://mafiauniverse.org/*", "http://mafiauniverse.org/*"],
   "action": {
     "default_title": "Mafia Host → MafiaUniverse",
     "default_popup": "popup.html"
   },
   "content_scripts": [
+    {
+      "matches": [
+        "https://mafiauniverse.org/*",
+        "http://mafiauniverse.org/*"
+      ],
+      "js": ["mu-reskin-css.js", "mu-reskin.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://mafiauniverse.org/*",
+        "http://mafiauniverse.org/*"
+      ],
+      "js": ["mu-cleanup.js"],
+      "run_at": "document_idle"
+    },
     {
       "matches": [
         "https://mafiauniverse.org/Games/Edit*",

@@ -93,10 +93,82 @@
       details p {
         margin: 6px 0 0;
       }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 0 0 10px;
+        padding: 8px 10px;
+        background: #111114;
+        border: 1px solid #3a3a3f;
+        border-radius: 4px;
+      }
+      .toggle-row label.title {
+        font-size: 12px;
+        color: #e6e1d6;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        user-select: none;
+        display: block;
+      }
+      .toggle-row .hint {
+        font-size: 10px;
+        color: #6e6e74;
+        margin-top: 2px;
+      }
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 22px;
+        flex-shrink: 0;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #3a3a3f;
+        border-radius: 22px;
+        transition: background-color 0.18s;
+      }
+      .slider::before {
+        content: '';
+        position: absolute;
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        top: 3px;
+        background-color: #e6e1d6;
+        border-radius: 50%;
+        transition: transform 0.18s, background-color 0.18s;
+      }
+      .switch input:checked + .slider {
+        background-color: #4a1f25;
+      }
+      .switch input:checked + .slider::before {
+        transform: translateX(16px);
+        background-color: #c8a96a;
+      }
     </style>
   </head>
   <body>
     <h1>Mafia Host → MafiaUniverse</h1>
+    <div class="toggle-row">
+      <div>
+        <label class="title" for="reskin-toggle">Reskin страниц MU</label>
+        <div class="hint">тема Mafia Host поверх Bootstrap</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="reskin-toggle" />
+        <span class="slider"></span>
+      </label>
+    </div>
     <textarea
       id="json-input"
       placeholder="Вставьте JSON из кнопки &quot;Скопировать MU JSON&quot; в приложении"

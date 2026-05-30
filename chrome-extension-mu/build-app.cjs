@@ -46,7 +46,29 @@ FILES.forEach(function (f) {
 // копию (js/vendor/tailwind-cdn.js), которую один раз скачали с того же CDN.
 patchIndexHtmlForExtension();
 
+// Бандлим mu-reskin.css в JS-строку (mu-reskin-css.js), чтобы content-script
+// мог инжектить стиль СИНХРОННО при document_start (без fetch — иначе на долю
+// секунды виден неотрескиненный MU). Файл коммитится в репозиторий, чтобы
+// пользователи без npm-сборки получали актуальную версию.
+bundleReskinCss();
+
 console.log('Built extension app at', dest);
+
+function bundleReskinCss() {
+  var srcCss = path.join(here, 'mu-reskin.css');
+  var outJs = path.join(here, 'mu-reskin-css.js');
+  if (!fs.existsSync(srcCss)) {
+    console.warn('skip reskin bundle: mu-reskin.css not found');
+    return;
+  }
+  var css = fs.readFileSync(srcCss, 'utf8');
+  var js =
+    '// AUTO-GENERATED from mu-reskin.css by build-app.cjs. DO NOT EDIT.\n' +
+    '// Inlining CSS as a JS string позволяет content-script инжектить стили\n' +
+    '// синхронно при document_start (без async fetch → без FOUC).\n' +
+    'window.MU_RESKIN_CSS = ' + JSON.stringify(css) + ';\n';
+  fs.writeFileSync(outJs, js);
+}
 
 function patchIndexHtmlForExtension() {
   var indexPath = path.join(dest, 'index.html');

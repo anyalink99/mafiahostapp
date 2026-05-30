@@ -6,6 +6,19 @@
   var jsonInput = $('json-input');
   var fillBtn = $('fill-btn');
   var pasteBtn = $('paste-btn');
+  var reskinToggle = $('reskin-toggle');
+
+  // Чекбокс reskin'а: читаем из storage (дефолт true), пишем при изменении.
+  // mu-reskin.js на всех вкладках MU подхватит chrome.storage.onChanged
+  // и снимет/наложит <style> без перезагрузки страницы.
+  if (reskinToggle && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get(['reskinEnabled'], function (items) {
+      reskinToggle.checked = items && items.reskinEnabled === false ? false : true;
+    });
+    reskinToggle.addEventListener('change', function () {
+      chrome.storage.local.set({ reskinEnabled: !!reskinToggle.checked });
+    });
+  }
 
   function setStatus(text, kind) {
     statusEl.textContent = text;

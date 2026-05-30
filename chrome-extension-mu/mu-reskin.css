@@ -1,0 +1,845 @@
+/* Mafia Host Theme — reskin для mafiauniverse.org.
+ * Переопределяет Bootstrap (data-bs-theme="dark") под нашу палитру
+ * (mafia-black/coal/card/gold/blood/cream) и подменяет шрифты на display-serif.
+ * Не трогает HTML/structure MU — только CSS-overlay; легко откатывается
+ * выключением расширения.
+ *
+ * Цвета (из tailwind.config.js нашего приложения):
+ *   black     #0c0a09   deepest bg
+ *   coal      #1c1917   page bg / cards
+ *   card      #292524   secondary surface
+ *   border    #44403c
+ *   gold      #d4af37
+ *   goldLight #f0d875
+ *   blood     #7f1d1d
+ *   bloodLight#991b1b
+ *   cream     #faf8f5
+ */
+
+/* ───────────────────── Bootstrap CSS variables ───────────────────── */
+html[data-bs-theme="dark"],
+html[data-bs-theme="dark"] body {
+  --bs-body-bg: #0c0a09;
+  --bs-body-bg-rgb: 12, 10, 9;
+  --bs-body-color: #faf8f5;
+  --bs-body-color-rgb: 250, 248, 245;
+
+  --bs-secondary-bg: #1c1917;
+  --bs-secondary-bg-rgb: 28, 25, 23;
+  --bs-tertiary-bg: #1c1917;
+  --bs-tertiary-bg-rgb: 28, 25, 23;
+
+  --bs-emphasis-color: #faf8f5;
+  --bs-emphasis-color-rgb: 250, 248, 245;
+  --bs-secondary-color: rgba(250, 248, 245, 0.7);
+  --bs-tertiary-color: rgba(250, 248, 245, 0.5);
+
+  --bs-primary: #d4af37;
+  --bs-primary-rgb: 212, 175, 55;
+  --bs-primary-text-emphasis: #f0d875;
+  --bs-primary-bg-subtle: rgba(212, 175, 55, 0.12);
+  --bs-primary-border-subtle: rgba(212, 175, 55, 0.4);
+
+  --bs-link-color: #d4af37;
+  --bs-link-color-rgb: 212, 175, 55;
+  --bs-link-hover-color: #f0d875;
+  --bs-link-hover-color-rgb: 240, 216, 117;
+
+  --bs-border-color: #44403c;
+  --bs-border-color-translucent: rgba(68, 64, 60, 0.45);
+
+  --bs-danger: #7f1d1d;
+  --bs-danger-rgb: 127, 29, 29;
+  --bs-warning: #d4af37;
+  --bs-warning-rgb: 212, 175, 55;
+  --bs-success: #65a30d;
+  --bs-success-rgb: 101, 163, 13;
+  --bs-info: #d4af37;
+  --bs-info-rgb: 212, 175, 55;
+
+  /* focus-ring — Bootstrap по умолчанию синий (--bs-focus-ring-color = primary 13,110,253) */
+  --bs-focus-ring-color: rgba(212, 175, 55, 0.45);
+  --bs-focus-ring-width: 0.2rem;
+  --bs-focus-ring-opacity: 0.6;
+  --bs-btn-focus-shadow-rgb: 212, 175, 55;
+
+  /* navbar */
+  --bs-navbar-color: rgba(250, 248, 245, 0.72);
+  --bs-navbar-hover-color: #d4af37;
+  --bs-navbar-active-color: #d4af37;
+  --bs-navbar-disabled-color: rgba(250, 248, 245, 0.3);
+  --bs-navbar-brand-color: #d4af37;
+  --bs-navbar-brand-hover-color: #f0d875;
+
+  /* nav-tabs / nav-pills */
+  --bs-nav-link-color: rgba(250, 248, 245, 0.72);
+  --bs-nav-link-hover-color: #d4af37;
+  --bs-nav-tabs-link-active-color: #d4af37;
+  --bs-nav-tabs-link-active-bg: #1c1917;
+  --bs-nav-tabs-link-active-border-color: rgba(212, 175, 55, 0.4) rgba(212, 175, 55, 0.4) transparent;
+  --bs-nav-pills-link-active-color: #d4af37;
+  --bs-nav-pills-link-active-bg: rgba(127, 29, 29, 0.45);
+
+  /* progress, list-group и пр. — на ту же палитру */
+  --bs-list-group-bg: #1c1917;
+  --bs-list-group-color: #faf8f5;
+  --bs-list-group-border-color: rgba(68, 64, 60, 0.5);
+  --bs-list-group-action-color: #faf8f5;
+  --bs-list-group-action-hover-bg: rgba(212, 175, 55, 0.08);
+  --bs-list-group-action-hover-color: #d4af37;
+  --bs-list-group-action-active-bg: rgba(212, 175, 55, 0.15);
+  --bs-list-group-action-active-color: #f0d875;
+}
+
+/* ───────────────────── Body ───────────────────── */
+/* Градиент применяем прямо на body — без ::before оверлея, чтобы не перекрыть
+ * случайные элементы, монтируемые мимо .mu-ui-* контейнеров (dropdown'ы и т.п.). */
+body {
+  background: linear-gradient(to bottom, rgba(127, 29, 29, 0.18), #0c0a09 320px, #0c0a09) #0c0a09 !important;
+  color: #faf8f5 !important;
+  font-family: 'Manrope', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif !important;
+}
+
+/* ───────────────────── Заголовки — display serif + золото ───────────────────── */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6,
+.navbar-brand-text,
+.modal-title {
+  font-family: 'Cormorant Garamond', 'Cormorant', 'Georgia', serif !important;
+  color: #d4af37 !important;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+/* ───────────────────── Navbar ───────────────────── */
+.navbar,
+.navbar.bg-body-tertiary {
+  background-color: rgba(28, 25, 23, 0.95) !important;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+  backdrop-filter: blur(6px);
+}
+
+.navbar-brand-text {
+  font-size: 1.4rem !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase;
+  color: #d4af37 !important;
+}
+
+/* Текст в navbar — статика, hover, active. Дополнительно жёстко зануляем
+ * `-webkit-text-fill-color` + `background-image`, потому что MU кое-где
+ * наследует gradient-text трюк (через утилиту .maingradient или классы),
+ * а это перекрывает color и даёт сине-фиолетовый текст. */
+.nav-link,
+.navbar .nav-link,
+.navbar .nav-link:hover,
+.navbar .nav-link:focus,
+.navbar .nav-link.active,
+.top-menu .nav-link,
+.top-menu .nav-link:hover,
+.top-menu .nav-link.active,
+.top-menu li.nav-item a,
+.top-menu li.nav-item a:hover,
+.top-menu li.nav-item.active a {
+  background-image: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-decoration: none !important;
+  letter-spacing: 0.05em;
+  transition: color 0.18s ease;
+}
+.nav-link,
+.navbar .nav-link,
+.top-menu .nav-link,
+.top-menu li.nav-item a {
+  color: rgba(250, 248, 245, 0.72) !important;
+}
+.navbar .nav-link:hover,
+.navbar .nav-link:focus,
+.navbar .nav-link.active,
+.top-menu .nav-link:hover,
+.top-menu .nav-link.active,
+.top-menu li.nav-item a:hover,
+.top-menu li.nav-item.active a,
+.top-menu li.nav-item.active a:hover {
+  color: #d4af37 !important;
+}
+.navbar .nav-link.text-danger,
+.navbar .nav-link.text-danger:visited {
+  color: #991b1b !important;
+}
+.navbar .nav-link.text-danger:hover {
+  color: #ef4444 !important;
+}
+
+/* Утилитарный .text-black MU использует в навбаре. В тёмной теме перекрашиваем. */
+.text-black {
+  color: rgba(250, 248, 245, 0.72) !important;
+}
+
+.navbar-toggler {
+  border-color: rgba(212, 175, 55, 0.35) !important;
+}
+.navbar-toggler:focus,
+.navbar-toggler:focus-visible {
+  box-shadow: 0 0 0 0.18rem rgba(212, 175, 55, 0.35) !important;
+}
+.navbar-toggler-icon {
+  filter: invert(0.85) sepia(0.6) saturate(2) hue-rotate(355deg);
+}
+
+/* Brand «MafiaUniverse» — золотом, без синего hover'а.
+ *
+ * MU использует gradient-text трюк:
+ *   .navbar-brand-text {
+ *     background-image: radial-gradient(circle at top left, #c2bdff, #3020ff);
+ *     -webkit-background-clip: text;
+ *     -webkit-text-fill-color: transparent;
+ *   }
+ * Поэтому обычный `color:` не виден — нужно либо подменить градиент, либо
+ * выключить text-fill-color. Делаем второе и красим color напрямую.
+ * То же относится к утилите .maingradient (на других страницах). */
+.navbar-brand,
+a.navbar-brand,
+a.navbar-brand:hover,
+a.navbar-brand:focus {
+  color: #d4af37 !important;
+  text-decoration: none !important;
+}
+/* Тот же gradient-text трюк MU использует для:
+ *   .navbar-brand-text, .maingradient — статическое golden название.
+ *   .gradienthover:hover, .navbar-brand-text:hover — анимированный
+ *     blue-purple gradient на hover (применяется ко ВСЕМ ссылкам с классом
+ *     .gradienthover: названия турниров, клубов, серий — их там сотни). */
+.navbar-brand-text,
+.maingradient,
+.gradienthover {
+  background-image: linear-gradient(120deg, #f0d875, #d4af37 55%, #b8941f) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: #d4af37 !important;
+}
+.gradienthover:hover,
+.navbar-brand-text:hover,
+.maingradient:hover,
+a.navbar-brand:hover .navbar-brand-text,
+a.navbar-brand:focus .navbar-brand-text {
+  background-image: linear-gradient(120deg, #fff0b0, #f0d875 55%, #d4af37) !important;
+  -webkit-text-fill-color: transparent !important;
+  text-decoration-color: rgba(212, 175, 55, 0.5) !important;
+}
+
+/* Аватарки .logophoto / .logophoto_flash — у MU кольцо вокруг через
+ * `linear-gradient(bg,bg), radial-gradient(c2bdff, 3020ff)` на border-box,
+ * плюс ::before — размытое сине-фиолетовое свечение под аватаркой.
+ * Подменяем оба слоя на gold→blood, оставляя двухслойный трюк. */
+.logophoto {
+  background-image:
+    linear-gradient(#0c0a09, #0c0a09),
+    radial-gradient(circle at top left, #f0d875, #d4af37 55%, #7f1d1d) !important;
+}
+/* MU использует ::after (не ::before) для размытого свечения вокруг аватарки. */
+.logophoto_flash::after,
+.logophoto_flash::before {
+  background: radial-gradient(circle at top left, #f0d875, #d4af37 60%, #7f1d1d) !important;
+}
+
+/* Карточки турниров/серий/лиг (.tournament-cart) — у MU аватар+название
+ * выровнены по центру через `justify-content-sm-center`. Прижимаем влево,
+ * чтобы layout соответствовал левому ряду деталей под ним (text-start). */
+.tournament-cart .col.text-center {
+  text-align: left !important;
+}
+.tournament-cart .col.text-center > .d-flex,
+.tournament-cart .d-flex.justify-content-sm-center {
+  justify-content: flex-start !important;
+}
+
+/* MU добавляет ::after к каждой ссылке в верхнем меню — полоска, которая
+ * вырастает по hover и подсвечивает active. У них она сине-фиолетовая. */
+.top-menu li.nav-item a::after,
+.navbar-nav .nav-link::after {
+  background: radial-gradient(circle at top left, #f0d875, #d4af37 55%, #7f1d1d) !important;
+}
+
+/* Hover/active цвета линков в верхнем меню — MU задаёт !important #c2bdff. */
+.top-menu li.nav-item a:hover,
+.top-menu li.nav-item a:focus,
+.top-menu li.nav-item.active a,
+.top-menu li.nav-item.active a:hover,
+.nav-link.active,
+.navbar-nav .nav-link.active {
+  color: #d4af37 !important;
+}
+
+/* Loader (3 кружка крутящихся) — MU кладёт каждому кружку
+ * `box-shadow: 0 -10px 5px #3020ff` (синее свечение). Убираем. */
+.loader .inner,
+.loader .inner.one,
+.loader .inner.two,
+.loader .inner.three {
+  box-shadow: none !important;
+}
+
+/* Tabs/pills внутри страниц профилей: «Общая информация / Турниры / Рейтинги / ...» */
+.nav-tabs {
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+}
+.nav-tabs .nav-link,
+.nav-pills .nav-link {
+  color: rgba(250, 248, 245, 0.7) !important;
+  border-color: transparent !important;
+}
+.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:focus,
+.nav-pills .nav-link:hover,
+.nav-pills .nav-link:focus {
+  color: #d4af37 !important;
+  border-color: transparent transparent rgba(212, 175, 55, 0.4) !important;
+  background-color: transparent !important;
+  isolation: isolate;
+}
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+  color: #d4af37 !important;
+  background-color: #1c1917 !important;
+  border-color: rgba(212, 175, 55, 0.4) rgba(212, 175, 55, 0.4) transparent !important;
+}
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+  color: #d4af37 !important;
+  background-color: rgba(127, 29, 29, 0.45) !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+}
+
+/* ───────────────────── Прелоадер (3 кружка) — золото ───────────────────── */
+.loaderbody { background-color: #0c0a09 !important; }
+.loader .inner.one { border-top-color: #d4af37 !important; }
+.loader .inner.two { border-right-color: #f0d875 !important; }
+.loader .inner.three { border-left-color: #991b1b !important; }
+
+/* ───────────────────── Карточки / модалки ───────────────────── */
+.card,
+.modal-content {
+  background-color: #1c1917 !important;
+  border: 1px solid #44403c !important;
+  color: #faf8f5 !important;
+  border-radius: 0.5rem !important;
+}
+.card-header,
+.modal-header {
+  background-color: rgba(212, 175, 55, 0.05) !important;
+  border-bottom: 1px solid rgba(68, 64, 60, 0.6) !important;
+}
+.card-footer,
+.modal-footer {
+  background-color: transparent !important;
+  border-top: 1px solid rgba(68, 64, 60, 0.6) !important;
+}
+.btn-close {
+  filter: invert(1) brightness(0.85) sepia(1) saturate(2) hue-rotate(355deg);
+}
+
+/* ───────────────────── Таблицы ───────────────────── */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: #faf8f5;
+  --bs-table-striped-bg: rgba(68, 64, 60, 0.25);
+  --bs-table-striped-color: #faf8f5;
+  --bs-table-hover-bg: rgba(212, 175, 55, 0.08);
+  --bs-table-hover-color: #f0d875;
+  --bs-table-border-color: rgba(68, 64, 60, 0.4);
+  color: #faf8f5 !important;
+}
+.table > :not(caption) > * > * {
+  border-color: rgba(68, 64, 60, 0.5);
+}
+.table thead th,
+.table th {
+  color: #d4af37 !important;
+  font-family: 'Cormorant Garamond', serif !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-bottom: 2px solid rgba(212, 175, 55, 0.35) !important;
+}
+
+/* ───────────────────── Кнопки ───────────────────── */
+.btn {
+  border-radius: 0.25rem !important;
+  letter-spacing: 0.04em;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.1s ease !important;
+}
+.btn:active { transform: scale(0.98); }
+
+/* Главные действия — кроваво-золотые */
+.btn-primary,
+.btn-warning,
+.btn-info {
+  background-color: #7f1d1d !important;
+  border: 2px solid #d4af37 !important;
+  color: #d4af37 !important;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.btn-primary:hover,
+.btn-warning:hover,
+.btn-info:hover {
+  background-color: #991b1b !important;
+  color: #f0d875 !important;
+}
+
+/* Outline-варианты — рамка золотом */
+.btn-outline-warning,
+.btn-outline-primary,
+.btn-outline-info,
+.btn-outline-light {
+  border: 1px solid rgba(212, 175, 55, 0.55) !important;
+  color: #d4af37 !important;
+  background: transparent !important;
+}
+.btn-outline-warning:hover,
+.btn-outline-primary:hover,
+.btn-outline-info:hover,
+.btn-outline-light:hover {
+  background-color: rgba(212, 175, 55, 0.12) !important;
+  border-color: #d4af37 !important;
+  color: #f0d875 !important;
+}
+
+.btn-danger {
+  background-color: #7f1d1d !important;
+  border-color: #991b1b !important;
+  color: #faf8f5 !important;
+}
+.btn-danger:hover {
+  background-color: #991b1b !important;
+}
+.btn-outline-danger {
+  border: 1px solid #991b1b !important;
+  color: #ef4444 !important;
+  background: transparent !important;
+}
+.btn-outline-danger:hover {
+  background-color: rgba(127, 29, 29, 0.3) !important;
+  color: #faf8f5 !important;
+}
+
+.btn-secondary,
+.btn-outline-secondary {
+  background-color: #292524 !important;
+  border-color: #44403c !important;
+  color: #faf8f5 !important;
+}
+.btn-secondary:hover,
+.btn-outline-secondary:hover {
+  background-color: #44403c !important;
+  color: #d4af37 !important;
+}
+
+.btn-success {
+  background-color: #166534 !important;
+  border-color: #65a30d !important;
+  color: #faf8f5 !important;
+}
+
+/* ───────────────────── Формы ───────────────────── */
+.form-control,
+.form-select,
+textarea.form-control {
+  background-color: #1c1917 !important;
+  border: 1px solid #44403c !important;
+  color: #faf8f5 !important;
+  border-radius: 0.25rem;
+}
+.form-control::placeholder { color: rgba(250, 248, 245, 0.32) !important; }
+.form-control:focus,
+.form-select:focus,
+textarea.form-control:focus {
+  background-color: #1c1917 !important;
+  border-color: rgba(212, 175, 55, 0.55) !important;
+  color: #faf8f5 !important;
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.18) !important;
+}
+.form-label {
+  color: rgba(250, 248, 245, 0.85) !important;
+  font-size: 0.9em;
+  letter-spacing: 0.03em;
+}
+.form-check-input {
+  background-color: #1c1917 !important;
+  border-color: #44403c !important;
+}
+.form-check-input:checked {
+  background-color: #7f1d1d !important;
+  border-color: #d4af37 !important;
+}
+
+.input-group-text {
+  background-color: #292524 !important;
+  border-color: #44403c !important;
+  color: #d4af37 !important;
+}
+
+/* ───────────────────── Dropdown ───────────────────── */
+.dropdown-menu {
+  background-color: #1c1917 !important;
+  border: 1px solid rgba(212, 175, 55, 0.35) !important;
+  border-radius: 0.25rem;
+  --bs-dropdown-link-color: #faf8f5;
+  --bs-dropdown-link-hover-color: #d4af37;
+  --bs-dropdown-link-hover-bg: rgba(212, 175, 55, 0.1);
+  --bs-dropdown-link-active-color: #d4af37;
+  --bs-dropdown-link-active-bg: rgba(212, 175, 55, 0.15);
+  --bs-dropdown-divider-bg: rgba(68, 64, 60, 0.6);
+}
+.dropdown-item {
+  color: #faf8f5 !important;
+}
+.dropdown-item:hover,
+.dropdown-item:focus {
+  color: #d4af37 !important;
+  background-color: rgba(212, 175, 55, 0.1) !important;
+}
+
+/* ───────────────────── Бэйджи / pill'ы ───────────────────── */
+.badge {
+  border-radius: 0.25rem !important;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+.bg-primary, .text-bg-primary { background-color: #7f1d1d !important; color: #d4af37 !important; }
+.bg-warning, .text-bg-warning { background-color: #d4af37 !important; color: #1c1917 !important; }
+.bg-danger,  .text-bg-danger  { background-color: #7f1d1d !important; color: #faf8f5 !important; }
+.bg-success, .text-bg-success { background-color: #166534 !important; color: #faf8f5 !important; }
+.bg-secondary, .text-bg-secondary { background-color: #292524 !important; color: #faf8f5 !important; }
+.bg-info,    .text-bg-info    { background-color: rgba(212, 175, 55, 0.15) !important; color: #d4af37 !important; }
+.bg-light,   .text-bg-light   { background-color: #292524 !important; color: #faf8f5 !important; }
+.bg-dark,    .text-bg-dark    { background-color: #0c0a09 !important; color: #faf8f5 !important; }
+.bg-body-tertiary,
+.bg-body-secondary { background-color: #1c1917 !important; }
+
+/* ───────────────────── Текстовые утилиты ───────────────────── */
+.text-warning   { color: #d4af37 !important; }
+.text-primary   { color: #d4af37 !important; }
+.text-info      { color: #d4af37 !important; }
+.text-danger    { color: #ef4444 !important; }
+.text-success   { color: #65a30d !important; }
+.text-muted     { color: rgba(250, 248, 245, 0.5) !important; }
+.text-secondary { color: rgba(250, 248, 245, 0.65) !important; }
+
+.border-warning { border-color: #d4af37 !important; }
+.border-primary { border-color: #d4af37 !important; }
+.border-danger  { border-color: #991b1b !important; }
+.border-info    { border-color: rgba(212, 175, 55, 0.4) !important; }
+.border-success { border-color: #65a30d !important; }
+.border-dark    { border-color: #0c0a09 !important; }
+
+/* ───────────────────── Ссылки ───────────────────── */
+a, a.text-info, a.text-primary, a.text-warning {
+  color: #d4af37 !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease;
+}
+a:hover, a.text-info:hover, a.text-primary:hover, a.text-warning:hover {
+  color: #f0d875 !important;
+  text-decoration: underline !important;
+  text-decoration-color: rgba(212, 175, 55, 0.5) !important;
+  text-underline-offset: 2px;
+}
+a.btn { text-decoration: none !important; }
+
+/* ───────────────────── Footer ───────────────────── */
+.mu-ui-footer,
+.footer.text-muted {
+  background-color: rgba(28, 25, 23, 0.95) !important;
+  border-top: 1px solid rgba(212, 175, 55, 0.2) !important;
+  color: rgba(250, 248, 245, 0.45) !important;
+}
+
+/* ───────────────────── Пагинация ───────────────────── */
+.pagination {
+  --bs-pagination-bg: #1c1917;
+  --bs-pagination-color: #d4af37;
+  --bs-pagination-border-color: #44403c;
+  --bs-pagination-hover-bg: #292524;
+  --bs-pagination-hover-color: #f0d875;
+  --bs-pagination-hover-border-color: rgba(212, 175, 55, 0.45);
+  --bs-pagination-active-bg: #7f1d1d;
+  --bs-pagination-active-color: #d4af37;
+  --bs-pagination-active-border-color: #d4af37;
+  --bs-pagination-disabled-bg: #1c1917;
+  --bs-pagination-disabled-color: rgba(250, 248, 245, 0.3);
+  --bs-pagination-disabled-border-color: rgba(68, 64, 60, 0.4);
+}
+
+/* ───────────────────── Прятки: реклама / куки ───────────────────── */
+[id^="yandex_rtb_"],
+.yandex-rtb-block,
+script[src*="yandex"],
+#cookies_notice {
+  display: none !important;
+}
+
+/* ───────────────────── Скроллбар ─────────────────────
+ * Firefox-style свойства (поддерживаются и Chromium 121+):
+ *   scrollbar-color: <thumb> <track>
+ *   scrollbar-width: auto | thin | none
+ * Плюс WebKit-pseudo для старых Chromium-сборок и нестандартных контейнеров.
+ * Применяем и к html, и к body, и к произвольным контейнерам — MU использует
+ * горизонтальный/вертикальный скролл внутри .table-responsive, .dropdown-menu и т.п.
+ */
+html,
+body,
+.table-responsive,
+.modal-body,
+.dropdown-menu,
+pre,
+textarea {
+  scrollbar-color: #44403c #1c1917;
+  scrollbar-width: thin;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: #1c1917;
+}
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background-color: #44403c;
+  border-radius: 5px;
+  border: 2px solid #1c1917;
+}
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(212, 175, 55, 0.55);
+}
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: #1c1917;
+}
+
+/* ───────────────────── Notyf (toasts MU) ───────────────────── */
+.notyf__toast {
+  background-color: #1c1917 !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  color: #faf8f5 !important;
+  border-radius: 0.25rem !important;
+}
+.notyf__toast--success { border-color: #65a30d !important; }
+.notyf__toast--error   { border-color: #991b1b !important; }
+
+/* ───────────────────── Аватарки / изображения ───────────────────── */
+img.rounded, img.rounded-4 {
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* ───────────────────── Список карточек игроков/клубов ───────────────────── */
+.logophoto,
+.logophoto_flash {
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 4px;
+}
+
+/* ───────────────────── HR ───────────────────── */
+hr {
+  border-top: 1px solid rgba(212, 175, 55, 0.25) !important;
+  opacity: 1 !important;
+}
+
+/* ───────────────────── games.min.css — ТОЛЬКО плашка результата команды ─────────────────────
+ * У MU отдельный стиль games.min.css. Меняем ИСКЛЮЧИТЕЛЬНО `.box_game_res .win_*`
+ * — это header-плашка карточки игры, на которой написано «Игра №X / ведущий /
+ * дата» с резко-красным/чёрным фоном (#f33, #000, #565656). Смягчаем под нашу
+ * палитру. Внутренности таблиц (role_*, killedfirst, ended_true, voting) НЕ
+ * трогаем — это функциональные индикаторы, читаемость важнее темы. */
+.box_game_res .win_,
+.box_game_res .win_1,
+.box_game_res .win_2,
+.box_game_res .win_3 {
+  color: #faf8f5 !important;
+  border-color: rgba(212, 175, 55, 0.25) !important;
+}
+.box_game_res .win_  { background-color: #292524 !important; } /* нейтральный/незаверш. */
+.box_game_res .win_1 { background-color: #7f1d1d !important; } /* красная команда — было #f33 */
+.box_game_res .win_2 { background-color: #0c0a09 !important; } /* чёрная команда — было #000 */
+.box_game_res .win_3 { background-color: #44403c !important; } /* ничья — было #565656 */
+
+/* Роли игроков (role_2/3/4 — колонки ролей в таблицах игр), голосование
+ * (#TableOfCurrentVoting), первый убитый и пр. — НЕ трогаем, это не часть
+ * «шапки результата команды», а внутреннее содержимое игры. Оставляем
+ * как у MU чтобы не сломать читаемость функциональных таблиц. */
+
+/* ───────────────────── Sub-nav профилей: перенесён в начало контента ─────────────────────
+ * mu-cleanup.js физически переносит nav[id$="Navigation"] (playerNavigation,
+ * clubNavigation, tournamentNavigation) в начало .mu-ui-content, чтобы он шёл
+ * сразу под главным fixed-navbar'ом. Здесь — лёгкая косметика sub-nav, чтобы
+ * он визуально смыкался с верхней шапкой. */
+.mu-ui-content > nav[id$="Navigation"] {
+  margin-top: 0 !important;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+  padding-bottom: 0.25rem;
+}
+
+/* ───────────────────── Финальный «убийца» голубого в navbar ─────────────────────
+ * Несмотря на все !important rules, какие-то правила MU всё ещё могут пробить
+ * через специфичность. ID-селектор (1,0,0) выигрывает у любой комбинации
+ * классов. Жёстко принудительно закрепляем gold для главного и sub-nav. */
+#MainNav a,
+#MainNav .nav-link,
+#playerNavigation a,
+#playerNavigation .nav-link,
+#clubNavigation a,
+#clubNavigation .nav-link,
+#tournamentNavigation a,
+#tournamentNavigation .nav-link {
+  background-image: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-decoration: none !important;
+  color: rgba(250, 248, 245, 0.72) !important;
+}
+#MainNav a:hover,
+#MainNav a:focus,
+#MainNav .nav-link:hover,
+#MainNav .nav-link:focus,
+#MainNav .nav-link.active,
+#MainNav .nav-item.active a,
+#playerNavigation a:hover,
+#playerNavigation a:focus,
+#playerNavigation .nav-link:hover,
+#playerNavigation .nav-link.active,
+#clubNavigation a:hover,
+#clubNavigation .nav-link:hover,
+#clubNavigation .nav-link.active,
+#tournamentNavigation a:hover,
+#tournamentNavigation .nav-link:hover,
+#tournamentNavigation .nav-link.active {
+  color: #d4af37 !important;
+  -webkit-text-fill-color: #d4af37 !important;
+  background-image: none !important;
+}
+/* Магазин («Subscriptions») оставляем кроваво-красным */
+#MainNav .nav-link.text-danger,
+#MainNav .nav-link.text-danger:visited {
+  color: #991b1b !important;
+  -webkit-text-fill-color: #991b1b !important;
+}
+#MainNav .nav-link.text-danger:hover {
+  color: #ef4444 !important;
+  -webkit-text-fill-color: #ef4444 !important;
+}
+
+/* Brand «MAFIAUNIVERSE» — отдельно, оставляем gradient-text gold */
+#MainNav .navbar-brand-text {
+  color: #d4af37 !important;
+  -webkit-text-fill-color: transparent !important;
+  background-image: linear-gradient(120deg, #f0d875, #d4af37 55%, #b8941f) !important;
+}
+#MainNav a.navbar-brand:hover .navbar-brand-text {
+  background-image: linear-gradient(120deg, #fff0b0, #f0d875 55%, #d4af37) !important;
+}
+
+/* ───────────────────── Focus ring (всё, что подсвечивается синим) ─────────────────────
+ * Bootstrap 5.3 даёт box-shadow rgba(13,110,253,…) на :focus-visible элементов
+ * .btn, .form-control, .form-check-input, .form-select. Перебиваем на золото. */
+.btn:focus,
+.btn:focus-visible,
+.btn.focus,
+.btn:active:focus,
+.btn-check:focus + .btn,
+.btn-check:focus-visible + .btn {
+  outline: none !important;
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.35) !important;
+}
+.form-control:focus,
+.form-control:focus-visible,
+.form-select:focus,
+.form-select:focus-visible,
+.form-check-input:focus,
+.form-check-input:focus-visible {
+  border-color: rgba(212, 175, 55, 0.55) !important;
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.2) !important;
+  outline: none !important;
+}
+.form-check-input:checked {
+  background-color: #7f1d1d !important;
+  border-color: #d4af37 !important;
+}
+.form-check-input[type="checkbox"]:indeterminate {
+  background-color: #7f1d1d !important;
+  border-color: #d4af37 !important;
+}
+/* Любой остальной :focus-visible — золотой outline, без браузерного дефолта */
+:focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.55) !important;
+  outline-offset: 2px;
+}
+/* Ссылки/nav-link обычно не показывают rectangular outline — оставим тонкий */
+a:focus-visible,
+.nav-link:focus-visible {
+  outline-offset: -2px;
+  outline-width: 1px;
+}
+
+/* ───────────────────── Bootstrap link helper'ы ───────────────────── */
+.link-primary, a.link-primary { color: #d4af37 !important; }
+.link-secondary, a.link-secondary { color: rgba(250, 248, 245, 0.65) !important; }
+.link-success, a.link-success { color: #65a30d !important; }
+.link-danger, a.link-danger { color: #ef4444 !important; }
+.link-warning, a.link-warning { color: #d4af37 !important; }
+.link-info, a.link-info { color: #d4af37 !important; }
+.link-light, a.link-light { color: #faf8f5 !important; }
+.link-dark, a.link-dark { color: rgba(250, 248, 245, 0.85) !important; }
+
+/* ───────────────────── Active row / accordion ─────────────────────
+ * MU использует .table-active для выделения строк, accordion — для свёртки. */
+.table-active {
+  --bs-table-bg-state: rgba(212, 175, 55, 0.1);
+}
+.accordion {
+  --bs-accordion-bg: #1c1917;
+  --bs-accordion-color: #faf8f5;
+  --bs-accordion-border-color: rgba(68, 64, 60, 0.5);
+  --bs-accordion-btn-bg: #1c1917;
+  --bs-accordion-btn-color: #d4af37;
+  --bs-accordion-active-bg: rgba(127, 29, 29, 0.25);
+  --bs-accordion-active-color: #f0d875;
+  --bs-accordion-btn-focus-border-color: rgba(212, 175, 55, 0.4);
+  --bs-accordion-btn-focus-box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.2);
+}
+
+/* ───────────────────── Альерты ───────────────────── */
+.alert-primary,
+.alert-info,
+.alert-warning {
+  background-color: rgba(212, 175, 55, 0.1) !important;
+  border-color: rgba(212, 175, 55, 0.4) !important;
+  color: #f0d875 !important;
+}
+.alert-danger {
+  background-color: rgba(127, 29, 29, 0.25) !important;
+  border-color: #991b1b !important;
+  color: #faf8f5 !important;
+}
+.alert-success {
+  background-color: rgba(101, 163, 13, 0.18) !important;
+  border-color: #65a30d !important;
+  color: #a3e635 !important;
+}
+.alert-secondary,
+.alert-light,
+.alert-dark {
+  background-color: rgba(28, 25, 23, 0.85) !important;
+  border-color: rgba(68, 64, 60, 0.6) !important;
+  color: #faf8f5 !important;
+}
