@@ -1,3 +1,24 @@
+/* =============================================================================
+   styles.css — глобальные стили приложения Mafia Host.
+
+   Структура (по разделам, ищите по «=== <name> ===»):
+     === Reset / base ===                     — html/body, скроллбары, .screen, modal-overlay
+     === Cards (раздача ролей) ===            — card-flip/card-grid
+     === Players list & slots ===             — .player-cell, .player-slot, foul-pill
+     === Timer + role icons ===               — #timer/#timer-pill, .role-icon, анимации
+     === Player slot animations ===           — foul-bump, role-classes, и т.п.
+     === PC voting layout ===                 — .game-voting, game-side-left/right, vote-slot
+     === Inputs / forms ===                   — mafia-checkbox и пр. form controls
+     === Music settings ===                   — accordion music-item-* и тип
+     === Auto-mode UI bits ===                — auto-back-hold-indicator
+     === Desktop shell (lg+) ===              — global timer host, screen-nav-vert, screen offsets
+     === Player detail slot (lg+) ===         — inline-slot для unified-panel
+     === Unified player panel (lg+) ===       — секции/аккордеон/header/footer
+     === MU mode toggles ===                  — body.mu-mode классы видимости элементов
+     === MU autocomplete dropdown ===         — .mu-ac-* виджет автокомплита
+   ============================================================================= */
+
+/* =================== Reset / base =================== */
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;

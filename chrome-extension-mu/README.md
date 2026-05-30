@@ -1,124 +1,144 @@
 # Mafia Host on MafiaUniverse
 
 Chrome-расширение, которое на странице `mafiauniverse.org/Games/Edit` подменяет
-их интерфейс редактирования игры на UI приложения **Mafia Host**, а потом
+интерфейс редактирования игры на UI приложения **Mafia Host**, а потом
 переносит данные обратно в их форму одной кнопкой.
 
-В расширении есть **два режима** работы:
+В расширении два режима:
 
 - **MU-режим (основной).** На `/Games/Edit` поверх страницы открывается оверлей
-  с iframe нашего приложения. Внутри iframe — обычный Mafia Host: те же
-  экраны (Меню → Подготовка → Игра → Итоги), та же логика. Плюс
-  доступны фичи, которых нет в standalone-версии:
-  - **Автокомплит ника игрока и ведущего из базы MafiaUniverse** —
-    выпадайка с аватаркой и клубом, поиск через их же `/Players/Search/`.
-  - **Кнопка «Применить к форме MafiaUniverse»** на экране Итоги —
-    заполняет их скрытую форму, прячет iframe, показывает их UI с
-    данными и баннером «проверьте и нажмите Сохранить».
-  - **Авто-привязка ника к учётке.** Если ник выбран из автокомплита,
-    в форму уходит `PlayerId` — больше не надо после Apply руками
-    тыкать в выпадайки сайта.
-- **Popup-режим (fallback).** Иконка расширения открывает текстовое окошко
-  с textarea, куда можно вставить JSON, скопированный кнопкой
-  «Скопировать MU JSON» из standalone-версии приложения. Удобно, когда
-  игру вели не через MU-режим, а в обычном приложении или на телефоне.
+  с iframe нашего приложения. Внутри iframe — обычный Mafia Host, плюс
+  специфичные для MU фичи:
+  - Автокомплит ника игрока и ведущего из базы MafiaUniverse — выпадайка с
+    аватаркой и клубом, поиск через их же `/Players/Search/`.
+  - Двусторонний sync state ↔ форма при каждом переключении интерфейса
+    («Показать форму MU» / «Вернуться в Mafia Host»). При первой загрузке
+    содержимое уже сохранённой игры подтягивается в наш UI.
+  - Кнопка «Применить к форме MafiaUniverse» на экране Итоги — заполняет
+    их скрытую форму, прячет iframe, показывает их UI с данными и баннером
+    «проверьте и нажмите Сохранить».
+  - Авто-привязка ника к учётке: если ник выбран из автокомплита, в форму
+    уходит `PlayerId` — после Apply не надо руками тыкать в выпадайки сайта.
+- **Popup-режим (fallback).** Иконка расширения открывает textarea, куда можно
+  вставить JSON, скопированный кнопкой «Скопировать MU JSON» из standalone-
+  версии. Удобно, когда игру вели на телефоне или без подключения к MU.
 
 ## Установка
 
 ```bash
 git clone https://github.com/anyalink99/mafiahostapp.git
 cd mafiahostapp
-npm install            # ставит dev-зависимости (для cap, но не помешает)
-npm run build:extension  # копирует index.html + js/ + css/ + icons/ + audio/ в chrome-extension-mu/app/
+npm install
+npm run build:extension
 ```
+
+`npm run build:extension` копирует `index.html` + `js/` + `css/` + `icons/` +
+`audio/` в `chrome-extension-mu/app/` и патчит index.html на локальный
+Tailwind bundle (CSP MV3 запрещает внешние CDN).
 
 Затем:
 
-1. Откройте `chrome://extensions` (или `edge://extensions`).
-2. Включите **Developer mode** (правый верхний угол).
-3. **Load unpacked** → выберите папку `chrome-extension-mu/`.
-4. Залогиньтесь на mafiauniverse.org.
-5. Перейдите на любую страницу `https://mafiauniverse.org/Games/Edit?...` —
-   увидите оверлей с нашим UI поверх их страницы.
+1. `chrome://extensions` (или `edge://extensions`) → включить **Developer mode**.
+2. **Load unpacked** → выбрать папку `chrome-extension-mu/`.
+3. Залогиниться на mafiauniverse.org.
+4. Перейти на `https://mafiauniverse.org/Games/Edit?...` — увидите оверлей.
 
-После любого изменения кода в нашем приложении нужно перезапустить `npm run build:extension`
-и нажать **Reload** на расширении в `chrome://extensions`.
+**После любых правок исходников** запускайте `npm run build:extension`
+(копия в `app/` обновится) и нажимайте **Reload** на расширении.
+Правки в самих файлах расширения (`content.js`, `mu-form-io.js`, `inject.css`,
+`popup.*`, `manifest.json`, `build-app.cjs`) rebuild **не требуют** — только
+Reload расширения.
 
 ## Использование — MU-режим
 
-1. Откройте `/Games/Edit?...` нужного турнира.
-2. В оверлее Mafia Host идёт обычный путь: «Подготовка» → раздача ролей →
-   игра → итоги. В полях ника игрока и ведущего начинайте вводить ник —
-   снизу появится выпадайка с никами из базы MU. Выбор кликом / стрелками + Enter.
-3. На экране Итоги нажмите **«Применить к форме MafiaUniverse»**.
-4. Оверлей закроется, появится их форма с заполненными полями и баннером
-   «Данные применены». Проверьте всё глазами, нажмите их кнопку «Сохранить».
-5. Если нужно вернуться в Mafia Host — кнопка «Вернуться в Mafia Host»
-   в правом нижнем углу страницы.
+1. Открыть `/Games/Edit?...` нужного турнира.
+2. В оверлее Mafia Host идёт обычный путь: Подготовка → раздача ролей → игра
+   → итоги. В полях ника начинайте вводить — снизу выпадает автокомплит из
+   базы MU (стрелки/Enter/клик).
+3. На экране Итоги — **«Применить к форме MafiaUniverse»**.
+4. Оверлей закроется, появится их форма с заполненными полями + баннер
+   «Данные применены». Проверьте, нажмите их «Сохранить».
+5. Вернуться в Mafia Host — кнопка в правом нижнем углу.
 
 ## Использование — popup-режим
 
-1. В standalone-приложении Mafia Host (открытом в браузере или на телефоне)
-   на экране Итоги нажмите **«Скопировать MU JSON»**.
-2. Откройте `/Games/Edit?...`, выйдите из MU-режима (кнопка «Показать форму MU»).
-3. Кликните по иконке расширения, нажмите **«Вставить»**, затем **«Заполнить форму»**.
+1. В standalone Mafia Host на экране Итоги → «Скопировать MU JSON».
+2. На `/Games/Edit?...` сначала «Показать форму MU», потом иконка расширения
+   → «Вставить» → «Заполнить форму».
 
 ## Что подставляется в форму MU
 
-- Дата игры (`DateOfGame`)
-- Ведущий (если ник выбран из автокомплита — с привязкой к учётке)
-- Победитель (`GameWinnerId`)
-- Коэффициент игры (`ScoreCoefficient`)
-- Для каждой из 10 позиций:
-  - Никнейм текстом (`PlayerName_i`, `NickName`)
-  - `PlayerId` — если ник был выбран из автокомплита
-  - Роль (`GameRoleId`: 1=Мирный, 2=Шериф, 3=Мафия, 4=Дон)
-  - Фолы (`Foul`, hidden)
-  - Первый отстрел (`KilledFirst`, hidden)
-  - Лучший ход (`BestMove`)
-  - Доп. баллы плюс/минус (`BonusScore`, `PenaltyScore`)
-  - Технический штраф (`TechPenaltyScore`)
-- Голосования — пишутся в скрытое поле `Process`
-  как массив `[{VotingId, VotingStrings:[{PlayerNumber, VotesCount}]}]`,
-  и в превью-таблицу «Результаты голосований» внизу страницы.
+- Шапка: `DateOfGame`, `Leading_Name`, `LeadingId` (если привязан), `GameWinnerId`,
+  `ScoreCoefficient`.
+- Для каждой из 10 позиций: `NickName`, `PlayerId` (если из автокомплита),
+  `GameRoleId` (1=Мирный, 2=Шериф, 3=Мафия, 4=Дон), `Foul` (hidden + видимый
+  span обновляется), `KilledFirst`, `BestMove`, `BonusScore`, `PenaltyScore`,
+  `TechPenaltyScore`. Свободный ник → text-light + `PlayerId=""`; привязанный
+  → text-black + `PlayerId=<id>` (как делают они сами в `select`-обработчике).
+- Голосования в скрытое `#Process` — массив `[{VotingId, VotingStrings, PlayersGone?}]`.
+  Реконструкция раундов из нашего gameLog: ничьи переголосования → несколько
+  entries подряд с теми же кандидатами, казнь → entry с `PlayersGone:[id]`,
+  «Подняли всех» → entry с пустым `VotingStrings` + `PlayersGone:[ids]`.
+- Превью голосований дорисовывается в их таблицу `#Votings` (помечаются
+  `data-mu-importer="1"` чтобы не конфликтовать с их собственным рендером).
 
 ## Известные ограничения
 
-- **Сохранение пока не делается из нашего UI.** «Применить» только заполняет
-  их форму; кнопку их «Сохранить» нужно нажимать руками. Это сознательное
-  решение для v0.2 — пока не доковыряем save-flow (нужен `__RequestVerificationToken`,
-  правила `PlayersGone` в `Process`).
-- **`TableOfCurrentVoting` не перерисовывается** — это виджет активного раунда
-  голосования. На итог это не влияет (источник правды — поле `Process`),
-  но визуально в нём пусто.
-- **Не поддерживается ничья** — наше приложение не различает ничью;
-  поле «Победа» останется пустым.
+- **Save-flow.** «Применить» только заполняет форму; кнопку их «Сохранить»
+  нажимаете руками. Save через MU API требует `__RequestVerificationToken` и
+  обратной обработки `PlayersGone` — отложен.
+- **`TableOfCurrentVoting`** (виджет активного раунда) не наполняется. На
+  результат сохранения не влияет — источник правды для них поле `#Process`.
+- **Ничья** не моделируется в нашем приложении — поле «Победа» при roundtrip
+  может остаться пустым.
 
 ## Архитектура
 
 ```
 chrome-extension-mu/
-  manifest.json          # MV3: content script + inject.css на /Games/Edit, web_accessible_resources для app/
-  content.js             # Скрипты на стороне MU: оверлей с iframe, postMessage-прокси к MU API, fillForm
-  inject.css             # Стили оверлея и баннера
-  popup.html, popup.js   # Fallback-режим с textarea
-  app/                   # КОПИЯ нашего приложения (создаётся `npm run build:extension`)
-  build-app.cjs          # Скрипт копирования
+  manifest.json    # MV3: content_scripts (mu-form-io.js + content.js) + web_accessible_resources для app/
+  mu-form-io.js    # Низкоуровневая работа с формой MU: fillForm/readFormToMUJson + MU API
+                   #   (searchPlayers, getLastTournamentGame). Экспорт через window.MuFormIO.
+  content.js       # Overlay/iframe, postMessage proxy между iframe и формой/MU API,
+                   #   двусторонний sync state↔form, баннер, плавающая кнопка возврата.
+  inject.css       # Стили оверлея и баннера.
+  popup.html/.js   # Fallback-режим с textarea (вне MU-режима).
+  app/             # КОПИЯ нашего приложения (создаётся `npm run build:extension`).
+                   # В iframe загружается app/index.html?mu=1.
+  build-app.cjs    # Скрипт копирования + патч tailwind CDN.
 ```
 
-В нашем приложении ([../index.html](../index.html) + [../js/](../js/)) есть три
-файла, которые отвечают за интеграцию с расширением:
+В нашем приложении (`../index.html` + `../js/`) интеграционные модули:
 
-- [js/mu-bridge.js](../js/mu-bridge.js) — детектит, что мы в iframe внутри
-  расширения (по `location.protocol === 'chrome-extension:'` + `?mu=1` в URL),
-  открывает `app.MU` с методами `searchPlayers`, `applyToForm`, `showOriginalForm`,
-  `getLastGamePlayers`. Под капотом — postMessage к content-script.
-- [js/mu-autocomplete.js](../js/mu-autocomplete.js) — виджет автокомплита плюс
-  bootstrap: автоматически вешается на `#modal-player-nick`, `#modal-summary-nick`,
-  `#modal-auto-player-nick`, `#summary-host-name`. Хранит выбранные привязки
-  в `app.muPlayerIdByNick`.
-- [js/summary/mu-export.js](../js/summary/mu-export.js) — собирает MU JSON,
-  включая `playerId` из `muPlayerIdByNick`. Этот же JSON летит и в popup-flow,
-  и в MU-режиме через Apply.
+- [`js/mu-utils.js`](../js/mu-utils.js) — общие хелперы (escapeHtml, byId,
+  parseIntOr) для всех MU-модулей.
+- [`js/mu-bridge.js`](../js/mu-bridge.js) — детектит iframe-в-расширении
+  (`chrome-extension:` + `?mu=1`), публикует `app.MU` с методами
+  `searchPlayers`/`applyToForm`/`showOriginalForm`/`getLastGamePlayers`.
+  Под капотом — postMessage к content.js + handlers dictionary для входящих
+  сообщений.
+- [`js/mu-autocomplete.js`](../js/mu-autocomplete.js) — виджет автокомплита
+  с аватарками, плюс bootstrap — автоматически вешается на `#modal-player-nick`,
+  `#modal-summary-nick`, `#modal-auto-player-nick`, `#summary-host-name`.
+  Хранит выбранные привязки в `app.muPlayerIdByNick` / `app.muMetaByNick`.
+- [`js/mu-state-apply.js`](../js/mu-state-apply.js) — обратный sync формы →
+  state приложения (form→app при возврате в Mafia Host). Внутри —
+  реконструкция голосований из MU `Process` в наш gameLog (single / raise_all
+  / no_elimination с учётом переголосований).
+- [`js/summary/mu-export.js`](../js/summary/mu-export.js) — собирает MU JSON
+  из текущего state приложения (state→form при Apply или ручном popup-flow).
 
-Поток MU-режима: `iframe (наш UI) ←postMessage→ content.js на mafiauniverse.org ←fetch→ MU API + их форма`.
+Поток MU-режима: `iframe (наш UI) ←postMessage→ content.js на MU ←fetch→ MU API/форма`.
+
+## Тесты
+
+`tests/test-mu-vote-roundtrip.cjs` — Node smoke-test реконструкции голосований
+из MU Process. Запуск:
+
+```bash
+node tests/test-mu-vote-roundtrip.cjs
+```
+
+Использует фикстуру из реальной сохранённой игры (`tests/fixtures/mu-process-game36.json`).
+Проверяет что `groupProcessEntriesIntoRounds` корректно расщепляет
+последовательные tie+revote+resolution на логические раунды.

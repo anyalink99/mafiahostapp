@@ -13,6 +13,7 @@
 
   var attached = new WeakSet();
   var MU_ORIGIN = 'https://mafiauniverse.org';
+  var escapeHtml = (app.MuUtils && app.MuUtils.escapeHtml) || function (s) { return String(s == null ? '' : s); };
 
   function debounce(fn, ms) {
     var t;
@@ -50,15 +51,6 @@
     }
     var initial = (item.label || '?').charAt(0).toUpperCase();
     return '<div class="mu-ac-item__avatar mu-ac-item__avatar--placeholder">' + escapeHtml(initial) + '</div>';
-  }
-
-  function escapeHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 
   function renderItems(dd, items) {
