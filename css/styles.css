@@ -300,8 +300,12 @@ body {
   width: 0;
   opacity: 0;
   overflow: hidden;
+  /* См. комментарий у .player-detail-slot — почему -0.5rem, а не -1rem. */
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
   transition:
     width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.24s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.2s ease;
 }
 
@@ -327,6 +331,8 @@ body {
 #game-screen.game-voting #game-vote-slot.vote-slot-open {
   width: 20rem;
   opacity: 1;
+  margin-left: 0;
+  margin-right: 0;
 }
 @media (min-width: 1280px) {
   #game-screen.game-voting #game-vote-slot.vote-slot-open {
@@ -740,13 +746,23 @@ input.mafia-checkbox:active:not(:disabled) {
   overflow: hidden;
   flex-shrink: 0;
   min-width: 0;
+  /* Negative margins -0.5rem (а не -1rem!) — суммарно -1rem с двух сторон
+     убирает РОВНО один gap родителя (gap=1rem остаётся «снаружи»). Так
+     соседи рядом с закрытым слотом стоят на той же позиции, что были бы
+     при display:none — нет ни phantom gap, ни «overshoot+snap-back» при
+     закрытии. display:none уже не нужен — слот может всегда жить в layout. */
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
   transition:
     width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.24s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.2s ease;
 }
 .player-detail-slot.slot-open {
   width: 22rem;
   opacity: 1;
+  margin-left: 0;
+  margin-right: 0;
 }
 @media (min-width: 1280px) {
   .player-detail-slot.slot-open {

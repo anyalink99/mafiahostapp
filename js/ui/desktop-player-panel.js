@@ -434,7 +434,6 @@
     updateSectionVisibility();
     expandOnly(firstVisibleSectionKey(sourceSectionKeyForOpen(sourceModalId)));
 
-    // Один RAF, чтобы CSS transition увидел переход из width:0 → width:22rem.
     requestAnimationFrame(function () { target.classList.add('slot-open'); });
     return true;
   }

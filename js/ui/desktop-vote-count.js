@@ -39,9 +39,7 @@
       if (el && el.id === MODAL_ID) {
         if (open) {
           if (panel.parentNode !== s) s.appendChild(panel);
-          requestAnimationFrame(function () {
-            s.classList.add('slot-open');
-          });
+          requestAnimationFrame(function () { s.classList.add('slot-open'); });
           el.setAttribute('data-open', '');
           el.setAttribute('aria-hidden', 'false');
         } else {
