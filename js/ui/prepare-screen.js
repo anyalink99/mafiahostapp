@@ -40,10 +40,9 @@
     var modeContainer = el('prepare-mode-options');
     if (modeContainer) {
       modeContainer.innerHTML = '';
-      var modes = [
-        { value: 'host', label: 'Обычный ведущий' },
-        { value: 'auto', label: 'Автономный ведущий' }
-      ];
+      var modes = [{ value: 'host', label: 'Обычный ведущий' }];
+      // Автономный ведущий считается экспериментальным режимом.
+      if (app.experimentalModesEnabled) modes.push({ value: 'auto', label: 'Автономный ведущий' });
       modes.forEach(function (m) {
         var b = document.createElement('button');
         b.type = 'button';

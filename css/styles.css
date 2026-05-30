@@ -622,3 +622,155 @@ input.mafia-checkbox:active:not(:disabled) {
 #auto-back-hold-indicator.is-active {
   opacity: 0.95;
 }
+
+/* ============================================================
+   MU-режим: видимость элементов в iframe внутри расширения
+   ============================================================ */
+.mu-show-in-mu {
+  display: none !important;
+}
+body.mu-mode .mu-show-in-mu {
+  display: flex !important;
+}
+body.mu-mode .mu-hide-in-mu {
+  display: none !important;
+}
+/* В MU-режиме экспериментальные режимы (включая авто-ведущего) всегда
+   отключены через app.experimentalModesEnabled=false; экран выбора режима
+   подготовки скипается. Здесь также прячем настройку самого тогглера. */
+body.mu-mode #setting-experimental-modes,
+body.mu-mode #setting-experimental-modes + span,
+body.mu-mode label:has(#setting-experimental-modes) {
+  display: none !important;
+}
+
+/* ============================================================
+   Автокомплит игроков из базы MafiaUniverse
+   ============================================================ */
+.mu-ac-dropdown {
+  position: absolute;
+  z-index: 100;
+  min-width: 220px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #1c1c1f;
+  border: 1px solid rgba(200, 169, 106, 0.4);
+  border-radius: 6px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
+  font-family: 'Manrope', sans-serif;
+}
+.mu-ac-dropdown::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+.mu-ac-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(200, 169, 106, 0.45);
+  border-radius: 3px;
+}
+.mu-ac-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #e6e1d6;
+  font-size: 13px;
+}
+.mu-ac-item:last-child {
+  border-bottom: none;
+}
+.mu-ac-item.is-active,
+.mu-ac-item:hover {
+  background: rgba(200, 169, 106, 0.16);
+}
+.mu-ac-item__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #2a2a30;
+  flex-shrink: 0;
+}
+.mu-ac-item__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: rgba(230, 225, 214, 0.5);
+}
+.mu-ac-item__text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.mu-ac-item__nick {
+  font-weight: 600;
+  color: #f3d68f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mu-ac-item__note {
+  font-size: 11px;
+  color: rgba(230, 225, 214, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mu-ac-empty,
+.mu-ac-loading,
+.mu-ac-error {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: rgba(230, 225, 214, 0.55);
+  font-style: italic;
+}
+.mu-ac-error {
+  color: #e2786a;
+  font-style: normal;
+}
+
+/* Привязка к учётке MU — input получает золотистый текст,
+   и справа поверх него — мини-аватарка привязанного игрока. */
+input.is-mu-bound {
+  color: #f3d68f !important;
+  border-color: rgba(200, 169, 106, 0.55) !important;
+  padding-right: 40px !important;
+}
+input.is-mu-bound::placeholder {
+  color: rgba(243, 214, 143, 0.4);
+}
+/* Обёртка вокруг автокомплит-инпута — нужна, чтобы badge позиционировался
+   именно у границ input-а, а не у границ модалки/контейнера выше. */
+.mu-input-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.mu-ac-input-badge {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  overflow: hidden;
+  pointer-events: none;
+  background: #2a2a30;
+  box-shadow: 0 0 0 1px rgba(200, 169, 106, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mu-ac-input-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mu-ac-input-badge__placeholder {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(243, 214, 143, 0.85);
+}

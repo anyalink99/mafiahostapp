@@ -1,0 +1,116 @@
+/* Стили, инжектируемые на mafiauniverse.org/Games/Edit для оверлея с нашим UI. */
+
+/* Контейнер: фон не рисуем, всё прозрачно, iframe сам себе фон. */
+.mu-mh-host {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  color: #e6e1d6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.mu-mh-host--hidden {
+  display: none !important;
+}
+
+/* Iframe занимает всё пространство оверлея. */
+.mu-mh-host__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  display: block;
+}
+
+/* Шапка не нужна — оставляем элемент в DOM, но делаем невидимым контейнером
+   для кнопки. Кнопка плавает в правом нижнем углу — там же где «Вернуться». */
+.mu-mh-host__bar {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 99999;
+  pointer-events: none;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mu-mh-host__title,
+.mu-mh-host__spacer {
+  display: none;
+}
+
+.mu-mh-host__btn {
+  pointer-events: auto;
+  background: #2a2a30;
+  color: #f1ece2;
+  border: 1px solid #4a4a52;
+  border-radius: 3px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.mu-mh-host__btn:hover {
+  filter: brightness(1.15);
+}
+
+.mu-mh-host__btn--primary {
+  background: #4a1f25;
+  border-color: #c8a96a;
+  color: #f3d68f;
+}
+
+/* Баннер над их формой после Apply. */
+.mu-mh-banner {
+  position: sticky;
+  top: 0;
+  z-index: 99997;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #1c1c1f;
+  color: #e6e1d6;
+  border: 1px solid #c8a96a;
+  border-radius: 4px;
+  margin: 8px 0 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.mu-mh-banner__title {
+  font-weight: 700;
+  color: #f3d68f;
+  letter-spacing: 0.03em;
+}
+
+.mu-mh-banner__details {
+  flex: 1 1 auto;
+  color: #c5c1b6;
+}
+
+.mu-mh-banner__btn {
+  background: #2a2a30;
+  color: #f1ece2;
+  border: 1px solid #4a4a52;
+  border-radius: 3px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.mu-mh-banner__btn:hover {
+  filter: brightness(1.15);
+}

@@ -1,0 +1,78 @@
+'use strict';
+// Копирует основное приложение mafia-host-app в chrome-extension-mu/app/
+// для использования в iframe-режиме расширения.
+//
+// Не копируется: service-worker.js и manifest.webmanifest (PWA-вещи, в iframe
+// внутри chrome-extension они только мешают). MU-режим определяется в runtime
+// через js/mu-bridge.js, поэтому сам index.html копируется как есть.
+//
+// Запуск: npm run build:extension  (или прямо `node chrome-extension-mu/build-app.cjs`)
+
+var fs = require('fs');
+var path = require('path');
+
+var here = __dirname;
+var root = path.join(here, '..');
+var dest = path.join(here, 'app');
+
+var DIRS = ['css', 'js', 'icons', 'audio'];
+var FILES = ['index.html'];
+
+if (fs.existsSync(dest)) {
+  fs.rmSync(dest, { recursive: true });
+}
+fs.mkdirSync(dest, { recursive: true });
+
+DIRS.forEach(function (d) {
+  var src = path.join(root, d);
+  if (!fs.existsSync(src)) {
+    console.warn('skip missing dir:', d);
+    return;
+  }
+  fs.cpSync(src, path.join(dest, d), { recursive: true });
+});
+
+FILES.forEach(function (f) {
+  var from = path.join(root, f);
+  if (!fs.existsSync(from)) {
+    console.warn('skip missing file:', f);
+    return;
+  }
+  fs.copyFileSync(from, path.join(dest, f));
+});
+
+// MV3 запрещает внешние скрипты (script-src 'self'). Tailwind у нас через CDN —
+// в standalone это удобно, но в расширении ломается. Подменяем на локальную
+// копию (js/vendor/tailwind-cdn.js), которую один раз скачали с того же CDN.
+patchIndexHtmlForExtension();
+
+console.log('Built extension app at', dest);
+
+function patchIndexHtmlForExtension() {
+  var indexPath = path.join(dest, 'index.html');
+  if (!fs.existsSync(indexPath)) return;
+  var html = fs.readFileSync(indexPath, 'utf8');
+  var before = html;
+  // Заодно глушим production-warning от tailwind CDN отдельным внешним
+  // скриптом (inline-скрипты запрещены CSP-политикой MV3 на extension-страницах).
+  // js/vendor/tailwind-suppress.js уже скопирован вместе с остальными js.
+  html = html.replace(
+    /<script\s+src="https:\/\/cdn\.tailwindcss\.com"><\/script>/,
+    '<script src="js/vendor/tailwind-suppress.js"></script>\n    <script src="js/vendor/tailwind-cdn.js"></script>'
+  );
+  if (html === before) {
+    console.warn('warn: tailwind CDN line not found in index.html — патч не сработал');
+    return;
+  }
+  fs.writeFileSync(indexPath, html, 'utf8');
+
+  // Проверяем, что локальный bundle действительно есть в собранной папке.
+  var localTw = path.join(dest, 'js', 'vendor', 'tailwind-cdn.js');
+  if (!fs.existsSync(localTw)) {
+    console.warn(
+      'warn: js/vendor/tailwind-cdn.js не найден в собранной папке. ' +
+        'Скачайте его командой:\n' +
+        '  curl -sL https://cdn.tailwindcss.com -o js/vendor/tailwind-cdn.js'
+    );
+  }
+}

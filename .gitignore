@@ -4,3 +4,4 @@ android/
 ios/
 .DS_Store
 _cursor_*.py
+chrome-extension-mu/app/

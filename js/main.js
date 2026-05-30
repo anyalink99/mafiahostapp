@@ -11,6 +11,8 @@
   app.registerServiceWorker = function () {
     if (!('serviceWorker' in navigator)) return Promise.resolve(null);
     if (location.protocol === 'file:') return Promise.resolve(null);
+    if (location.protocol === 'chrome-extension:') return Promise.resolve(null);
+    if (app.MU && app.MU.isActive && app.MU.isActive()) return Promise.resolve(null);
     try {
       if (
         window.Capacitor &&

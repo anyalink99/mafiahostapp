@@ -74,6 +74,9 @@
     return out;
   }
 
+  // Эмитим объекты под структуру MU Process: каждый — отдельная запись
+  // {candidates, playersGone?}. content-script расширения переписывает их в
+  // {VotingStrings, PlayersGone} для скрытого поля #Process.
   function buildVotings() {
     var votings = [];
     if (!app.inferRoundsForExport) return votings;
@@ -82,10 +85,12 @@
       var round = rounds[r];
       if (round.kind === 'skip') continue;
       if (round.kind === 'single') {
+        // одиночный кандидат (или казнь вне голосования) — сразу казнён
         var sev = round.events[0];
         var pool = typeof sev.votePoolTotal === 'number' ? sev.votePoolTotal : 0;
         votings.push({
           candidates: [{ playerNumber: sev.playerId, votesCount: pool }],
+          playersGone: [sev.playerId],
         });
         continue;
       }
@@ -95,10 +100,26 @@
         if (ev.type === 'vote_tie') {
           var cands = candidatesFromEvent(ev);
           if (cands.length) votings.push({ candidates: cands });
-        } else if (ev.type === 'vote_hang' && !ev.viaRaiseAll) {
-          var cands2 = candidatesFromEvent(ev);
-          if (cands2.length) votings.push({ candidates: cands2 });
+        } else if (ev.type === 'vote_hang') {
+          if (ev.viaRaiseAll) {
+            // Подняли: MU-entry с пустыми VotingStrings и PlayersGone = все казнённые
+            votings.push({
+              candidates: [],
+              playersGone: (ev.eliminatedIds || []).slice(),
+            });
+          } else {
+            var cands2 = candidatesFromEvent(ev);
+            var elim = ev.eliminatedIds || [];
+            if (cands2.length) {
+              votings.push({
+                candidates: cands2,
+                playersGone: elim.length ? elim.slice() : undefined,
+              });
+            }
+          }
         }
+        // vote_raise_all и vote_no_elimination в MU Process не пишутся
+        // (raise_all — маркер; no_elimination = "Оставили" = просто отсутствие записи)
       }
     }
     return votings;
@@ -126,9 +147,18 @@
       var bonusPlus = bonus > 0 ? formatBonusComma(bonus) : '0,00';
       var bonusMinus = bonus < 0 ? formatBonusComma(Math.abs(bonus)) : '0,00';
 
+      var nickTrimmed = pl.nick != null ? String(pl.nick).trim() : '';
+      var muId = null;
+      if (app.muPlayerIdByNick && nickTrimmed && app.muPlayerIdByNick[nickTrimmed]) {
+        muId = app.muPlayerIdByNick[nickTrimmed];
+      } else if (pl.muPlayerId) {
+        muId = pl.muPlayerId;
+      }
+
       out.push({
         position: sid,
-        nick: pl.nick != null ? String(pl.nick).trim() : '',
+        nick: nickTrimmed,
+        playerId: muId || null,
         roleId: roleId,
         fouls: pl.fouls || 0,
         killedFirst: firstShot === sid,
@@ -142,11 +172,17 @@
   }
 
   function buildExportObject() {
+    var hostName = app.summaryHostName != null ? String(app.summaryHostName).trim() : '';
+    var hostId = null;
+    if (app.muPlayerIdByNick && hostName && app.muPlayerIdByNick[hostName]) {
+      hostId = app.muPlayerIdByNick[hostName];
+    }
     return {
       version: 1,
       source: 'mafia-host-app',
       dateOfGame: formatDateForMU(firstGameTimestamp()),
-      host: app.summaryHostName != null ? String(app.summaryHostName).trim() : '',
+      host: hostName,
+      hostId: hostId,
       winner: winnerForMU(),
       scoreCoefficient: '1.0',
       players: buildPlayers(),

@@ -16,6 +16,18 @@
     I.bindRevealHoldGestures();
     I.bindBackGestures();
     I.bindAutoPlayerGestures();
+
+    // Если эксперименты выключены — ни автономного ведущего, ни вариантов
+    // не предлагаем, промежуточный экран выбора режима пропускаем.
+    if (!app.experimentalModesEnabled) {
+      if (app.prepareConfig.mode !== 'host') app.prepareConfig.mode = 'host';
+      if (app.prepareConfig.variant !== 'standard') app.prepareConfig.variant = 'standard';
+      I.savePrepareConfig();
+      if (app.applyHostVariantDeck) app.applyHostVariantDeck();
+      app.navigateToScreen('prepare-screen');
+      return;
+    }
+
     var mode = app.prepareConfig.mode;
     if (mode === 'auto') {
       var s = app.autoState;

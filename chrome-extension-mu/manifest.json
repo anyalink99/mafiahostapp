@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Mafia Host → MafiaUniverse Importer",
-  "version": "0.1.0",
-  "description": "Заполняет страницу редактирования игры на mafiauniverse.org из JSON-экспорта приложения Mafia Host.",
+  "name": "Mafia Host on MafiaUniverse",
+  "version": "0.2.0",
+  "description": "Заменяет интерфейс /Games/Edit на mafiauniverse.org на UI приложения Mafia Host. Автокомплит игроков, ввод игры, заполнение их формы по кнопке.",
   "permissions": ["activeTab", "scripting"],
   "host_permissions": ["https://mafiauniverse.org/*", "http://mafiauniverse.org/*"],
   "action": {
@@ -16,7 +16,14 @@
         "http://mafiauniverse.org/Games/Edit*"
       ],
       "js": ["content.js"],
+      "css": ["inject.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["app/*"],
+      "matches": ["https://mafiauniverse.org/*", "http://mafiauniverse.org/*"]
     }
   ]
 }

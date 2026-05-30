@@ -392,8 +392,11 @@
                 <button type="button" data-action="export-copy-text" class="w-full sm:flex-1 py-2.5 border-2 border-mafia-gold/50 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Скопировать текст</button>
                 <button type="button" data-action="export-download-csv" class="w-full sm:flex-1 py-2.5 border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream/90 font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Экспортировать таблицу</button>
             </div>
-            <div class="flex flex-col sm:flex-row gap-2 mt-2">
+            <div class="flex flex-col sm:flex-row gap-2 mt-2 mu-hide-in-mu">
                 <button type="button" data-action="export-copy-mu-json" class="w-full py-2.5 border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream/90 font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Скопировать MU JSON</button>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 mt-2 mu-show-in-mu">
+                <button type="button" data-action="export-apply-mu" class="w-full py-2.5 border-2 border-mafia-gold/50 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Применить к форме MafiaUniverse</button>
             </div>
         </section>
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
@@ -956,6 +959,11 @@
 <audio id="timer-voice" preload="auto" playsinline></audio>
 <audio id="sfx-voice" preload="auto" playsinline></audio>
 <audio id="music-preview" preload="none" playsinline></audio>
+
+<!-- MU-режим: мост между нашим UI в iframe и content-script расширения -->
+<script src="js/mu-bridge.js"></script>
+<script src="js/mu-state-apply.js"></script>
+<script src="js/mu-autocomplete.js"></script>
 
 <script src="js/vendor/jszip.min.js"></script>
 

@@ -191,10 +191,20 @@
 
   app.setExperimentalModes = function (enabled) {
     app.experimentalModesEnabled = !!enabled;
-    if (!app.experimentalModesEnabled && app.prepareConfig.variant !== 'standard') {
-      app.prepareConfig.variant = 'standard';
-      savePrepareConfig();
+    // Автономный ведущий теперь считается экспериментальным — при выключении
+    // флага возвращаем mode и variant к стандартным.
+    var changed = false;
+    if (!app.experimentalModesEnabled) {
+      if (app.prepareConfig.variant !== 'standard') {
+        app.prepareConfig.variant = 'standard';
+        changed = true;
+      }
+      if (app.prepareConfig.mode !== 'host') {
+        app.prepareConfig.mode = 'host';
+        changed = true;
+      }
     }
+    if (changed) savePrepareConfig();
     saveExperimentalModes();
     app.syncExperimentalModesCheckbox();
   };
