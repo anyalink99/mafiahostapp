@@ -873,9 +873,22 @@ input.mafia-checkbox:active:not(:disabled) {
 .unified-section .modal-panel > .modal-panel__close-x {
   display: none !important;
 }
+/* Прячем встроенные Save-кнопки внутри секций — у unified-панели свой
+   универсальный Save в подвале. */
+.unified-section [data-action="player-modal-save"],
+.unified-section [data-action="summary-modal-save"] {
+  display: none !important;
+}
 /* Роль в секции «Итоги» дублирует «Подготовку» на десктопе — прячем. */
 .unified-section #modal-summary-role-section {
   display: none !important;
+}
+
+/* Подвал унифицированной панели с универсальным Save. Стиль самой кнопки
+   приходит через Tailwind-классы из JS — как у оригинальных Save в модалках. */
+.unified-player-panel__footer {
+  flex-shrink: 0;
+  padding: 4px 18px 12px;
 }
 
 .modal-panel__close-x {

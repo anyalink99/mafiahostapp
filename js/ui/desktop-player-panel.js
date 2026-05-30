@@ -133,6 +133,17 @@
       sectionByKey[s.key] = section;
     });
 
+    // Универсальный Save в подвале — закрывает панель (а closeUnified уже
+    // прогоняет save-функции каждой открытой модалки). Стиль — как у
+    // оригинальных Save кнопок в модалках (приглушённая ссылка-подпись).
+    var footer = document.createElement('div');
+    footer.className = 'unified-player-panel__footer';
+    footer.innerHTML =
+      '<button type="button" data-action="unified-player-close" ' +
+      'class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 ' +
+      'text-sm uppercase tracking-wider cursor-pointer">Сохранить</button>';
+    unified.appendChild(footer);
+
     distributeOriginalModalContent();
     bindNickMirror();
   }
@@ -408,6 +419,12 @@
     var target = findSlot();
     if (!target) return false;
 
+    // Если панель уже открыта для ДРУГОГО игрока — сохраняем его правки до
+    // того как crossPopulate перепишет dataset.playerId на нового. Иначе
+    // правки старого приписались бы новому или потерялись.
+    var prevPid = getCurrentOpenPlayerId();
+    if (prevPid != null && prevPid !== playerId) saveCurrentPlayerInputs();
+
     crossPopulate(playerId, sourceModalId);
     unhideContentFor(playerId);
 
@@ -438,28 +455,45 @@
     });
   }
 
-  // Закрытие unified — прогоняет штатные save-функции каждой открытой модалки
-  // (они синкают nick + extras + bonus + role в state), потом закрывает slot
-  // и помечает модалки закрытыми. Защищено от рекурсии: их modalSetOpen(false)
-  // опять заходит в наш хук, но возвращается early из-за isInternalClose.
-  function closeUnified() {
+  // Прогон save-функций открытых модалок (без визуального закрытия). Их
+  // modalSetOpen(false) попадает в наш hook → closeUnified → guarded
+  // inUnifiedCloseCall → return early. Используется при переключении игроков
+  // (чтобы не потерять правки) и из closeUnified.
+  function saveCurrentPlayerInputs() {
     if (inUnifiedCloseCall) return;
     inUnifiedCloseCall = true;
     try {
-      var paOpen = isModalMarkedOpen('modal-player-actions');
-      var spOpen = isModalMarkedOpen('modal-summary-player');
-      if (paOpen && typeof app.hidePlayerActionsModal === 'function') {
+      if (isModalMarkedOpen('modal-player-actions') &&
+          typeof app.hidePlayerActionsModal === 'function') {
         try { app.hidePlayerActionsModal(); } catch (e) {}
       }
-      if (spOpen && typeof app.applySummaryPlayerModal === 'function') {
+      // ВАЖНО: applySummaryPlayerModal читает #modal-summary-nick и пишет
+      // в pl.nick. Если bindNickMirror не успел сработать (paste, programmatic
+      // .value=, autocomplete pick) — summary nick может содержать старое
+      // значение и перезатрёт свежий nick из header. Синкаем явно.
+      forceMirrorNickFromHeader();
+      if (isModalMarkedOpen('modal-summary-player') &&
+          typeof app.applySummaryPlayerModal === 'function') {
         try { app.applySummaryPlayerModal(); } catch (e) {}
       }
-      closeAllSlots();
-      collapseAll();
-      markAllModalsClosed();
     } finally {
       inUnifiedCloseCall = false;
     }
+  }
+
+  function forceMirrorNickFromHeader() {
+    var src = document.getElementById('modal-player-nick');
+    var dst = document.getElementById('modal-summary-nick');
+    if (src && dst && dst.value !== src.value) dst.value = src.value;
+  }
+
+  // Закрытие unified — сохраняем правки + сворачиваем слот.
+  function closeUnified() {
+    if (inUnifiedCloseCall) return;
+    saveCurrentPlayerInputs();
+    closeAllSlots();
+    collapseAll();
+    markAllModalsClosed();
   }
 
   function isModalMarkedOpen(id) {

@@ -251,7 +251,12 @@ window.MafiaApp = window.MafiaApp || {};
     if (app.timerInterval) clearInterval(app.timerInterval);
     app.timerInterval = null;
     app.saveState();
-    app.navigateToScreen('menu-screen');
+    // Остаёмся на текущем экране (на мобилке reset обычно жмут из menu — и
+    // навигация туда же = no-op; на десктопе menu закрыт, и принудительно
+    // выкидывать пользователя оттуда некуда). navigateToScreen всё равно
+    // запускает рендеры активного экрана — нужный side-effect.
+    var current = (document.querySelector('.screen.active') || {}).id || 'menu-screen';
+    app.navigateToScreen(current);
     app.updateResetButtonVisibility();
   };
 
