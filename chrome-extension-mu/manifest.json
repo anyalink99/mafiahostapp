@@ -15,7 +15,7 @@
         "https://mafiauniverse.org/Games/Edit*",
         "http://mafiauniverse.org/Games/Edit*"
       ],
-      "js": ["content.js"],
+      "js": ["mu-form-io.js", "content.js"],
       "css": ["inject.css"],
       "run_at": "document_idle"
     }
