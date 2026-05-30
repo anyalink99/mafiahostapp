@@ -150,9 +150,11 @@
   app.pickPrepareModalRole = function (roleCode) {
     if (manualRolesForCurrentPrepare(modalPlayerId()).indexOf(roleCode) === -1) return;
     var m = document.getElementById('modal-player-actions');
-    if (!m || m.getAttribute('data-mode') !== 'prepare') return;
+    if (!m) return;
     renderPrepareModalRoleRadios(roleCode);
   };
+
+  app.renderPrepareModalRoleRadios = renderPrepareModalRoleRadios;
 
   app.getActivePlayerCount = function () {
     var c = 0;
@@ -244,7 +246,7 @@
     m.dataset.playerId = String(id);
     var prepRoleSection = document.getElementById('modal-player-prepare-role-section');
     if (prepRoleSection) prepRoleSection.classList.toggle('hidden', !nickOnlyMode);
-    if (nickOnlyMode && app.getEffectiveSummaryRoleCode) {
+    if (app.getEffectiveSummaryRoleCode) {
       var seatIndex = app.players.indexOf(p);
       renderPrepareModalRoleRadios(app.getEffectiveSummaryRoleCode(id, seatIndex));
     }

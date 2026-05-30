@@ -440,6 +440,8 @@
     }
   }
 
+  app.renderModalSummaryRoleRadios = renderModalSummaryRoleRadios;
+
   function getModalSummarySelectedRoleCode() {
     var row = document.getElementById('modal-summary-role-icons');
     if (!row) return null;
