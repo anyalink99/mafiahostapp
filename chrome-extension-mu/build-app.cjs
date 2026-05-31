@@ -84,9 +84,15 @@ function patchIndexHtmlForExtension() {
   );
   // Niokit (https://github.com/anyalink99/niokit) — MV3 запрещает script-src
   // с CDN. Меняем jsdelivr-ссылки на локальный vendor (js/vendor/niokit/).
+  // Грузим только tokens + components (без reset, без motion — см. комментарий
+  // в index.html: reset.css ломает Tailwind-рамки).
   html = html.replace(
-    /<link\s+rel="stylesheet"\s+href="https:\/\/cdn\.jsdelivr\.net\/gh\/anyalink99\/niokit@[^"]+\/dist\/niokit\.css">/,
-    '<link rel="stylesheet" href="js/vendor/niokit/niokit.css">'
+    /<link\s+rel="stylesheet"\s+href="https:\/\/cdn\.jsdelivr\.net\/gh\/anyalink99\/niokit@[^"]+\/css\/tokens\.css">/,
+    '<link rel="stylesheet" href="js/vendor/niokit/tokens.css">'
+  );
+  html = html.replace(
+    /<link\s+rel="stylesheet"\s+href="https:\/\/cdn\.jsdelivr\.net\/gh\/anyalink99\/niokit@[^"]+\/css\/components\.css">/,
+    '<link rel="stylesheet" href="js/vendor/niokit/components.css">'
   );
   html = html.replace(
     /<script\s+src="https:\/\/cdn\.jsdelivr\.net\/gh\/anyalink99\/niokit@[^"]+\/dist\/niokit\.js"><\/script>/,
@@ -100,14 +106,14 @@ function patchIndexHtmlForExtension() {
 
   // Проверяем, что локальные vendor-bundle'ы действительно есть в собранной папке.
   var localTw = path.join(dest, 'js', 'vendor', 'tailwind-cdn.js');
-  var localNiokitCss = path.join(dest, 'js', 'vendor', 'niokit', 'niokit.css');
   var localNiokitJs = path.join(dest, 'js', 'vendor', 'niokit', 'niokit.js');
-  if (!fs.existsSync(localNiokitCss) || !fs.existsSync(localNiokitJs)) {
+  if (!fs.existsSync(localNiokitJs)) {
     console.warn(
-      'warn: js/vendor/niokit/{niokit.css,niokit.js} не найдены. Скачайте:\n' +
+      'warn: js/vendor/niokit/{tokens.css,components.css,niokit.js} не найдены. Скачайте:\n' +
         '  mkdir -p js/vendor/niokit && \\\n' +
-        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/dist/niokit.css -o js/vendor/niokit/niokit.css && \\\n' +
-        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/dist/niokit.js  -o js/vendor/niokit/niokit.js'
+        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/css/tokens.css -o js/vendor/niokit/tokens.css && \\\n' +
+        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/css/components.css -o js/vendor/niokit/components.css && \\\n' +
+        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/dist/niokit.js -o js/vendor/niokit/niokit.js'
     );
   }
   if (!fs.existsSync(localTw)) {

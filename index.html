@@ -13,10 +13,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Niokit: shared design tokens + motion + .k-slot (см. js/vendor/niokit/).
-         В extension build patch'ится на локальный js/vendor/niokit/* (MV3 CSP
-         запрещает CDN), в standalone PWA — берётся напрямую с jsDelivr. -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/dist/niokit.css">
+    <!-- Niokit: shared design tokens + .k-slot (см. js/vendor/niokit/).
+         Берём ТОЛЬКО tokens.css + components.css; reset.css не грузим
+         (его `button { border: 0 }` конфликтует с Tailwind preflight'ом —
+         все .border-* классы перестают рендерить рамки). motion.css тоже
+         не нужен — у нас .k-slot на transition, не на @keyframes.
+         В extension build URLs patch'атся на js/vendor/niokit/* (MV3 CSP). -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/css/tokens.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/css/components.css">
     <script src="https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/dist/niokit.js"></script>
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://cdn.tailwindcss.com"></script>
