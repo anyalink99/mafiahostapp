@@ -61,8 +61,8 @@
     return s ? s.querySelector('.unified-player-slot') : null;
   }
   function closeAllSlots() {
-    var slots = document.querySelectorAll('.unified-player-slot.slot-open');
-    for (var i = 0; i < slots.length; i++) slots[i].classList.remove('slot-open');
+    var slots = document.querySelectorAll('.unified-player-slot.is-open');
+    for (var i = 0; i < slots.length; i++) slots[i].classList.remove('is-open');
   }
 
   // Прочитать ID игрока из dataset любой из перехватываемых модалок, если она открыта.
@@ -77,7 +77,7 @@
     return null;
   }
   function panelIsCurrentlyOpen() {
-    return !!document.querySelector('.unified-player-slot.slot-open');
+    return !!document.querySelector('.unified-player-slot.is-open');
   }
 
   // Прочитать выбранную роль из ARIA-radio группы (Подготовка / Итоги).
@@ -437,7 +437,7 @@
     updateSectionVisibility();
     expandOnly(firstVisibleSectionKey(sourceSectionKeyForOpen(sourceModalId)));
 
-    requestAnimationFrame(function () { target.classList.add('slot-open'); });
+    requestAnimationFrame(function () { target.classList.add('is-open'); });
     return true;
   }
 
@@ -670,7 +670,7 @@
     // (showPlayerActionsModal → renderPrepareModalRoleRadios), которые
     // выполняются ДО того, как openForPlayer успеет attach'нуть panel в slot.
     // Слот в закрытом состоянии имеет width:0/opacity:0, так что unified
-    // не виден, пока его не раскроют через .slot-open.
+    // не виден, пока его не раскроют через .is-open (niokit's .k-slot).
     var initSlot = document.querySelector('.unified-player-slot');
     if (initSlot && unified) initSlot.appendChild(unified);
     hideAllOverlays();

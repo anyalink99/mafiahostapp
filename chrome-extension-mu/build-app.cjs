@@ -82,14 +82,34 @@ function patchIndexHtmlForExtension() {
     /<script\s+src="https:\/\/cdn\.tailwindcss\.com"><\/script>/,
     '<script src="js/vendor/tailwind-suppress.js"></script>\n    <script src="js/vendor/tailwind-cdn.js"></script>'
   );
+  // Niokit (https://github.com/anyalink99/niokit) — MV3 запрещает script-src
+  // с CDN. Меняем jsdelivr-ссылки на локальный vendor (js/vendor/niokit/).
+  html = html.replace(
+    /<link\s+rel="stylesheet"\s+href="https:\/\/cdn\.jsdelivr\.net\/gh\/anyalink99\/niokit@[^"]+\/dist\/niokit\.css">/,
+    '<link rel="stylesheet" href="js/vendor/niokit/niokit.css">'
+  );
+  html = html.replace(
+    /<script\s+src="https:\/\/cdn\.jsdelivr\.net\/gh\/anyalink99\/niokit@[^"]+\/dist\/niokit\.js"><\/script>/,
+    '<script src="js/vendor/niokit/niokit.js"></script>'
+  );
   if (html === before) {
     console.warn('warn: tailwind CDN line not found in index.html — патч не сработал');
     return;
   }
   fs.writeFileSync(indexPath, html, 'utf8');
 
-  // Проверяем, что локальный bundle действительно есть в собранной папке.
+  // Проверяем, что локальные vendor-bundle'ы действительно есть в собранной папке.
   var localTw = path.join(dest, 'js', 'vendor', 'tailwind-cdn.js');
+  var localNiokitCss = path.join(dest, 'js', 'vendor', 'niokit', 'niokit.css');
+  var localNiokitJs = path.join(dest, 'js', 'vendor', 'niokit', 'niokit.js');
+  if (!fs.existsSync(localNiokitCss) || !fs.existsSync(localNiokitJs)) {
+    console.warn(
+      'warn: js/vendor/niokit/{niokit.css,niokit.js} не найдены. Скачайте:\n' +
+        '  mkdir -p js/vendor/niokit && \\\n' +
+        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/dist/niokit.css -o js/vendor/niokit/niokit.css && \\\n' +
+        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/dist/niokit.js  -o js/vendor/niokit/niokit.js'
+    );
+  }
   if (!fs.existsSync(localTw)) {
     console.warn(
       'warn: js/vendor/tailwind-cdn.js не найден в собранной папке. ' +

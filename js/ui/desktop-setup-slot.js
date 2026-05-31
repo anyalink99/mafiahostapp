@@ -26,7 +26,7 @@
   function getSlot() { return document.getElementById(SLOT_ID); }
   function slotIsOpen() {
     var s = getSlot();
-    return !!(s && s.classList.contains('slot-open'));
+    return !!(s && s.classList.contains('is-open'));
   }
 
   // Переносим всё содержимое setup-screen внутрь setup-slot — кроме самой
@@ -45,14 +45,14 @@
   function openSetupSlot() {
     var slot = getSlot();
     if (!slot) return;
-    requestAnimationFrame(function () { slot.classList.add('slot-open'); });
+    requestAnimationFrame(function () { slot.classList.add('is-open'); });
     // Перезапускаем рендер карт (его обычно зовёт screens.js при navigate
     // на setup-screen — но мы туда не переходим, нужно дёрнуть вручную).
     if (app.initCards) app.initCards(app.revealedIndices && app.revealedIndices.length > 0);
   }
   function closeSetupSlot() {
     var slot = getSlot();
-    if (slot) slot.classList.remove('slot-open');
+    if (slot) slot.classList.remove('is-open');
   }
 
   function hookNavigate() {

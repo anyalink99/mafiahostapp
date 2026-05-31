@@ -300,7 +300,12 @@ body {
   width: 0;
   opacity: 0;
   overflow: hidden;
-  /* См. комментарий у .player-detail-slot — почему -0.5rem, а не -1rem. */
+  /* Negative margin -0.5rem с двух сторон = -1rem суммарно = ровно один
+     gap родителя (flex gap=1rem). Сосед стоит как при display:none —
+     ни phantom-gap, ни overshoot+snap при закрытии. Тот же приём, что
+     в niokit-овской .k-slot (--k-slot-cancel). Здесь не используем
+     .k-slot потому, что #game-vote-slot живёт в game-screen с своей
+     механикой (.vote-slot-open), отдельной от .player-detail-slot. */
   margin-left: -0.5rem;
   margin-right: -0.5rem;
   transition:
@@ -737,53 +742,28 @@ input.mafia-checkbox:active:not(:disabled) {
 }
 
 /* ============================================================
-   Десктоп: панель деталей игрока — встроена в раскладку каждого экрана
-   как flex-сестра гармошки игроков, анимируется как vote-slot
+   Десктоп: панель деталей игрока — flex-сестра гармошки игроков.
+   Базовая механика (width:0 ⇄ width:N, negative-margin gap-cancel,
+   transition) пришла из niokit: .k-slot / .k-slot.is-open. Здесь —
+   только наши специфичные размеры через --k-slot-w и стили контента.
    ============================================================ */
-.player-detail-slot {
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-  flex-shrink: 0;
-  min-width: 0;
-  /* Negative margins -0.5rem (а не -1rem!) — суммарно -1rem с двух сторон
-     убирает РОВНО один gap родителя (gap=1rem остаётся «снаружи»). Так
-     соседи рядом с закрытым слотом стоят на той же позиции, что были бы
-     при display:none — нет ни phantom gap, ни «overshoot+snap-back» при
-     закрытии. display:none уже не нужен — слот может всегда жить в layout. */
-  margin-left: -0.5rem;
-  margin-right: -0.5rem;
-  transition:
-    width 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-    margin 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.2s ease;
-}
-.player-detail-slot.slot-open {
-  width: 22rem;
-  opacity: 1;
-  margin-left: 0;
-  margin-right: 0;
-}
+/* Ширины открытого слота: 22rem default (из niokit), 24rem на xl+,
+   28-30rem для setup-slot (там сетка карт max-w-md). */
 @media (min-width: 1280px) {
-  .player-detail-slot.slot-open {
-    width: 24rem;
-  }
+  .player-detail-slot { --k-slot-w: 24rem; }
 }
-/* setup-slot шире — там сетка карт (max-w-md = 28rem). */
-#setup-slot.slot-open {
-  width: 28rem;
-}
+#setup-slot { --k-slot-w: 28rem; }
 @media (min-width: 1280px) {
-  #setup-slot.slot-open {
-    width: 30rem;
-  }
+  #setup-slot { --k-slot-w: 30rem; }
 }
+
 /* На lg+ полноэкранный показ роли не нужен — карточка уже flip'ается
    inline и показывает роль на своей лицевой стороне. role-screen
    всё ещё получает .active внутри showRole, но visually скрыт. */
 @media (min-width: 1024px) {
   #role-screen { display: none !important; }
 }
+
 .player-detail-slot > .modal-panel,
 .player-detail-slot > .unified-player-panel {
   width: 100%;
@@ -798,8 +778,8 @@ input.mafia-checkbox:active:not(:disabled) {
      пределами слота поверх соседних элементов (например, гармошки). */
   pointer-events: none;
 }
-.player-detail-slot.slot-open > .modal-panel,
-.player-detail-slot.slot-open > .unified-player-panel {
+.player-detail-slot.is-open > .modal-panel,
+.player-detail-slot.is-open > .unified-player-panel {
   pointer-events: auto;
 }
 
