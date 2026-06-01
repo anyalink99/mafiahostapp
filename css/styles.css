@@ -833,59 +833,23 @@ input.mafia-checkbox:active:not(:disabled) {
   background: rgba(200, 169, 106, 0.1);
   border-color: rgba(200, 169, 106, 0.3);
 }
+/* Контейнер аккордеон-секций — flex-child, скроллится по vertical-overflow. */
 .unified-sections {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
-.unified-section {
-  border-bottom: 1px solid rgba(200, 169, 106, 0.15);
-}
-.unified-section:last-child {
-  border-bottom: none;
-}
-.unified-section__header {
-  width: 100%;
-  background: transparent;
-  border: none;
-  padding: 10px 18px;
-  text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+
+/* Базовая разметка/анимация (.k-accordion__item / __header / __body / __inner)
+ * приходит из niokit v0.3.0. Здесь — только проектные оверрайды под mafia-тему:
+ * акцент header'а в наш золотой (вместо niokit-овского --k-text-2), chevron
+ * тоже золотой через ::before currentColor. */
+.unified-section.k-accordion__item > .k-accordion__header {
   color: rgba(243, 214, 143, 0.9);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
 }
-.unified-section__header:hover {
+.unified-section.k-accordion__item > .k-accordion__header:hover {
+  color: rgba(243, 214, 143, 1);
   background: rgba(200, 169, 106, 0.06);
-}
-.unified-section__chevron {
-  display: inline-block;
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 6px solid rgba(200, 169, 106, 0.7);
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-  transform: rotate(-90deg);
-}
-.unified-section.is-expanded .unified-section__chevron {
-  transform: rotate(0deg);
-}
-/* max-height управляется из JS (по scrollHeight, как в music settings). */
-.unified-section__body {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.unified-section__inner {
-  padding: 4px 18px 14px;
 }
 /* В секцию «Итоги» переносится целый .modal-panel modal-summary-player.
    Сбрасываем его собственные рамки/фон/тень/паддинги — иначе он выглядит

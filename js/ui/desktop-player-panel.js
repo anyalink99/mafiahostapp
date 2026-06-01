@@ -136,6 +136,11 @@
       sectionByKey[s.key] = section;
     });
 
+    // Делегированный click-handler + collapse-others on expand. Single-mode =
+    // классический accordion (одна секция за раз). Графика (max-height transition,
+    // chevron rotation) полностью в niokit'овском .k-accordion.
+    if (window.Kit && window.Kit.accordion) window.Kit.accordion(sectionsWrap, { single: true });
+
     // Универсальный Save в подвале — закрывает панель (а closeUnified уже
     // прогоняет save-функции каждой открытой модалки). Стиль — как у
     // оригинальных Save кнопок в модалках (приглушённая ссылка-подпись).
@@ -153,29 +158,23 @@
 
   function buildSection(spec) {
     var section = document.createElement('section');
-    section.className = 'unified-section';
+    // .k-accordion__item — niokit базовая разметка; .unified-section — наш
+    // селектор для проектных оверрайдов (chevron цвет, padding modal-panel).
+    section.className = 'k-accordion__item unified-section';
     section.setAttribute('data-section-key', spec.key);
 
     var headerBtn = document.createElement('button');
     headerBtn.type = 'button';
-    headerBtn.className = 'unified-section__header';
-    headerBtn.innerHTML =
-      '<span class="unified-section__chevron" aria-hidden="true"></span>' +
-      '<span>' + spec.label + '</span>';
-    headerBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (section.classList.contains('is-expanded')) {
-        setSectionExpanded(section, false);
-      } else {
-        expandOnly(spec.key);
-      }
-    });
+    headerBtn.className = 'k-accordion__header unified-section__header';
+    // Chevron — через ::before niokit'овского .k-accordion__header, span здесь
+    // больше не нужен. Click-handler не вешаем — Kit.accordion на корне
+    // делегирует click'и + сам collapse'ит другие при single:true.
+    headerBtn.innerHTML = '<span>' + spec.label + '</span>';
 
     var body = document.createElement('div');
-    body.className = 'unified-section__body';
+    body.className = 'k-accordion__body unified-section__body';
     var inner = document.createElement('div');
-    inner.className = 'unified-section__inner';
+    inner.className = 'k-accordion__inner unified-section__inner';
     body.appendChild(inner);
 
     section.appendChild(headerBtn);
@@ -245,70 +244,46 @@
   }
 
   // ────────────────────────────────────────────────────────────
-  // Аккордеон: измеренная max-height с авто-сбросом в `none`
+  // Аккордеон — тонкие обёртки над Kit.accordion (niokit v0.3.0).
+  // Всю механику (измеренная max-height, transition, chevron rotation)
+  // делает Kit; здесь — только проектные хелперы expandOnly/collapseAll
+  // под sectionByKey.
   // ────────────────────────────────────────────────────────────
 
-  // Анимирует body до scrollHeight его внутреннего элемента. После
-  // transition выставляет max-height: none, чтобы контент мог расти при
-  // изменении состояния (рендер ролей и т.п.).
-  function animateBodyToContent(section, body) {
-    var inner = body.firstElementChild;
-    var target = inner ? inner.scrollHeight : body.scrollHeight;
-    body.style.maxHeight = target + 'px';
-    var onEnd = function (e) {
-      if (e && e.propertyName !== 'max-height') return;
-      body.removeEventListener('transitionend', onEnd);
-      if (section.classList.contains('is-expanded')) {
-        body.style.maxHeight = 'none';
-      }
-    };
-    body.addEventListener('transitionend', onEnd);
-  }
+  function kitAcc() { return (window.Kit && window.Kit.accordion) || null; }
 
   function setSectionExpanded(section, expanded) {
-    if (!section) return;
-    var body = section.querySelector('.unified-section__body');
-    if (!body) return;
-    var already = section.classList.contains('is-expanded');
-    if (expanded) {
-      if (already) return;
-      section.classList.add('is-expanded');
-      body.style.maxHeight = '0px';
-      void body.offsetHeight; // force reflow, чтобы transition стартовал с 0
-      animateBodyToContent(section, body);
-    } else {
-      if (!already) return;
-      // Зафиксировать текущую высоту явно, иначе transition не пойдёт с 'none'.
-      var innerH = body.firstElementChild ? body.firstElementChild.scrollHeight : body.scrollHeight;
-      body.style.maxHeight = innerH + 'px';
-      void body.offsetHeight;
-      section.classList.remove('is-expanded');
-      body.style.maxHeight = '0px';
-    }
+    var A = kitAcc();
+    if (!A || !section) return;
+    if (expanded) A.expand(section);
+    else A.collapse(section);
   }
 
   function expandOnly(key) {
+    var A = kitAcc();
+    if (!A) return;
     Object.keys(sectionByKey).forEach(function (k) {
-      setSectionExpanded(sectionByKey[k], k === key);
+      if (k === key) A.expand(sectionByKey[k]);
+      else A.collapse(sectionByKey[k]);
     });
   }
 
   function collapseAll() {
+    var A = kitAcc();
+    if (!A) return;
     Object.keys(sectionByKey).forEach(function (k) {
-      setSectionExpanded(sectionByKey[k], false);
+      A.collapse(sectionByKey[k]);
     });
   }
 
-  // Перевычислить высоту развёрнутых секций (используется когда внутреннее
-  // содержимое поменялось — например, скрылся бонус-блок).
+  // После изменения видимости/контента внутри открытой секции (показался
+  // или скрылся бонус-блок, перерендерилась радио-row ролей) — фиксированный
+  // max-height становится неверным. Просим Kit перемерить scrollHeight.
   function recomputeExpandedHeights() {
+    var A = kitAcc();
+    if (!A) return;
     Object.keys(sectionByKey).forEach(function (k) {
-      var s = sectionByKey[k];
-      if (!s.classList.contains('is-expanded')) return;
-      var body = s.querySelector('.unified-section__body');
-      if (body && body.firstElementChild) {
-        animateBodyToContent(s, body);
-      }
+      A.recompute(sectionByKey[k]);
     });
   }
 

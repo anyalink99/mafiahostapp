@@ -111,9 +111,9 @@ function patchIndexHtmlForExtension() {
     console.warn(
       'warn: js/vendor/niokit/{tokens.css,components.css,niokit.js} не найдены. Скачайте:\n' +
         '  mkdir -p js/vendor/niokit && \\\n' +
-        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/css/tokens.css -o js/vendor/niokit/tokens.css && \\\n' +
-        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/css/components.css -o js/vendor/niokit/components.css && \\\n' +
-        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.2.0/dist/niokit.js -o js/vendor/niokit/niokit.js'
+        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.3.0/css/tokens.css -o js/vendor/niokit/tokens.css && \\\n' +
+        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.3.0/css/components.css -o js/vendor/niokit/components.css && \\\n' +
+        '  curl -sL https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.3.0/dist/niokit.js -o js/vendor/niokit/niokit.js'
     );
   }
   if (!fs.existsSync(localTw)) {
