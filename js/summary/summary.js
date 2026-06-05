@@ -986,7 +986,7 @@
       var n = app.players.length;
       var rowCount = Math.max(1, Math.ceil(n / 2));
       grid.className =
-        'grid h-full min-h-0 min-w-0 grid-flow-col grid-cols-2 gap-1.5 overflow-hidden';
+        'grid flex-1 min-h-0 min-w-0 grid-flow-col grid-cols-2 gap-1.5 overflow-hidden';
       grid.style.gridTemplateRows = 'repeat(' + rowCount + ', minmax(0, 1fr))';
 
       var sumOrder = app.playerSeatIndicesForTwoColumnDisplay(n);
