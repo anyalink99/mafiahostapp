@@ -231,16 +231,31 @@
       }
     }
 
+    // Если value совпадает с уже выбранным игроком (is-mu-bound) — не
+    // показываем дропдаун. Изменит юзер хоть символ → bound снимется в
+    // refreshBoundClass, doSearch отработает.
+    function isBound() {
+      return input.classList.contains('is-mu-bound');
+    }
+
     input.addEventListener('input', function () {
       refreshBoundClass();
       if (onClear) {
         try { onClear(); } catch (e) {}
+      }
+      if (isBound()) {
+        close();
+        return;
       }
       doSearch();
     });
 
     input.addEventListener('focus', function () {
       refreshBoundClass();
+      if (isBound()) {
+        close();
+        return;
+      }
       doSearch();
     });
 
