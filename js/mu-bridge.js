@@ -27,6 +27,17 @@
   // Если null/empty → standalone-fallback отключён (тогда canSearch() = ACTIVE).
   var WORKER_SEARCH_URL = 'https://mafia-mu-proxy.anyalink99.workers.dev/search';
 
+  // Юзер может выключить опрос MU в настройках («Подтягивать псевдонимы
+  // из базы MU» в settings-screen). Флаг применим к standalone-режиму;
+  // в extension (ACTIVE) опрос идёт через content-script и всегда доступен.
+  var MU_LOOKUP_KEY = 'muLookupEnabled';
+  app.muLookupEnabled = true;
+  try { app.muLookupEnabled = localStorage.getItem(MU_LOOKUP_KEY) !== '0'; } catch (e) {}
+
+  function workerEnabled() {
+    return !!WORKER_SEARCH_URL && app.muLookupEnabled !== false;
+  }
+
   var context = null;
   var contextCallbacks = [];
 
@@ -131,10 +142,9 @@
   app.MU = {
     isActive: function () { return ACTIVE; },
     // canSearch — true если есть КАКОЙ-НИБУДЬ путь к поиску игроков MU:
-    // extension content-script (ACTIVE) или public Cloudflare worker.
-    // Используется autocomplete'ом; в standalone'е без extension'а позволяет
-    // ник-инпутам подтягивать имена через прокси.
-    canSearch: function () { return ACTIVE || !!WORKER_SEARCH_URL; },
+    // extension content-script (ACTIVE) или public Cloudflare worker
+    // (если юзер не отключил его в настройках через app.muLookupEnabled).
+    canSearch: function () { return ACTIVE || workerEnabled(); },
     getContext: function () { return context; },
 
     onContext: function (cb) {
@@ -151,7 +161,7 @@
         return call('mu/searchPlayers', { term: term, tournteamId: tournteamId })
           .then(function (msg) { return msg.items || []; });
       }
-      if (!WORKER_SEARCH_URL) return Promise.resolve([]);
+      if (!workerEnabled()) return Promise.resolve([]);
       // Standalone-режим: воркер. Нормализуем к тому же контракту, что и
       // extension-канал: {label, id, logoId, note, avatarUrl}.
       // У воркера нет cookies → нет персональных списков турниров, поэтому
@@ -192,6 +202,18 @@
       if (/^https?:\/\//i.test(path)) return path;
       return 'https://mafiauniverse.org' + (path.charAt(0) === '/' ? '' : '/') + path;
     },
+
+    // Toggle опроса MU из настроек.
+    setLookupEnabled: function (enabled) {
+      app.muLookupEnabled = !!enabled;
+      try { localStorage.setItem(MU_LOOKUP_KEY, app.muLookupEnabled ? '1' : '0'); } catch (e) {}
+      if (app.syncMuLookupCheckbox) app.syncMuLookupCheckbox();
+    },
+  };
+
+  app.syncMuLookupCheckbox = function () {
+    var cb = document.getElementById('setting-mu-lookup');
+    if (cb) cb.checked = !!app.muLookupEnabled;
   };
 
   // ────────────────────────────────────────────────────────────

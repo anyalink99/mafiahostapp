@@ -474,6 +474,10 @@
         if (app.setExperimentalModes) app.setExperimentalModes(!!el.checked);
         return;
       }
+      if (el.id === 'setting-mu-lookup') {
+        if (app.MU && app.MU.setLookupEnabled) app.MU.setLookupEnabled(!!el.checked);
+        return;
+      }
       var field = el.getAttribute('data-music-field');
       if (field === 'offset') {
         app.applyMusicFieldChange(el);

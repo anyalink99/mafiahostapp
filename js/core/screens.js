@@ -128,6 +128,7 @@
       if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
       if (app.syncTimerDurationInputs) app.syncTimerDurationInputs();
       if (app.syncExperimentalModesCheckbox) app.syncExperimentalModesCheckbox();
+      if (app.syncMuLookupCheckbox) app.syncMuLookupCheckbox();
     }
     if (screenId === 'prepare-mode-screen' && app.renderPrepareModeScreen) app.renderPrepareModeScreen();
     if (screenId === 'auto-setup-screen' && app.renderAutoSetup) app.renderAutoSetup();
