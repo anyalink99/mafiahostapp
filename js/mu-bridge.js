@@ -21,6 +21,12 @@
   var HAS_MU_FLAG = /[?&]mu=1\b/.test(location.search);
   var ACTIVE = IN_IFRAME && IS_EXT_ORIGIN && HAS_MU_FLAG;
 
+  // Public Cloudflare Worker proxy для autocomplete'а игроков в standalone
+  // (вне extension'а). Воркер скрейпит публичную /Players?searchString=…,
+  // отдаёт JSON с CORS. Endpoint: GET <URL>?q=<term>.
+  // Если null/empty → standalone-fallback отключён (тогда canSearch() = ACTIVE).
+  var WORKER_SEARCH_URL = 'https://mafia-mu-proxy.anyalink99.workers.dev/search';
+
   var context = null;
   var contextCallbacks = [];
 
@@ -124,6 +130,11 @@
 
   app.MU = {
     isActive: function () { return ACTIVE; },
+    // canSearch — true если есть КАКОЙ-НИБУДЬ путь к поиску игроков MU:
+    // extension content-script (ACTIVE) или public Cloudflare worker.
+    // Используется autocomplete'ом; в standalone'е без extension'а позволяет
+    // ник-инпутам подтягивать имена через прокси.
+    canSearch: function () { return ACTIVE || !!WORKER_SEARCH_URL; },
     getContext: function () { return context; },
 
     onContext: function (cb) {
@@ -136,8 +147,32 @@
     },
 
     searchPlayers: function (term, tournteamId) {
-      return call('mu/searchPlayers', { term: term, tournteamId: tournteamId })
-        .then(function (msg) { return msg.items || []; });
+      if (ACTIVE) {
+        return call('mu/searchPlayers', { term: term, tournteamId: tournteamId })
+          .then(function (msg) { return msg.items || []; });
+      }
+      if (!WORKER_SEARCH_URL) return Promise.resolve([]);
+      // Standalone-режим: воркер. Нормализуем к тому же контракту, что и
+      // extension-канал: {label, id, logoId, note, avatarUrl}.
+      // У воркера нет cookies → нет персональных списков турниров, поэтому
+      // tournteamId игнорируется (не применимо к публичному поиску).
+      return fetch(WORKER_SEARCH_URL + '?q=' + encodeURIComponent(term || ''))
+        .then(function (r) {
+          if (!r.ok) throw new Error('Worker HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (items) {
+          if (!Array.isArray(items)) return [];
+          return items.map(function (p) {
+            return {
+              label: p.label,
+              id: p.id,
+              logoId: null,
+              note: [p.realName, p.club].filter(Boolean).join(' · '),
+              avatarUrl: p.avatarUrl || null, // воркер возвращает абсолютный URL
+            };
+          });
+        });
     },
     getLastGamePlayers: function () {
       return call('mu/getLastGamePlayers')

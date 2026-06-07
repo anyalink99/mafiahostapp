@@ -46,7 +46,9 @@
 
   function avatarHtml(item) {
     if (item.avatarUrl) {
-      var url = MU_ORIGIN + item.avatarUrl;
+      // extension отдаёт относительный путь '/Images/...', worker — абсолютный.
+      var raw = item.avatarUrl;
+      var url = /^https?:\/\//i.test(raw) ? raw : (MU_ORIGIN + raw);
       return '<img class="mu-ac-item__avatar" src="' + escapeHtml(url) + '" alt="" loading="lazy">';
     }
     var initial = (item.label || '?').charAt(0).toUpperCase();
@@ -77,7 +79,7 @@
   app.attachMUAutocomplete = function (input, options) {
     if (!input || !(input instanceof HTMLElement)) return;
     if (attached.has(input)) return;
-    if (!app.MU || !app.MU.isActive()) return;
+    if (!app.MU || !app.MU.canSearch()) return;
     attached.add(input);
 
     options = options || {};
@@ -304,7 +306,7 @@
   app.muPlayerIdByNick = app.muPlayerIdByNick || {};
 
   function attachToCommonInputs() {
-    if (!app.MU || !app.MU.isActive()) return;
+    if (!app.MU || !app.MU.canSearch()) return;
     var ids = [
       'modal-player-nick',
       'modal-summary-nick',
