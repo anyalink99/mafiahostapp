@@ -7,6 +7,19 @@
   var _spotifyActiveSlot = null;
   var sessionVolumeMul = null;
   var duckFactor = 1;
+  // ── Знакомство мафии (intro-режим): плавное нарастание громкости 0→100% ──
+  // introFadeFactor домножается к итоговой громкости (как duckFactor). Прогресс
+  // считаем от audio.currentTime, поэтому fade корректно «замирает» на паузе.
+  var introFadeFactor = 1;
+  var introFadeTimer = null;
+  // Куда сикать при старте текущего трека (для intro — «дроп − разгон», иначе null).
+  var currentSeekStart = null;
+  // Режим intro текущей сессии — чтобы ⏮/⏭ продолжали разгон+fade, если сессию
+  // открыли через «знакомство». Сбрасывается при полной остановке (stopMusic).
+  var currentIntroOpts = null;
+  // Подавляет закрытие модалки плеера внутри stopMusic при переключении трека
+  // (иначе модалка моргала бы close→open на каждый ⏮/⏭).
+  var suppressControlHide = false;
 
   // ── Реальное усиление громкости (>100%) через Web Audio ──
   // HTMLAudio.volume жёстко ограничен 1.0, поэтому x2 раньше «упирался» в потолок.
@@ -168,6 +181,9 @@
     }
     duckedForTimerVoice = false;
     duckFactor = 1;
+    clearIntroFade();
+    currentSeekStart = null;
+    currentIntroOpts = null;
     currentPlayItem = null;
     revokeCurrentUrl();
     currentSlot = null;
@@ -178,7 +194,7 @@
       a.load();
     }
     setMusicButtonPlaying(false);
-    if (app.hideMusicControlModal) app.hideMusicControlModal();
+    if (!suppressControlHide && app.hideMusicControlModal) app.hideMusicControlModal();
   };
 
   app.pauseMusic = function () {
@@ -234,7 +250,37 @@
     } else {
       mul = item && typeof item.volumeMul === 'number' ? item.volumeMul : 1;
     }
-    setElementGainVolume(a, mul * duckFactor);
+    setElementGainVolume(a, mul * duckFactor * introFadeFactor);
+  }
+
+  function clearIntroFade() {
+    if (introFadeTimer) {
+      clearInterval(introFadeTimer);
+      introFadeTimer = null;
+    }
+    introFadeFactor = 1;
+  }
+
+  // Запускает плавное нарастание громкости от 0 до 100% за fadeDur секунд
+  // воспроизведения, начиная с секунды startSec. Прогресс берём от a.currentTime,
+  // чтобы пауза замораживала fade, а перемотка — корректно его смещала.
+  function startIntroFade(a, item, startSec, fadeDur) {
+    clearIntroFade();
+    if (!a || fadeDur <= 0) return;
+    introFadeFactor = 0;
+    applyVolume(a, item);
+    introFadeTimer = setInterval(function () {
+      var cur = typeof a.currentTime === 'number' ? a.currentTime : startSec;
+      var f = (cur - startSec) / fadeDur;
+      if (f < 0) f = 0;
+      if (f >= 1) {
+        f = 1;
+        clearInterval(introFadeTimer);
+        introFadeTimer = null;
+      }
+      introFadeFactor = f;
+      applyVolume(a, item);
+    }, 40);
   }
 
   app.musicSetSessionVolumeMul = function (mul) {
@@ -255,7 +301,12 @@
 
   function seekAudioToItemOffset(a, item) {
     var dur = a.duration;
-    var off = typeof item.offsetSec === 'number' ? item.offsetSec : 0;
+    var off =
+      currentSeekStart !== null
+        ? currentSeekStart
+        : typeof item.offsetSec === 'number'
+        ? item.offsetSec
+        : 0;
     if (typeof dur === 'number' && !isNaN(dur) && dur > 0) {
       if (off >= dur - 0.05) off = Math.max(0, dur - 0.05);
       a.currentTime = off;
@@ -382,7 +433,26 @@
     });
   };
 
-  function playItem(slot, item) {
+  // Параметры intro-режима для трека: куда сикать (старт = «дроп − разгон») и
+  // длительность плавного нарастания громкости. Разгон ограничен длиной проигрыша
+  // (от 0 до дропа) — раньше начала файла уйти нельзя.
+  function computeIntroParams(item, leadInSec) {
+    var drop = typeof item.offsetSec === 'number' && item.offsetSec > 0 ? item.offsetSec : 0;
+    var lead = typeof leadInSec === 'number' && !isNaN(leadInSec) ? leadInSec : 0;
+    if (lead < 0) lead = 0;
+    if (lead > drop) lead = drop; // «если возможно по длине трека»
+    var start = drop - lead;
+    var pct =
+      typeof app.musicIntroFadePercent === 'number' && !isNaN(app.musicIntroFadePercent)
+        ? app.musicIntroFadePercent
+        : 70;
+    if (pct < 0) pct = 0;
+    if (pct > 100) pct = 100;
+    var fadeDur = (pct / 100) * lead;
+    return { start: start, fadeDur: fadeDur };
+  }
+
+  function playItem(slot, item, introOpts) {
     var a = getAudio();
     if (!a || !item) return Promise.resolve(false);
 
@@ -393,6 +463,18 @@
       currentObjectUrl = resolved.url;
       currentSlot = String(slot) === '2' ? '2' : '1';
       currentPlayItem = item;
+      // stopMusic сбросил currentIntroOpts — восстанавливаем режим текущей сессии
+      // (intro или обычный), чтобы ⏮/⏭ его сохраняли.
+      currentIntroOpts = introOpts || null;
+
+      var introStart = null;
+      var introFadeDur = 0;
+      if (introOpts) {
+        var ip = computeIntroParams(item, introOpts.leadInSec);
+        introStart = ip.start;
+        introFadeDur = ip.fadeDur;
+        currentSeekStart = introStart;
+      }
 
       a.src = resolved.url;
       a.playsInline = true;
@@ -420,6 +502,11 @@
           a.removeEventListener('canplay', onReady);
           if (fallbackTimer) clearTimeout(fallbackTimer);
           seekAudioToItemOffset(a, item);
+          // Сик отработал — дальше currentSeekStart не нужен (и не должен утечь в превью).
+          currentSeekStart = null;
+          if (introOpts && introFadeDur > 0) {
+            startIntroFade(a, item, introStart, introFadeDur);
+          }
           var p = a.play();
           if (p && typeof p.then === 'function') {
             p.then(function () {
@@ -548,7 +635,34 @@
       cur: document.getElementById('modal-music-control-time-current'),
       tot: document.getElementById('modal-music-control-time-total'),
       pauseBtn: document.getElementById('modal-music-control-pause'),
+      prevBtn: document.getElementById('modal-music-control-prev'),
+      nextBtn: document.getElementById('modal-music-control-next'),
+      drop: document.getElementById('modal-music-control-drop'),
+      dropTime: document.getElementById('modal-music-control-drop-time'),
     };
+  }
+
+  // Обратный отсчёт до дропа: показываем, пока трек не дошёл до «секунды дропа».
+  // Только для локального воспроизведения (у Spotify нет точной позиции/дропа).
+  function syncMusicControlDrop() {
+    var els = getMusicControlEls();
+    if (!els.drop) return;
+    var a = getAudio();
+    var drop =
+      currentPlayItem && typeof currentPlayItem.offsetSec === 'number'
+        ? currentPlayItem.offsetSec
+        : 0;
+    if (_spotifyActiveSlot || !a || !drop || drop <= 0) {
+      els.drop.classList.add('hidden');
+      return;
+    }
+    var left = drop - (typeof a.currentTime === 'number' ? a.currentTime : 0);
+    if (left <= 0.05) {
+      els.drop.classList.add('hidden');
+      return;
+    }
+    if (els.dropTime) els.dropTime.textContent = fmtTime(Math.ceil(left));
+    els.drop.classList.remove('hidden');
   }
 
   var seekIsDragging = false;
@@ -570,6 +684,7 @@
   function syncMusicControlProgress() {
     var els = getMusicControlEls();
     if (!els.modal || els.modal.classList.contains('hidden')) return;
+    syncMusicControlDrop();
     var a = getAudio();
     if (_spotifyActiveSlot || !a) return;
     var dur = a.duration;
@@ -648,10 +763,11 @@
     } catch (e) {}
   }
 
-  app.showMusicControlModal = function () {
+  // Обновляет содержимое плеера (название, состояние кнопок, прогресс, отсчёт)
+  // БЕЗ повторного открытия модалки — чтобы переключение трека не моргало.
+  function updateMusicControlContent() {
     var els = getMusicControlEls();
     if (!els.modal) return;
-    bindMusicControlListenersOnce();
     if (els.title) {
       var label = '';
       if (_spotifyActiveSlot) {
@@ -676,6 +792,14 @@
     }
     syncMusicControlPauseBtn();
     syncMusicControlProgress();
+  }
+  app.refreshMusicControlModal = updateMusicControlContent;
+
+  app.showMusicControlModal = function () {
+    var els = getMusicControlEls();
+    if (!els.modal) return;
+    bindMusicControlListenersOnce();
+    updateMusicControlContent();
     showEl('modal-music-control', true);
   };
 
@@ -721,9 +845,22 @@
     });
   }
 
-  app.musicStartSlot = function (slot) {
+  // opts.intro — режим «знакомства мафии»: старт за «разгон» секунд до дропа с
+  // плавным нарастанием громкости. opts.leadInSec переопределяет глобальную
+  // настройку (авто-режим передаёт фиксированные 10с под предкаунтдаун).
+  // Intro применимо только к локальному воспроизведению — Spotify играет как обычно.
+  app.musicStartSlot = function (slot, opts) {
     app.primeMusicAudio();
     app.hideMusicSlotModal();
+
+    var introOpts = null;
+    if (opts && opts.intro) {
+      var lead =
+        typeof opts.leadInSec === 'number' && !isNaN(opts.leadInSec)
+          ? opts.leadInSec
+          : app.musicIntroLeadInSec;
+      introOpts = { leadInSec: lead };
+    }
 
     var spotifyPlaylist = app.spotifyGetSlotPlaylist ? app.spotifyGetSlotPlaylist(slot) : null;
     if (spotifyPlaylist && spotifyPlaylist.playlistId && app.spotifyIsAuthenticated && app.spotifyIsAuthenticated()) {
@@ -736,8 +873,51 @@
       app.showMusicEmptyModal(slot);
       return;
     }
-    playItem(slot, item).then(function (ok) {
+    playItem(slot, item, introOpts).then(function (ok) {
       if (!ok) app.showMusicEmptyModal(slot);
+    });
+  };
+
+  // Переключение трека в плеере (⏮/⏭). Локально — листаем пул текущего слота по
+  // кругу. Режим воспроизведения сохраняем: если сессию открыли через «знакомство»
+  // (intro), новый трек тоже идёт с разгоном+fade; иначе — сразу с дропа.
+  // Для Spotify — штатные next/previous плеера.
+  app.musicPlayAdjacentTrack = function (dir) {
+    var step = dir < 0 ? -1 : 1;
+    if (_spotifyActiveSlot) {
+      app.primeMusicAudio();
+      if (step > 0) {
+        if (app.spotifyNextTrack) app.spotifyNextTrack().catch(function () {});
+      } else if (app.spotifyPreviousTrack) {
+        app.spotifyPreviousTrack().catch(function () {});
+      }
+      return;
+    }
+    var slot = currentSlot === '2' ? '2' : '1';
+    var pool = app.musicGetSlotPlayablePool ? app.musicGetSlotPlayablePool(slot) : [];
+    if (!pool.length) return;
+    app.primeMusicAudio();
+    var idx = -1;
+    if (currentPlayItem) {
+      for (var i = 0; i < pool.length; i++) {
+        if (pool[i].id === currentPlayItem.id) { idx = i; break; }
+      }
+    }
+    var newIdx;
+    if (idx === -1) {
+      newIdx = step > 0 ? 0 : pool.length - 1;
+    } else {
+      newIdx = (idx + step + pool.length) % pool.length;
+    }
+    // Сохраняем режим сессии (intro или обычный) для нового трека.
+    var introOpts = currentIntroOpts;
+    // Не даём stopMusic закрыть модалку — просто обновим её содержимое.
+    suppressControlHide = true;
+    playItem(slot, pool[newIdx], introOpts).then(function (ok) {
+      suppressControlHide = false;
+      if (ok) updateMusicControlContent();
+    }, function () {
+      suppressControlHide = false;
     });
   };
 
@@ -758,6 +938,9 @@
   app.musicPlaylistEditId = '';
   // id развёрнутого трека внутри редактируемого плейлиста (открыт только один за раз).
   app.musicPlaylistTrackOpenId = '';
+  // Режим выбора треков для объединения в плейлист (по слотам) + множество id.
+  app.musicSelectModeBySlot = { '1': false, '2': false };
+  app.musicSelectedIdsBySlot = { '1': {}, '2': {} };
 
   app.getMusicExpandedItemId = function (slot) {
     var k = String(slot) === '2' ? '2' : '1';
@@ -944,10 +1127,126 @@
     if (c1) c1.innerHTML = app.buildMusicSlotListHtml('1');
     if (c2) c2.innerHTML = app.buildMusicSlotListHtml('2');
     app.finishMusicSettingsExpandAnimations();
+    if (app.syncMusicSlotControls) app.syncMusicSlotControls();
     if (app.renderSpotifySlotSettings) {
       app.renderSpotifySlotSettings('1');
       app.renderSpotifySlotSettings('2');
     }
+  };
+
+  // Прячет статические кнопки «Добавить/ZIP/Создать плейлист» в слоте, пока активен
+  // режим выбора (там своя панель действий), и показывает обратно при выходе.
+  app.syncMusicSlotControls = function () {
+    ['1', '2'].forEach(function (k) {
+      var on = !!app.musicSelectModeBySlot[k];
+      var bar = document.getElementById('music-slot-actions-' + k);
+      if (bar) bar.classList.toggle('hidden', on);
+    });
+  };
+
+  // Вход/выход режима выбора треков для объединения (по слотам — взаимоисключающе
+  // не требуется, но сбрасываем выбор при выходе).
+  app.musicEnterSelectMode = function (slot) {
+    var k = String(slot) === '2' ? '2' : '1';
+    app.musicSelectModeBySlot[k] = true;
+    app.musicSelectedIdsBySlot[k] = {};
+    // Сворачиваем раскрытые панели этого слота, чтобы не мешали.
+    if (app.expandedMusicItemIdBySlot[k]) app.expandedMusicItemIdBySlot[k] = '';
+    app.renderMusicSettings();
+  };
+
+  app.musicExitSelectMode = function (slot) {
+    var k = String(slot) === '2' ? '2' : '1';
+    app.musicSelectModeBySlot[k] = false;
+    app.musicSelectedIdsBySlot[k] = {};
+    app.renderMusicSettings();
+  };
+
+  // Тогл чекбокса трека в режиме выбора — обновляем только панель действий (счётчик
+  // и доступность кнопки «Объединить»), без перерисовки всего списка.
+  app.musicToggleSelected = function (slot, itemId, checked) {
+    var k = String(slot) === '2' ? '2' : '1';
+    var sel = app.musicSelectedIdsBySlot[k] || (app.musicSelectedIdsBySlot[k] = {});
+    if (checked) sel[itemId] = true;
+    else delete sel[itemId];
+    var container = document.getElementById('music-list-slot-' + k);
+    if (!container) return;
+    var n = 0;
+    for (var id in sel) {
+      if (Object.prototype.hasOwnProperty.call(sel, id) && sel[id]) n++;
+    }
+    var cntEl = container.querySelector('[data-music-select-count]');
+    if (cntEl) cntEl.textContent = String(n);
+    var btn = container.querySelector('[data-action="music-create-playlist-confirm"]');
+    if (btn) {
+      btn.disabled = n < 2;
+      btn.textContent = 'Объединить (' + n + ')';
+      btn.classList.toggle('border-mafia-border', n < 2);
+      btn.classList.toggle('text-mafia-cream/35', n < 2);
+      btn.classList.toggle('cursor-not-allowed', n < 2);
+      btn.classList.toggle('border-mafia-gold/60', n >= 2);
+      btn.classList.toggle('bg-mafia-blood/40', n >= 2);
+      btn.classList.toggle('text-mafia-gold', n >= 2);
+      btn.classList.toggle('cursor-pointer', n >= 2);
+    }
+    // Подсветка выбранной строки.
+    var li = container.querySelector('input[data-item-id="' + (window.CSS && CSS.escape ? CSS.escape(itemId) : itemId) + '"]');
+    li = li ? li.closest('li') : null;
+    if (li) {
+      li.classList.toggle('border-mafia-gold/60', !!checked);
+      li.classList.toggle('border-mafia-border', !checked);
+    }
+  };
+
+  app.musicCreatePlaylistFromSelection = function (slot) {
+    var k = String(slot) === '2' ? '2' : '1';
+    var sel = app.musicSelectedIdsBySlot[k] || {};
+    var ids = [];
+    for (var id in sel) {
+      if (Object.prototype.hasOwnProperty.call(sel, id) && sel[id]) ids.push(id);
+    }
+    if (ids.length < 2) {
+      if (app.showToast) app.showToast('Выберите минимум два трека');
+      return;
+    }
+    var res = app.musicCreatePlaylistFromItems(slot, ids);
+    app.musicSelectModeBySlot[k] = false;
+    app.musicSelectedIdsBySlot[k] = {};
+    app.renderMusicSettings();
+    if (res && res.snapshot && app.showUndoToast) {
+      var snap = res.snapshot;
+      app.showUndoToast('Плейлист создан', function () {
+        app.musicRestoreMetaSnapshot(snap);
+        app.renderMusicSettings();
+      });
+    } else if (app.showToast) {
+      app.showToast('Не удалось создать плейлист');
+    }
+  };
+
+  app.musicDisbandPlaylistWithUndo = function (slot, itemId) {
+    if (app.expandedMusicItemIdBySlot) {
+      if (app.expandedMusicItemIdBySlot['1'] === itemId) app.expandedMusicItemIdBySlot['1'] = '';
+      if (app.expandedMusicItemIdBySlot['2'] === itemId) app.expandedMusicItemIdBySlot['2'] = '';
+    }
+    var res = app.musicDisbandPlaylist(slot, itemId);
+    app.renderMusicSettings();
+    if (res && res.snapshot && app.showUndoToast) {
+      var snap = res.snapshot;
+      app.showUndoToast('Плейлист расформирован', function () {
+        app.musicRestoreMetaSnapshot(snap);
+        app.renderMusicSettings();
+      });
+    }
+  };
+
+  app.musicExportPlaylistWithFeedback = function (slot, itemId) {
+    if (!app.musicExportPlaylistZip) return;
+    app.musicExportPlaylistZip(slot, itemId).then(function () {
+      if (app.showToast) app.showToast('Архив плейлиста готов');
+    }).catch(function () {
+      if (app.showToast) app.showToast('Не удалось выгрузить плейлист');
+    });
   };
 
   // Один потрековый блок (режим «Редактировать»): сворачиваемый, открыт только один за раз.
@@ -968,7 +1267,7 @@
       '<span>Участвует в случайном выборе</span>' +
       '</label>' +
       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">' +
-      '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Секунда старта' +
+      '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Секунда дропа' +
       '<input type="number" min="0" step="0.1" data-music-field="offset" value="' +
       offset +
       '" class="mt-1 w-full px-2 py-1.5 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">' +
@@ -1146,7 +1445,7 @@
       escapeHtml(it.id) +
       '" class="flex min-w-0 flex-1 items-center gap-2 py-2.5 text-left hover:bg-mafia-card/50 transition-colors duration-200 cursor-pointer rounded-sm">' +
       '<span class="music-item-chevron" aria-hidden="true">▶</span>' +
-      '<span class="text-mafia-gold/90 text-sm font-medium truncate flex-1 min-w-0" title="' +
+      '<span data-music-title class="text-mafia-gold/90 text-sm font-medium truncate flex-1 min-w-0" title="' +
       escapeHtml(it.name) +
       '">' +
       escapeHtml(it.name) +
@@ -1162,6 +1461,11 @@
       '<div class="music-item-settings-wrap">' +
       '<div class="music-item-settings-inner">' +
       '<div class="music-item-settings-panel px-3 pb-3 pt-0 border-t border-mafia-border/40">' +
+      '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider pt-3">Название' +
+      '<input type="text" data-music-field="name" value="' +
+      escapeHtml(it.name) +
+      '" maxlength="120" class="mt-1 w-full px-2 py-1.5 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">' +
+      '</label>' +
       '<label class="flex items-center gap-2 cursor-pointer text-xs text-mafia-cream/70 pt-3 select-none">' +
       '<input type="checkbox" data-music-field="enabled" class="mafia-checkbox" ' +
       (offPool ? '' : 'checked') +
@@ -1192,7 +1496,19 @@
       '<div data-music-tracks>' +
       tracksHtml +
       '</div>' +
-      '<div class="flex justify-end mt-2">' +
+      '<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mt-3">' +
+      '<div class="flex flex-wrap items-center gap-x-3 gap-y-2">' +
+      '<button type="button" data-action="music-export-playlist" data-slot="' +
+      escapeHtml(slot) +
+      '" data-item-id="' +
+      escapeHtml(it.id) +
+      '" class="text-mafia-cream/70 hover:text-mafia-cream text-xs uppercase tracking-wider cursor-pointer">Скачать ZIP</button>' +
+      '<button type="button" data-action="music-disband-playlist" data-slot="' +
+      escapeHtml(slot) +
+      '" data-item-id="' +
+      escapeHtml(it.id) +
+      '" class="text-mafia-cream/70 hover:text-mafia-cream text-xs uppercase tracking-wider cursor-pointer">Расформировать</button>' +
+      '</div>' +
       '<button type="button" data-action="music-remove-item" data-slot="' +
       escapeHtml(slot) +
       '" data-item-id="' +
@@ -1247,7 +1563,104 @@
     }
   };
 
+  // Кол-во выбранных в режиме объединения для слота.
+  function musicSelectedCount(slot) {
+    var k = String(slot) === '2' ? '2' : '1';
+    var sel = app.musicSelectedIdsBySlot[k] || {};
+    var n = 0;
+    for (var id in sel) {
+      if (Object.prototype.hasOwnProperty.call(sel, id) && sel[id]) n++;
+    }
+    return n;
+  }
+
+  // Список слота в режиме выбора: чекбоксы у одиночных idb-треков + панель действий.
+  function buildMusicSlotSelectHtml(slot) {
+    var k = String(slot) === '2' ? '2' : '1';
+    var items = app.getMusicSlotItems(slot);
+    var sel = app.musicSelectedIdsBySlot[k] || {};
+    var n = musicSelectedCount(slot);
+    var bar =
+      '<div class="flex items-center justify-between gap-2 mb-3 p-2 rounded border border-mafia-gold/40 bg-mafia-black/40">' +
+      '<span class="text-xs text-mafia-cream/70 uppercase tracking-wider">Выбрано: <span class="text-mafia-gold tabular-nums" data-music-select-count>' +
+      n +
+      '</span></span>' +
+      '<div class="flex items-center gap-2">' +
+      '<button type="button" data-action="music-select-cancel" data-slot="' +
+      escapeHtml(slot) +
+      '" class="px-3 py-1.5 text-xs uppercase tracking-wider text-mafia-cream/70 hover:text-mafia-cream cursor-pointer">Отмена</button>' +
+      '<button type="button" data-action="music-create-playlist-confirm" data-slot="' +
+      escapeHtml(slot) +
+      '"' +
+      (n < 2 ? ' disabled' : '') +
+      ' class="px-3 py-1.5 text-xs uppercase tracking-wider rounded border ' +
+      (n < 2
+        ? 'border-mafia-border text-mafia-cream/35 cursor-not-allowed'
+        : 'border-mafia-gold/60 bg-mafia-blood/40 text-mafia-gold cursor-pointer') +
+      '">Объединить (' +
+      n +
+      ')</button>' +
+      '</div>' +
+      '</div>';
+
+    var rows = '<ul class="space-y-2">';
+    var eligibleCount = 0;
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (!it) continue;
+      var eligible = it.type !== 'playlist' && it.source && it.source.type === 'idb';
+      if (eligible) {
+        eligibleCount++;
+        var checked = !!sel[it.id];
+        rows +=
+          '<li class="bg-mafia-black/40 border rounded text-left ' +
+          (checked ? 'border-mafia-gold/60' : 'border-mafia-border') +
+          '">' +
+          '<label class="flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none">' +
+          '<input type="checkbox" class="mafia-checkbox" data-music-select data-slot="' +
+          escapeHtml(slot) +
+          '" data-item-id="' +
+          escapeHtml(it.id) +
+          '"' +
+          (checked ? ' checked' : '') +
+          '>' +
+          '<span class="text-mafia-cream/90 text-sm truncate min-w-0" title="' +
+          escapeHtml(it.name) +
+          '">' +
+          escapeHtml(it.name) +
+          '</span>' +
+          '</label>' +
+          '</li>';
+      } else {
+        var why = it.type === 'playlist' ? 'плейлист' : 'встроенный';
+        rows +=
+          '<li class="bg-mafia-black/20 border border-mafia-border/50 rounded text-left opacity-50">' +
+          '<div class="flex items-center justify-between gap-2 px-3 py-2.5">' +
+          '<span class="text-mafia-cream/70 text-sm truncate min-w-0" title="' +
+          escapeHtml(it.name) +
+          '">' +
+          escapeHtml(it.name) +
+          '</span>' +
+          '<span class="text-mafia-cream/40 text-xs flex-shrink-0 uppercase tracking-wider">' +
+          why +
+          '</span>' +
+          '</div>' +
+          '</li>';
+      }
+    }
+    rows += '</ul>';
+    if (!eligibleCount) {
+      rows =
+        '<p class="text-mafia-cream/50 text-sm py-2">Нет одиночных треков для объединения. Добавьте треки кнопкой «Добавить треки».</p>';
+    }
+    return bar + rows;
+  }
+
   app.buildMusicSlotListHtml = function (slot) {
+    var sk = String(slot) === '2' ? '2' : '1';
+    if (app.musicSelectModeBySlot[sk]) {
+      return buildMusicSlotSelectHtml(slot);
+    }
     var items = app.getMusicSlotItems(slot);
     if (!items.length) {
       return '<p class="text-mafia-cream/50 text-sm py-2">Нет треков — добавьте файлы.</p>';
@@ -1308,7 +1721,7 @@
         '<span>Участвует в случайном выборе</span>' +
         '</label>' +
         '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">' +
-        '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Секунда старта' +
+        '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider">Секунда дропа' +
         '<input type="number" min="0" step="0.1" data-music-field="offset" value="' +
         (typeof it.offsetSec === 'number' ? it.offsetSec : 0) +
         '" class="mt-1 w-full px-2 py-1.5 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">' +
@@ -1385,6 +1798,8 @@
       if (label) label.textContent = v.toFixed(2);
     } else if (field === 'enabled') {
       patch.enabled = !!el.checked;
+    } else if (field === 'name') {
+      patch.name = el.value;
     } else {
       return;
     }
@@ -1397,10 +1812,41 @@
       if (field === 'enabled' && app.musicSyncEnabledRowAppearance) {
         app.musicSyncEnabledRowAppearance(li, el.checked);
       }
+      // Переименование плейлиста — обновляем видимый заголовок строки на месте.
+      if (field === 'name') {
+        var titleEl = li.querySelector('[data-music-title]');
+        if (titleEl) {
+          var nm = el.value.replace(/\s+/g, ' ').trim().slice(0, 120);
+          if (nm) {
+            titleEl.textContent = nm;
+            titleEl.setAttribute('title', nm);
+          }
+        }
+      }
     }
   };
 
+  app.syncMusicIntroControls = function () {
+    var leadInp = document.getElementById('setting-music-intro-leadin');
+    var leadLab = document.getElementById('setting-music-intro-leadin-label');
+    var fadeInp = document.getElementById('setting-music-intro-fade');
+    var fadeLab = document.getElementById('setting-music-intro-fade-label');
+    var lead =
+      typeof app.musicIntroLeadInSec === 'number' && !isNaN(app.musicIntroLeadInSec)
+        ? app.musicIntroLeadInSec
+        : 10;
+    var fade =
+      typeof app.musicIntroFadePercent === 'number' && !isNaN(app.musicIntroFadePercent)
+        ? app.musicIntroFadePercent
+        : 70;
+    if (leadInp) leadInp.value = String(lead);
+    if (leadLab) leadLab.textContent = String(lead);
+    if (fadeInp) fadeInp.value = String(fade);
+    if (fadeLab) fadeLab.textContent = fade + '%';
+  };
+
   app.initMusic = function () {
+    if (app.loadMusicIntroPrefs) app.loadMusicIntroPrefs();
     var a = getAudio();
     if (a) {
       a.addEventListener('ended', function () {

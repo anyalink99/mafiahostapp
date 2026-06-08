@@ -149,6 +149,16 @@
     return Promise.resolve();
   };
 
+  app.spotifyNextTrack = function () {
+    if (_player) return _player.nextTrack();
+    return Promise.resolve();
+  };
+
+  app.spotifyPreviousTrack = function () {
+    if (_player) return _player.previousTrack();
+    return Promise.resolve();
+  };
+
   app.spotifySetVolume = function (vol) {
     if (vol < 0) vol = 0;
     if (vol > 1) vol = 1;

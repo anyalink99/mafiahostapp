@@ -10,6 +10,12 @@
     if (slot) app.musicStartSlot(slot);
   };
 
+  // Знакомство мафии — те же треки «Ночных действий», но с разгоном и fade к дропу.
+  app.uiActionHandlers['music-pick-intro'] = function (el) {
+    var slot = el.getAttribute('data-slot') || '2';
+    app.musicStartSlot(slot, { intro: true });
+  };
+
   app.uiActionHandlers['music-empty-cancel'] = function () {
     app.hideMusicEmptyModal();
   };
@@ -41,6 +47,14 @@
     if (app.toggleMusicPause) app.toggleMusicPause();
   };
 
+  app.uiActionHandlers['music-control-prev'] = function () {
+    if (app.musicPlayAdjacentTrack) app.musicPlayAdjacentTrack(-1);
+  };
+
+  app.uiActionHandlers['music-control-next'] = function () {
+    if (app.musicPlayAdjacentTrack) app.musicPlayAdjacentTrack(1);
+  };
+
   app.uiActionHandlers['music-toggle-item-panel'] = function (el) {
     var sid = el.getAttribute('data-slot');
     var iid = el.getAttribute('data-item-id');
@@ -65,6 +79,40 @@
     var iid = el.getAttribute('data-item-id');
     var tid = el.getAttribute('data-track-id');
     if (sid && iid && tid && app.toggleMusicPlaylistTrack) app.toggleMusicPlaylistTrack(sid, iid, tid);
+  };
+
+  app.uiActionHandlers['settings-tab'] = function (el) {
+    var tab = el.getAttribute('data-tab');
+    if (app.setSettingsTab) app.setSettingsTab(tab);
+  };
+
+  /* ── Создание/расформирование плейлистов ── */
+
+  app.uiActionHandlers['music-create-playlist-mode'] = function (el) {
+    var slot = el.getAttribute('data-slot');
+    if (slot && app.musicEnterSelectMode) app.musicEnterSelectMode(slot);
+  };
+
+  app.uiActionHandlers['music-select-cancel'] = function (el) {
+    var slot = el.getAttribute('data-slot');
+    if (slot && app.musicExitSelectMode) app.musicExitSelectMode(slot);
+  };
+
+  app.uiActionHandlers['music-create-playlist-confirm'] = function (el) {
+    var slot = el.getAttribute('data-slot');
+    if (slot && app.musicCreatePlaylistFromSelection) app.musicCreatePlaylistFromSelection(slot);
+  };
+
+  app.uiActionHandlers['music-disband-playlist'] = function (el) {
+    var slot = el.getAttribute('data-slot');
+    var iid = el.getAttribute('data-item-id');
+    if (slot && iid && app.musicDisbandPlaylistWithUndo) app.musicDisbandPlaylistWithUndo(slot, iid);
+  };
+
+  app.uiActionHandlers['music-export-playlist'] = function (el) {
+    var slot = el.getAttribute('data-slot');
+    var iid = el.getAttribute('data-item-id');
+    if (slot && iid && app.musicExportPlaylistWithFeedback) app.musicExportPlaylistWithFeedback(slot, iid);
   };
 
   app.uiActionHandlers['music-remove-item'] = function (el) {

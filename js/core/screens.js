@@ -122,10 +122,12 @@
     if (screenId === 'vote-screen' && app.renderVoteScreen) app.renderVoteScreen();
     if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
     if (screenId === 'settings-screen') {
+      if (app.setSettingsTab) app.setSettingsTab(app.settingsActiveTab);
       if (app.renderSpotifyGlobalSettings) app.renderSpotifyGlobalSettings();
       if (app.renderMusicSettings) app.renderMusicSettings();
       if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
       if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
+      if (app.syncMusicIntroControls) app.syncMusicIntroControls();
       if (app.syncTimerDurationInputs) app.syncTimerDurationInputs();
       if (app.syncExperimentalModesCheckbox) app.syncExperimentalModesCheckbox();
       if (app.syncMuLookupCheckbox) app.syncMuLookupCheckbox();
@@ -154,6 +156,37 @@
     return app.roles.length;
   };
 
+  app.settingsActiveTab = 'general';
+  app.setSettingsTab = function (tab) {
+    if (tab !== 'music' && tab !== 'general') tab = 'general';
+    app.settingsActiveTab = tab;
+    var mp = document.getElementById('settings-tab-music');
+    var gp = document.getElementById('settings-tab-general');
+    // Прячем через inline display, а не класс `hidden`: на десктопе `lg:grid`
+    // перебивает `hidden` (media-query важнее), и скрытая вкладка всё равно
+    // показывалась бы. Inline-стиль имеет приоритет над любыми классами.
+    if (mp) {
+      mp.style.display = tab === 'music' ? '' : 'none';
+      mp.classList.remove('hidden');
+    }
+    if (gp) {
+      gp.style.display = tab === 'general' ? '' : 'none';
+      gp.classList.remove('hidden');
+    }
+    var btns = document.querySelectorAll('[data-action="settings-tab"]');
+    for (var i = 0; i < btns.length; i++) {
+      var b = btns[i];
+      var on = b.getAttribute('data-tab') === tab;
+      b.classList.toggle('bg-mafia-blood/40', on);
+      b.classList.toggle('border-mafia-gold/60', on);
+      b.classList.toggle('text-mafia-gold', on);
+      b.classList.toggle('bg-mafia-card', !on);
+      b.classList.toggle('border-mafia-border', !on);
+      b.classList.toggle('text-mafia-cream/80', !on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  };
+
   app.showToast = function (message) {
     var el = document.getElementById('app-toast');
     if (!el) {
@@ -174,5 +207,56 @@
       el.classList.remove('opacity-100');
       el.classList.add('opacity-0');
     }, 2400);
+  };
+
+  // Тост с действием «Отменить» (для undo операций с плейлистами). Висит дольше
+  // обычного; клик по «Отменить» вызывает onUndo и сразу прячет тост.
+  app.showUndoToast = function (message, onUndo, holdMs) {
+    var el = document.getElementById('app-undo-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'app-undo-toast';
+      el.className =
+        'fixed bottom-6 left-1/2 z-[100] flex max-w-[min(92vw,24rem)] -translate-x-1/2 items-center gap-3 rounded-lg border border-mafia-gold/45 bg-mafia-coal/95 px-4 py-2.5 text-sm text-mafia-cream/95 shadow-lg transition-opacity duration-200 ease-out opacity-0';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
+      var msgEl = document.createElement('span');
+      msgEl.setAttribute('data-undo-msg', '');
+      msgEl.className = 'flex-1 min-w-0';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('data-undo-btn', '');
+      btn.className =
+        'flex-shrink-0 uppercase tracking-wider text-mafia-gold hover:text-mafia-gold/80 cursor-pointer';
+      btn.textContent = 'Отменить';
+      el.appendChild(msgEl);
+      el.appendChild(btn);
+      document.body.appendChild(el);
+    }
+    var msgNode = el.querySelector('[data-undo-msg]');
+    var btnNode = el.querySelector('[data-undo-btn]');
+    if (msgNode) msgNode.textContent = message;
+
+    function hide() {
+      el.classList.remove('opacity-100');
+      el.classList.add('opacity-0');
+      el.classList.add('pointer-events-none');
+    }
+    clearTimeout(el._undoHide);
+    // Свежий обработчик на каждый показ (старый снимаем клонированием узла).
+    if (btnNode) {
+      var fresh = btnNode.cloneNode(true);
+      btnNode.parentNode.replaceChild(fresh, btnNode);
+      fresh.addEventListener('click', function () {
+        clearTimeout(el._undoHide);
+        hide();
+        if (typeof onUndo === 'function') onUndo();
+      });
+    }
+    el.classList.remove('pointer-events-none');
+    void el.offsetWidth;
+    el.classList.remove('opacity-0');
+    el.classList.add('opacity-100');
+    el._undoHide = setTimeout(hide, typeof holdMs === 'number' ? holdMs : 6000);
   };
 })(window.MafiaApp);

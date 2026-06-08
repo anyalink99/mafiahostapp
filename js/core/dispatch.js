@@ -441,6 +441,29 @@
         if (nlab) nlab.textContent = String(nw);
         return;
       }
+      if (el && el.id === 'setting-music-intro-leadin') {
+        var ml = parseInt(el.value, 10);
+        if (isNaN(ml)) return;
+        var mlMax = app.MUSIC_INTRO_LEADIN_MAX || 30;
+        if (ml < 0) ml = 0;
+        if (ml > mlMax) ml = mlMax;
+        app.musicIntroLeadInSec = ml;
+        if (app.saveMusicIntroPrefs) app.saveMusicIntroPrefs();
+        var mll = document.getElementById('setting-music-intro-leadin-label');
+        if (mll) mll.textContent = String(ml);
+        return;
+      }
+      if (el && el.id === 'setting-music-intro-fade') {
+        var mf = parseInt(el.value, 10);
+        if (isNaN(mf)) return;
+        if (mf < 0) mf = 0;
+        if (mf > 100) mf = 100;
+        app.musicIntroFadePercent = mf;
+        if (app.saveMusicIntroPrefs) app.saveMusicIntroPrefs();
+        var mfl = document.getElementById('setting-music-intro-fade-label');
+        if (mfl) mfl.textContent = mf + '%';
+        return;
+      }
       if (el && el.id === 'spotify-client-id') {
         if (app.spotifySaveClientId) app.spotifySaveClientId(el.value);
         if (app.renderSpotifyGlobalSettings) {
@@ -478,8 +501,16 @@
         if (app.MU && app.MU.setLookupEnabled) app.MU.setLookupEnabled(!!el.checked);
         return;
       }
+      if (el.hasAttribute('data-music-select')) {
+        var msSlot = el.getAttribute('data-slot');
+        var msId = el.getAttribute('data-item-id');
+        if (msSlot && msId && app.musicToggleSelected) {
+          app.musicToggleSelected(msSlot, msId, !!el.checked);
+        }
+        return;
+      }
       var field = el.getAttribute('data-music-field');
-      if (field === 'offset') {
+      if (field === 'offset' || field === 'name') {
         app.applyMusicFieldChange(el);
         return;
       }

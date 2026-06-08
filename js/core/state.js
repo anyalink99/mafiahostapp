@@ -51,6 +51,10 @@ window.MafiaApp = window.MafiaApp || {};
   app.voiceVolumeWithMusic = 0.92;
   app.voiceRate = 1.0;
   app.nightActionsWaitSec = 10;
+  // Знакомство мафии: за сколько секунд до дропа включать трек и какой процент
+  // этого «проигрыша» музыка плавно нарастает от 0 до 100% громкости.
+  app.musicIntroLeadInSec = 10;
+  app.musicIntroFadePercent = 70;
   app.canCloseRole = false;
 
   app.gameLog = [];

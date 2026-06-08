@@ -690,7 +690,10 @@
     if (!hasLocal && !hasSpotify) return;
     if (!app.musicStartSlot) return;
     if (app.musicSetSessionVolumeMul) app.musicSetSessionVolumeMul(null);
-    try { app.musicStartSlot('2'); } catch (_) {}
+    // Знакомство: трек стартует в начале pre-стадии (INTRO_PRE_SEC с) с разгоном к
+    // дропу, чтобы дроп пришёлся на старт самого знакомства. Разгон фиксирован под
+    // длину предкаунтдауна (но обрезается длиной проигрыша, если дроп ближе).
+    try { app.musicStartSlot('2', { intro: true, leadInSec: INTRO_PRE_SEC }); } catch (_) {}
     app._autoEphemeral.introMusicActive = true;
   }
 

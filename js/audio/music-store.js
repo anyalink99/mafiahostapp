@@ -2,6 +2,8 @@ window.MafiaApp = window.MafiaApp || {};
 
 (function (app) {
   app.MUSIC_META_KEY = 'mafia_host_music';
+  app.MUSIC_INTRO_LEADIN_KEY = 'mafia_host_music_intro_leadin_sec';
+  app.MUSIC_INTRO_FADE_KEY = 'mafia_host_music_intro_fade_pct';
   var DB_NAME = 'mafia_host_music_db';
   var DB_VERSION = 1;
   var STORE = 'blobs';
@@ -34,6 +36,41 @@ window.MafiaApp = window.MafiaApp || {};
   app.saveMusicMeta = function (meta) {
     try {
       localStorage.setItem(app.MUSIC_META_KEY, JSON.stringify(meta));
+    } catch (e) {}
+  };
+
+  // ── Глобальные настройки «знакомства мафии» (intro-режим воспроизведения) ──
+  app.MUSIC_INTRO_LEADIN_MAX = 30;
+
+  app.loadMusicIntroPrefs = function () {
+    try {
+      var l = parseInt(localStorage.getItem(app.MUSIC_INTRO_LEADIN_KEY), 10);
+      if (!isNaN(l)) {
+        if (l < 0) l = 0;
+        if (l > app.MUSIC_INTRO_LEADIN_MAX) l = app.MUSIC_INTRO_LEADIN_MAX;
+        app.musicIntroLeadInSec = l;
+      }
+    } catch (e) {}
+    if (typeof app.musicIntroLeadInSec !== 'number' || isNaN(app.musicIntroLeadInSec)) {
+      app.musicIntroLeadInSec = 10;
+    }
+    try {
+      var f = parseInt(localStorage.getItem(app.MUSIC_INTRO_FADE_KEY), 10);
+      if (!isNaN(f)) {
+        if (f < 0) f = 0;
+        if (f > 100) f = 100;
+        app.musicIntroFadePercent = f;
+      }
+    } catch (e) {}
+    if (typeof app.musicIntroFadePercent !== 'number' || isNaN(app.musicIntroFadePercent)) {
+      app.musicIntroFadePercent = 70;
+    }
+  };
+
+  app.saveMusicIntroPrefs = function () {
+    try {
+      localStorage.setItem(app.MUSIC_INTRO_LEADIN_KEY, String(app.musicIntroLeadInSec));
+      localStorage.setItem(app.MUSIC_INTRO_FADE_KEY, String(app.musicIntroFadePercent));
     } catch (e) {}
   };
 
@@ -229,6 +266,108 @@ window.MafiaApp = window.MafiaApp || {};
     });
   };
 
+  // ── Снимок/восстановление мета для undo (операции с плейлистами не трогают
+  //    блобы, поэтому достаточно сохранить/вернуть JSON-мету) ──
+  app.musicSnapshotMeta = function () {
+    try {
+      return JSON.parse(JSON.stringify(app.loadMusicMeta()));
+    } catch (e) {
+      return null;
+    }
+  };
+
+  app.musicRestoreMetaSnapshot = function (snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') return false;
+    app.saveMusicMeta(snapshot);
+    return true;
+  };
+
+  // Создаёт плейлист из выбранных одиночных треков (только источник idb).
+  // Плейлист встаёт на место первого выбранного; исходные одиночки удаляются.
+  // Блобы переиспользуются (не копируются). Возвращает { snapshot, playlistId } или null.
+  app.musicCreatePlaylistFromItems = function (slot, itemIds, playlistName) {
+    var key = String(slot) === '2' ? '2' : '1';
+    if (!Array.isArray(itemIds) || itemIds.length < 1) return null;
+    var snapshot = app.musicSnapshotMeta();
+    var meta = app.loadMusicMeta();
+    var list = meta.slots[key];
+    var idSet = {};
+    for (var s = 0; s < itemIds.length; s++) idSet[itemIds[s]] = true;
+
+    var tracks = [];
+    var firstIdx = -1;
+    // Собираем треки в порядке их появления в слоте.
+    for (var i = 0; i < list.length; i++) {
+      var it = list[i];
+      if (!it || !idSet[it.id]) continue;
+      if (it.type === 'playlist') continue;
+      if (!it.source || it.source.type !== 'idb' || !it.source.blobId) continue;
+      if (firstIdx === -1) firstIdx = i;
+      tracks.push({
+        id: it.id,
+        name: it.name,
+        blobId: it.source.blobId,
+        offsetSec: typeof it.offsetSec === 'number' ? it.offsetSec : 0,
+        volumeMul: clampVol(it.volumeMul),
+        enabled: it.enabled === false ? false : true,
+      });
+    }
+    if (tracks.length < 1 || firstIdx === -1) return null;
+
+    var playlist = normalizePlaylist({
+      name: playlistName || 'Плейлист',
+      tracks: tracks,
+      enabled: true,
+    });
+    // Удаляем исходные одиночки (с конца, чтобы не сбить индексы) и запоминаем,
+    // куда вставить плейлист (позиция первого выбранного после удалений).
+    var insertAt = firstIdx;
+    for (var j = list.length - 1; j >= 0; j--) {
+      if (list[j] && idSet[list[j].id] && list[j].type !== 'playlist') {
+        list.splice(j, 1);
+        if (j < insertAt) insertAt--;
+      }
+    }
+    list.splice(insertAt, 0, playlist);
+    app.saveMusicMeta(meta);
+    return { snapshot: snapshot, playlistId: playlist.id };
+  };
+
+  // Расформировывает плейлист: его треки становятся одиночными треками слота
+  // на месте плейлиста (порядок и настройки сохраняются). Возвращает { snapshot } или null.
+  app.musicDisbandPlaylist = function (slot, itemId) {
+    var key = String(slot) === '2' ? '2' : '1';
+    var snapshot = app.musicSnapshotMeta();
+    var meta = app.loadMusicMeta();
+    var list = meta.slots[key];
+    var idx = -1;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].id === itemId) { idx = i; break; }
+    }
+    if (idx === -1 || !list[idx] || list[idx].type !== 'playlist') return null;
+    var pl = list[idx];
+    var tracks = Array.isArray(pl.tracks) ? pl.tracks : [];
+    var singles = [];
+    for (var t = 0; t < tracks.length; t++) {
+      var tr = tracks[t];
+      if (!tr || !tr.blobId) continue;
+      singles.push(
+        normalizeItem({
+          id: tr.id,
+          name: tr.name,
+          offsetSec: typeof tr.offsetSec === 'number' ? tr.offsetSec : 0,
+          volumeMul: clampVol(tr.volumeMul),
+          enabled: tr.enabled === false ? false : true,
+          source: { type: 'idb', blobId: tr.blobId },
+        })
+      );
+    }
+    var args = [idx, 1].concat(singles);
+    Array.prototype.splice.apply(list, args);
+    app.saveMusicMeta(meta);
+    return { snapshot: snapshot };
+  };
+
   function isAudioFileName(name) {
     if (!name) return false;
     if (name.charAt(name.length - 1) === '/') return false;
@@ -261,19 +400,105 @@ window.MafiaApp = window.MafiaApp || {};
     return s;
   }
 
+  app.MUSIC_PLAYLIST_MANIFEST = 'manifest.json';
+  app.MUSIC_PLAYLIST_MANIFEST_TYPE = 'mafia-host-playlist';
+
+  // Импорт плейлиста по манифесту из zip: восстанавливаем имена, секунды дропа,
+  // громкости и enabled треков + настройки самого плейлиста.
+  function importPlaylistFromManifest(key, zip, manifest) {
+    var pl = manifest.playlist || {};
+    var manTracks = Array.isArray(manifest.tracks) ? manifest.tracks : [];
+    if (!manTracks.length) {
+      var err = new Error('empty manifest');
+      err.code = 'no_audio';
+      return Promise.reject(err);
+    }
+    var tracks = [];
+    var chain = Promise.resolve();
+    manTracks.forEach(function (mt) {
+      if (!mt || !mt.file) return;
+      chain = chain.then(function () {
+        var entry = zip.file(mt.file);
+        if (!entry) return;
+        return entry.async('blob').then(function (blob) {
+          var mime = audioMimeForName(mt.file);
+          var typed = blob;
+          if (blob && blob.type !== mime) {
+            try {
+              typed = blob.slice(0, blob.size, mime);
+            } catch (e) {
+              typed = blob;
+            }
+          }
+          var blobId = newId();
+          return app.musicPutBlob(blobId, typed, mime).then(function () {
+            tracks.push({
+              id: newId(),
+              name: String(mt.name || 'Трек'),
+              blobId: blobId,
+              offsetSec: typeof mt.offsetSec === 'number' ? Math.max(0, mt.offsetSec) : 0,
+              volumeMul: clampVol(mt.volumeMul),
+              enabled: mt.enabled === false ? false : true,
+            });
+          });
+        });
+      });
+    });
+    return chain.then(function () {
+      if (!tracks.length) {
+        var e2 = new Error('no audio in zip');
+        e2.code = 'no_audio';
+        throw e2;
+      }
+      var meta = app.loadMusicMeta();
+      var playlist = normalizePlaylist({
+        name: String(pl.name || 'Плейлист'),
+        tracks: tracks,
+        enabled: pl.enabled === false ? false : true,
+        volumeMul: clampVol(pl.volumeMul),
+      });
+      meta.slots[key].push(playlist);
+      app.saveMusicMeta(meta);
+      return playlist;
+    });
+  }
+
   app.musicAddZipToSlot = function (slot, zipFile) {
     if (!zipFile) return Promise.reject(new Error('no file'));
     if (typeof JSZip === 'undefined') {
       return Promise.reject(new Error('JSZip not loaded'));
     }
     var key = String(slot) === '2' ? '2' : '1';
-    var playlistName = String(zipFile.name || 'Плейлист').replace(/\.zip$/i, '') || 'Плейлист';
+    var playlistName = String(zipFile.name || 'Плейлист').replace(/\.(mhzip|zip)$/i, '') || 'Плейлист';
 
     return JSZip.loadAsync(zipFile, {
       decodeFileName: function (bytes) {
         return decodeZipEntryName(bytes);
       },
     }).then(function (zip) {
+      // Если в zip есть валидный manifest.json — восстанавливаем настройки из него.
+      var manifestEntry = zip.file(app.MUSIC_PLAYLIST_MANIFEST);
+      if (manifestEntry) {
+        return manifestEntry.async('string').then(function (txt) {
+          var manifest = null;
+          try {
+            manifest = JSON.parse(txt);
+          } catch (e) {
+            manifest = null;
+          }
+          if (manifest && manifest.type === app.MUSIC_PLAYLIST_MANIFEST_TYPE) {
+            return importPlaylistFromManifest(key, zip, manifest);
+          }
+          return addPlainZip(zip, key, playlistName);
+        });
+      }
+      return addPlainZip(zip, key, playlistName);
+    });
+  };
+
+  // Старое поведение: папка с аудио → плейлист с настройками по умолчанию.
+  function addPlainZip(zip, key, playlistName) {
+    return Promise.resolve().then(function () {
       var entries = [];
       zip.forEach(function (path, entry) {
         if (entry.dir) return;
@@ -332,6 +557,83 @@ window.MafiaApp = window.MafiaApp || {};
     });
   };
 
+  function extForMime(mime) {
+    if (!mime) return 'mp3';
+    if (/mpeg/.test(mime)) return 'mp3';
+    if (/mp4/.test(mime)) return 'm4a';
+    if (/ogg/.test(mime)) return 'ogg';
+    if (/wav/.test(mime)) return 'wav';
+    if (/flac/.test(mime)) return 'flac';
+    if (/webm/.test(mime)) return 'webm';
+    return 'mp3';
+  }
+
+  // Выгрузка плейлиста в обычный .zip: аудио + manifest.json с настройками треков
+  // и самого плейлиста (имя, enabled, громкости, секунды дропа). При импорте такого
+  // zip настройки восстанавливаются из манифеста; zip без манифеста — как раньше.
+  app.musicExportPlaylistZip = function (slot, itemId) {
+    if (typeof JSZip === 'undefined') return Promise.reject(new Error('JSZip not loaded'));
+    var key = String(slot) === '2' ? '2' : '1';
+    var meta = app.loadMusicMeta();
+    var list = meta.slots[key] || [];
+    var it = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].id === itemId && list[i].type === 'playlist') { it = list[i]; break; }
+    }
+    if (!it) return Promise.reject(new Error('not found'));
+    var tracks = Array.isArray(it.tracks) ? it.tracks : [];
+    var zip = new JSZip();
+    var manifest = {
+      type: app.MUSIC_PLAYLIST_MANIFEST_TYPE,
+      version: 1,
+      playlist: {
+        name: it.name || 'Плейлист',
+        enabled: it.enabled === false ? false : true,
+        volumeMul: typeof it.volumeMul === 'number' ? it.volumeMul : 1,
+      },
+      tracks: [],
+    };
+    function pad(n) {
+      return n < 10 ? '00' + n : n < 100 ? '0' + n : String(n);
+    }
+    var chain = Promise.resolve();
+    tracks.forEach(function (tr, idx) {
+      if (!tr || !tr.blobId) return;
+      chain = chain.then(function () {
+        return app.musicGetBlob(tr.blobId).then(function (rec) {
+          if (!rec || !rec.blob) return;
+          var ext = extForMime(rec.mimeType || rec.blob.type);
+          var fname = 'tracks/' + pad(idx + 1) + '.' + ext;
+          zip.file(fname, rec.blob);
+          manifest.tracks.push({
+            file: fname,
+            name: tr.name || 'Трек',
+            offsetSec: typeof tr.offsetSec === 'number' ? tr.offsetSec : 0,
+            volumeMul: typeof tr.volumeMul === 'number' ? tr.volumeMul : 1,
+            enabled: tr.enabled === false ? false : true,
+          });
+        });
+      });
+    });
+    return chain.then(function () {
+      if (!manifest.tracks.length) throw new Error('empty playlist');
+      zip.file(app.MUSIC_PLAYLIST_MANIFEST, JSON.stringify(manifest, null, 2));
+      return zip.generateAsync({ type: 'blob' });
+    }).then(function (blob) {
+      var safe = String(it.name || 'playlist').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'playlist';
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = safe + '.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () {
+        try { URL.revokeObjectURL(a.href); } catch (e) {}
+      }, 1000);
+      return true;
+    });
+  };
+
   app.musicGetSlotPlayablePool = function (slot) {
     var key = String(slot) === '2' ? '2' : '1';
     var meta = app.loadMusicMeta();
@@ -377,6 +679,10 @@ window.MafiaApp = window.MafiaApp || {};
     var list = meta.slots[key];
     for (var i = 0; i < list.length; i++) {
       if (list[i].id !== itemId) continue;
+      if (typeof patch.name === 'string') {
+        var nm = patch.name.replace(/\s+/g, ' ').trim().slice(0, 120);
+        list[i].name = nm || list[i].name;
+      }
       if (typeof patch.offsetSec === 'number') list[i].offsetSec = Math.max(0, patch.offsetSec);
       if (typeof patch.volumeMul === 'number') {
         list[i].volumeMul = patch.volumeMul;
