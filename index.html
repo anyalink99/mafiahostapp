@@ -121,7 +121,9 @@
         <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
         <span class="screen-title-label font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Настройки</span>
     </div>
-    <div class="max-w-lg w-full mx-auto mt-6 space-y-8 flex-shrink-0 pb-8">
+    <div class="mh-content-cap mt-6 pb-8 flex-shrink-0 w-full">
+      <div class="w-full mx-auto max-w-lg lg:max-w-none lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 space-y-8 lg:space-y-0">
+      <div class="space-y-8">
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Раздача карт</h2>
             <div class="flex flex-wrap gap-2 mb-3">
@@ -159,28 +161,28 @@
                     <input type="checkbox" id="setting-timer-voice-duck" class="mafia-checkbox">
                     <span>Приглушать трек</span>
                 </label>
-                <div id="timer-voice-duck-mul-wrap" class="pl-0 sm:pl-7">
+                <div id="timer-voice-duck-mul-wrap">
                     <div class="flex items-baseline justify-between gap-2 text-xs text-mafia-cream/60 uppercase tracking-wider">
                         <span>Степень приглушения</span>
                         <span id="setting-timer-voice-duck-mul-label" class="text-mafia-gold/90 tabular-nums normal-case tracking-normal">38%</span>
                     </div>
                     <input type="range" id="setting-timer-voice-duck-mul" min="0.05" max="1" step="0.01" value="0.38" class="mt-2 w-full accent-mafia-gold">
                 </div>
-                <div class="pl-0 sm:pl-7">
+                <div>
                     <div class="flex items-baseline justify-between gap-2 text-xs text-mafia-cream/60 uppercase tracking-wider">
                         <span>Громкость (без музыки)</span>
                         <span id="setting-voice-vol-no-music-label" class="text-mafia-gold/90 tabular-nums normal-case tracking-normal">92%</span>
                     </div>
                     <input type="range" id="setting-voice-vol-no-music" min="0" max="1" step="0.01" value="0.92" class="mt-2 w-full accent-mafia-gold">
                 </div>
-                <div class="pl-0 sm:pl-7">
+                <div>
                     <div class="flex items-baseline justify-between gap-2 text-xs text-mafia-cream/60 uppercase tracking-wider">
                         <span>Громкость (с музыкой)</span>
                         <span id="setting-voice-vol-with-music-label" class="text-mafia-gold/90 tabular-nums normal-case tracking-normal">92%</span>
                     </div>
                     <input type="range" id="setting-voice-vol-with-music" min="0" max="1" step="0.01" value="0.92" class="mt-2 w-full accent-mafia-gold">
                 </div>
-                <div class="pl-0 sm:pl-7">
+                <div>
                     <div class="flex items-baseline justify-between gap-2 text-xs text-mafia-cream/60 uppercase tracking-wider">
                         <span>Скорость озвучки</span>
                         <span id="setting-voice-rate-label" class="text-mafia-gold/90 tabular-nums normal-case tracking-normal">1x</span>
@@ -194,6 +196,8 @@
             </div>
             <input type="range" id="setting-night-wait" min="0" max="20" step="1" value="10" class="mt-2 w-full accent-mafia-gold">
         </section>
+      </div>
+      <div class="space-y-8">
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Таймер</h2>
             <div class="space-y-3">
@@ -228,6 +232,8 @@
             </label>
             <p class="mt-2 text-xs text-mafia-cream/55">При вводе ника в поля игроков показываем подсказки из mafiauniverse.org через проксирующий сервис. Если выключить — работаем только с локальной историей.</p>
         </section>
+      </div>
+      </div>
     </div>
 </div>
 
@@ -267,7 +273,7 @@
         <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
         <span class="screen-title-label font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Подготовка</span>
     </div>
-    <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-3 lg:gap-4 overflow-hidden">
+    <div class="mh-content-cap flex-1 min-h-0 flex flex-col lg:flex-row gap-3 lg:gap-4 overflow-hidden">
         <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-4 overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0">
             <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div id="prepare-players-list" class="grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden"></div>
@@ -296,7 +302,7 @@
 </div>
 
 <div id="game-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6">
-    <div id="timer-panel-wrap" class="flex-shrink-0">
+    <div id="timer-panel-wrap" class="mh-content-cap flex-shrink-0">
     <div class="relative bg-mafia-coal border border-mafia-border rounded-lg p-3 sm:p-4 min-w-0">
         <nav class="screen-nav-vert absolute left-3 top-3 bottom-3 sm:left-4 sm:top-4 sm:bottom-4 z-10" aria-label="Экраны">
             <button type="button" data-action="prepare-enter" class="screen-nav-vert__btn">Подготовка</button>
@@ -334,7 +340,7 @@
     </div>
     </div>
 
-    <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-3 lg:gap-4 overflow-hidden">
+    <div class="mh-content-cap flex-1 min-h-0 flex flex-col lg:flex-row gap-3 lg:gap-4 overflow-hidden">
         <aside id="game-side-left" class="hidden lg:flex lg:flex-col lg:w-[18rem] xl:w-[20rem] min-h-0 gap-3 overflow-hidden">
             <div class="bg-mafia-coal border border-mafia-border rounded-lg flex-shrink-0 flex items-center gap-2 px-3 py-2">
                 <span class="font-display text-mafia-gold text-sm tracking-widest flex-1 truncate">Игроки</span>
@@ -407,7 +413,7 @@
         <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
         <span class="screen-title-label font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Подведение итогов</span>
     </div>
-    <div id="summary-scroll" class="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 lg:gap-4 overflow-y-auto overflow-x-hidden lg:overflow-hidden pb-6 lg:pb-0">
+    <div id="summary-scroll" class="mh-content-cap flex-1 min-h-0 flex flex-col lg:flex-row gap-4 lg:gap-4 overflow-y-auto overflow-x-hidden lg:overflow-hidden pb-6 lg:pb-0">
         <!-- Колонка 1: ведущий, победитель, гармошка игроков -->
         <div class="flex-shrink-0 lg:flex-1 min-w-0 min-h-0 flex flex-col gap-4 lg:overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0">
             <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5 flex-shrink-0">

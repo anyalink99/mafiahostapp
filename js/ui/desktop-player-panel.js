@@ -401,7 +401,7 @@
     // того как crossPopulate перепишет dataset.playerId на нового. Иначе
     // правки старого приписались бы новому или потерялись.
     var prevPid = getCurrentOpenPlayerId();
-    if (prevPid != null && prevPid !== playerId) saveCurrentPlayerInputs();
+    if (prevPid != null && prevPid !== playerId) saveCurrentPlayerInputs(prevPid);
 
     crossPopulate(playerId, sourceModalId);
     unhideContentFor(playerId);
@@ -436,9 +436,26 @@
   // modalSetOpen(false) попадает в наш hook → closeUnified → guarded
   // inUnifiedCloseCall → return early. Используется при переключении игроков
   // (чтобы не потерять правки) и из closeUnified.
-  function saveCurrentPlayerInputs() {
+  //
+  // targetPid — кому ПРАВИТЬ. Caller (showSummary/showPlayerActions) может
+  // уже переписать modal.dataset.playerId на нового игрока ДО того, как мы
+  // через modalSetOpen попадём в openForPlayer и вызовем save. apply/hide
+  // читают dataset.playerId и пишут туда — без явного targetPid'а правки
+  // старого игрока приписались бы новому. Snapshot+force+restore над
+  // MODAL_IDS dataset'ами гарантирует, что save пишет в targetPid.
+  function saveCurrentPlayerInputs(targetPid) {
     if (inUnifiedCloseCall) return;
     inUnifiedCloseCall = true;
+    var snapshot = null;
+    if (targetPid != null) {
+      snapshot = {};
+      for (var si = 0; si < MODAL_IDS.length; si++) {
+        var sm = document.getElementById(MODAL_IDS[si]);
+        if (!sm) continue;
+        snapshot[MODAL_IDS[si]] = sm.dataset.playerId;
+        sm.dataset.playerId = String(targetPid);
+      }
+    }
     try {
       if (isModalMarkedOpen('modal-player-actions') &&
           typeof app.hidePlayerActionsModal === 'function') {
@@ -454,6 +471,14 @@
         try { app.applySummaryPlayerModal(); } catch (e) {}
       }
     } finally {
+      if (snapshot) {
+        for (var ri = 0; ri < MODAL_IDS.length; ri++) {
+          var rm = document.getElementById(MODAL_IDS[ri]);
+          if (rm && snapshot[MODAL_IDS[ri]] != null) {
+            rm.dataset.playerId = snapshot[MODAL_IDS[ri]];
+          }
+        }
+      }
       inUnifiedCloseCall = false;
     }
   }
