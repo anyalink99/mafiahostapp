@@ -60,31 +60,28 @@
   }
 
   function hookNavigate() {
-    var orig = app.navigateToScreen;
-    if (!orig || orig.__desktopSetupSlotHooked) return;
-    var wrapped = function (screenId) {
+    // Навигационный гвард ядра (вместо манки-патчинга navigateToScreen):
+    // возврат false отменяет переход — слот раскрывается/закрывается inline.
+    app.registerNavigationGuard(function (screenId) {
       // Желаемый переход на setup-screen → остаёмся на prepare и раскрываем slot.
       if (screenId === SCREEN_ID) {
         if (activeScreenId() !== HOST_SCREEN_ID) {
-          orig.call(this, HOST_SCREEN_ID);
+          app.navigateToScreen(HOST_SCREEN_ID);
         }
         openSetupSlot();
-        return;
+        return false;
       }
       // Кнопка «← Подготовка» внутри slot ведёт на prepare-screen. Мы уже там;
       // вместо no-op закрываем slot.
       if (screenId === HOST_SCREEN_ID && activeScreenId() === HOST_SCREEN_ID && slotIsOpen()) {
         closeSetupSlot();
-        return;
+        return false;
       }
       // Уходим с prepare-screen куда-то ещё — закрываем slot за собой.
       if (activeScreenId() === HOST_SCREEN_ID && screenId !== HOST_SCREEN_ID && slotIsOpen()) {
         closeSetupSlot();
       }
-      return orig.apply(this, arguments);
-    };
-    wrapped.__desktopSetupSlotHooked = true;
-    app.navigateToScreen = wrapped;
+    });
   }
 
   function init() {

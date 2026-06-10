@@ -28,29 +28,21 @@
     // Прячем overlay (backdrop) — он не нужен в inline-режиме.
     overlay.style.display = 'none';
 
-    var origSetOpen = app.modalSetOpen;
-    if (!origSetOpen || origSetOpen.__desktopVoteCountHooked) return;
-
-    var wrapped = function (el, open) {
-      if (el && el.id === MODAL_ID) {
-        if (open) {
-          if (panel.parentNode !== s) s.appendChild(panel);
-          requestAnimationFrame(function () {
-            s.classList.add('is-open');
-          });
-          el.setAttribute('data-open', '');
-          el.setAttribute('aria-hidden', 'false');
-        } else {
-          s.classList.remove('is-open');
-          el.removeAttribute('data-open');
-          el.setAttribute('aria-hidden', 'true');
-        }
-        return;
+    app.registerModalInterceptor(MODAL_ID, function (el, open) {
+      if (open) {
+        if (panel.parentNode !== s) s.appendChild(panel);
+        requestAnimationFrame(function () {
+          s.classList.add('is-open');
+        });
+        el.setAttribute('data-open', '');
+        el.setAttribute('aria-hidden', 'false');
+      } else {
+        s.classList.remove('is-open');
+        el.removeAttribute('data-open');
+        el.setAttribute('aria-hidden', 'true');
       }
-      return origSetOpen.apply(this, arguments);
-    };
-    wrapped.__desktopVoteCountHooked = true;
-    app.modalSetOpen = wrapped;
+      return true;
+    });
   }
 
   if (document.readyState === 'loading') {

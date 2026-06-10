@@ -43,17 +43,11 @@
   }
 
   function hookNavigate() {
-    var orig = app.navigateToScreen;
-    if (!orig || orig.__desktopShellHooked) return;
-    var wrapped = function () {
-      var r = orig.apply(this, arguments);
-      try {
-        syncNavActive();
-      } catch (e) {}
-      return r;
-    };
-    wrapped.__desktopShellHooked = true;
-    app.navigateToScreen = wrapped;
+    // Подсветка активного пункта навбара после каждого перехода —
+    // официальный слушатель ядра вместо манки-патчинга navigateToScreen.
+    app.onNavigated(function () {
+      syncNavActive();
+    });
   }
 
   function moveTimerToGlobal() {

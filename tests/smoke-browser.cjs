@@ -216,6 +216,46 @@ function findChrome() {
     errors.push('startFreshAutoGame: ожидалось reveal:10, получено ' + autoPhase);
   await page.waitForSelector('#auto-reveal-screen.active', { timeout: 3000 });
 
+  // ── Десктоп-контекст (lg+): desktop-shell/player-panel/setup-slot работают
+  // через официальные API ядра (перехватчики модалок, nav-гварды, события). ──
+  var dpage = await browser.newPage({
+    viewport: { width: 1366, height: 900 },
+    serviceWorkers: 'block',
+  });
+  dpage.on('console', function (msg) {
+    if (msg.type() === 'error') errors.push('desktop console.error: ' + msg.text());
+  });
+  dpage.on('pageerror', function (err) {
+    errors.push('desktop pageerror: ' + err.message);
+  });
+  await dpage.goto('http://127.0.0.1:' + port + '/', { waitUntil: 'networkidle' });
+
+  // desktop-shell на старте уводит с меню на игровой стол (через nav-гварды).
+  await dpage.waitForSelector('#game-screen.active', { timeout: 5000 });
+
+  // Модалка игрока перехватывается в unified-панель (registerModalInterceptor).
+  await dpage.evaluate(function () {
+    window.MafiaApp.showPlayerActionsModal(3);
+  });
+  await dpage.waitForSelector('.unified-player-slot.is-open', { timeout: 3000 });
+  var unifiedNum = await dpage.evaluate(function () {
+    var n = document.getElementById('unified-player-num');
+    return n ? n.textContent : null;
+  });
+  if (unifiedNum !== '3') {
+    errors.push('unified-панель: ожидался игрок 3, получено ' + unifiedNum);
+  }
+
+  // Переход экрана закрывает панель (навигационный гвард панели).
+  await dpage.evaluate(function () {
+    window.MafiaApp.navigateToScreen('summary-screen');
+  });
+  await dpage.waitForSelector('#summary-screen.active', { timeout: 3000 });
+  var slotStillOpen = await dpage.evaluate(function () {
+    return !!document.querySelector('.unified-player-slot.is-open');
+  });
+  if (slotStillOpen) errors.push('unified-панель не закрылась при переходе экрана');
+
   await browser.close();
   server.close();
 
@@ -232,7 +272,9 @@ function findChrome() {
     });
     process.exit(1);
   }
-  console.log('Браузерный смоук-тест прошёл: экраны, реестр рендереров, автономный режим OK');
+  console.log(
+    'Браузерный смоук-тест прошёл: экраны, реестр, голосование, автономный режим, десктоп-панели OK'
+  );
 })().catch(function (err) {
   console.error('SMOKE CRASHED:', err);
   process.exit(1);

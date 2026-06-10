@@ -1,4 +1,22 @@
 (function (app) {
+  // Минимальная событийная шина: модули объявляют «что произошло»
+  // (app.emit в обработчике события UI), слушатели (например, десктоп-панель
+  // игрока) реагируют — без подглядывания за чужими кликами через
+  // capture-слушатели и setTimeout(0).
+  app._appEventListeners = {};
+  app.on = function (event, fn) {
+    (app._appEventListeners[event] = app._appEventListeners[event] || []).push(fn);
+  };
+  app.emit = function (event, payload) {
+    var list = app._appEventListeners[event];
+    if (!list) return;
+    for (var i = 0; i < list.length; i++) {
+      try {
+        list[i](payload);
+      } catch (e) {}
+    }
+  };
+
   app.escapeHtml = function (value) {
     return String(value)
       .replace(/&/g, '&amp;')

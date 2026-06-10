@@ -8,6 +8,10 @@
 
   app.modalSetOpen = function (el, open) {
     if (!el) return;
+    // Десктоп-режимы могут перехватить модалку (показ inline-панелью вместо
+    // оверлея) — см. app.registerModalInterceptor ниже.
+    var icept = el.id ? app._modalInterceptors[el.id] : null;
+    if (icept && icept(el, open) === true) return;
     if (open) {
       el._modalGen = (el._modalGen || 0) + 1;
       if (el._modalTransEnd) {
@@ -87,7 +91,33 @@
     app.screenRenderers[screenId] = fn;
   };
 
+  // Перехватчики модалок (десктоп-режимы превращают модалки в inline-панели).
+  // fn(el, open) возвращает true, если открытие/закрытие полностью обработано —
+  // тогда стандартная механика modalSetOpen не выполняется.
+  app._modalInterceptors = {};
+  app.registerModalInterceptor = function (modalId, fn) {
+    app._modalInterceptors[modalId] = fn;
+  };
+
+  // Навигационные гварды: выполняются ДО перехода, в порядке, обратном
+  // регистрации (семантика вложенных обёрток: последний зарегистрированный —
+  // «снаружи»). Возврат false отменяет переход (гвард может выполнить свой —
+  // например, открыть inline-слот вместо экрана).
+  app._navGuards = [];
+  app.registerNavigationGuard = function (fn) {
+    app._navGuards.push(fn);
+  };
+
+  // Слушатели «после перехода» (например, подсветка активного пункта навбара).
+  app._navListeners = [];
+  app.onNavigated = function (fn) {
+    app._navListeners.push(fn);
+  };
+
   app.navigateToScreen = function (screenId) {
+    for (var gi = app._navGuards.length - 1; gi >= 0; gi--) {
+      if (app._navGuards[gi](screenId) === false) return;
+    }
     // Любой переход выходит из встроенного режима голосования (ПК) — раскладка стола
     // восстанавливается, vote-body возвращается на vote-screen.
     if (app.exitPcVoting) app.exitPcVoting();
@@ -112,6 +142,11 @@
     }
     var render = app.screenRenderers[screenId];
     if (render) render();
+    for (var li = 0; li < app._navListeners.length; li++) {
+      try {
+        app._navListeners[li](screenId);
+      } catch (e) {}
+    }
   };
 
   app.registerScreenRenderer('menu-screen', function () {

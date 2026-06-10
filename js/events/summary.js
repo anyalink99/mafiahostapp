@@ -53,6 +53,8 @@
     app.winningTeam = val === 'mafia' || val === 'peaceful' ? val : null;
     app.saveState();
     app.renderSummary();
+    // Десктоп-панель игрока гейтит секции по выбору победителя.
+    app.emit('roles-visibility-changed');
   };
 
   // Радио роли в модалке игрока итогов (кнопки строит summary/modals.js).
@@ -60,6 +62,7 @@
     if (!el || el.disabled) return;
     var code = el.dataset ? el.dataset.summaryRole : null;
     if (code && app.renderModalSummaryRoleRadios) app.renderModalSummaryRoleRadios(code, true);
+    app.emit('player-role-picked', 'modal-summary-role-icons');
   };
 
   app.uiActionHandlers['summary-player-open'] = function (el, _event, ui) {

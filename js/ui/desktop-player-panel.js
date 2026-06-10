@@ -39,10 +39,6 @@
     { key: 'summary', label: 'Итоги' },
   ];
 
-  // ID groups радио-кнопок выбора роли. Используется при автосейве и пересинке.
-  var ROLE_ROW_PREPARE = 'modal-player-prepare-role-icons';
-  var ROLE_ROW_SUMMARY = 'modal-summary-role-icons';
-
   // ────────────────────────────────────────────────────────────
   // Маленькие helpers общего назначения
   // ────────────────────────────────────────────────────────────
@@ -565,95 +561,47 @@
   }
 
   // ────────────────────────────────────────────────────────────
-  // Хуки: modalSetOpen, navigateToScreen
+  // Интеграция с ядром: перехват модалок, навигация, события
   // ────────────────────────────────────────────────────────────
 
-  function hookModalSetOpen() {
-    var orig = app.modalSetOpen;
-    if (!orig || orig.__desktopPlayerPanelHooked) return;
-    var wrapped = function (el, open) {
-      if (el && MODAL_IDS.indexOf(el.id) !== -1) {
-        // Рекурсия из cross-populate — оставить только метки data-open.
-        if (inCrossPopulateCall) {
-          if (open) {
-            el.setAttribute('data-open', '');
-            el.setAttribute('aria-hidden', 'false');
-          }
-          return;
-        }
-        if (open) {
-          var pid = parseInt(el.dataset.playerId, 10);
-          if (!openForPlayer(pid, el.id)) {
-            return orig.apply(this, arguments);
-          }
-          el.setAttribute('data-open', '');
-          el.setAttribute('aria-hidden', 'false');
-        } else {
-          closeUnified();
-        }
-        return;
+  // Открытие/закрытие модалок игрока перенаправляется в unified-панель
+  // (официальный API ядра — без манки-патчинга modalSetOpen).
+  function interceptPlayerModal(el, open) {
+    // Рекурсия из cross-populate — оставить только метки data-open.
+    if (inCrossPopulateCall) {
+      if (open) {
+        el.setAttribute('data-open', '');
+        el.setAttribute('aria-hidden', 'false');
       }
-      return orig.apply(this, arguments);
-    };
-    wrapped.__desktopPlayerPanelHooked = true;
-    app.modalSetOpen = wrapped;
+      return true;
+    }
+    if (open) {
+      var pid = parseInt(el.dataset.playerId, 10);
+      // Слот не найден (узкое окно после ресайза) → пустить дефолтную модалку.
+      if (!openForPlayer(pid, el.id)) return false;
+      el.setAttribute('data-open', '');
+      el.setAttribute('aria-hidden', 'false');
+      return true;
+    }
+    closeUnified();
+    return true;
   }
 
-  function hookNavigateToScreen() {
-    var orig = app.navigateToScreen;
-    if (!orig || orig.__desktopPlayerPanelNavHooked) return;
-    var wrapped = function () {
+  function registerCoreIntegration() {
+    MODAL_IDS.forEach(function (id) {
+      app.registerModalInterceptor(id, interceptPlayerModal);
+    });
+    // Любой переход экрана — сохранить правки и закрыть панель.
+    app.registerNavigationGuard(function () {
       closeUnified();
-      return orig.apply(this, arguments);
-    };
-    wrapped.__desktopPlayerPanelNavHooked = true;
-    app.navigateToScreen = wrapped;
-  }
-
-  // ────────────────────────────────────────────────────────────
-  // Глобальные слушатели событий
-  // ────────────────────────────────────────────────────────────
-
-  // Перерасчёт видимости при переключении «Показать роли» / выборе победителя.
-  // Слушаем на capture-фазе, чтобы поймать e.target ДО того как обработчик
-  // оригинала (b.onclick → renderSummary) перерисует #summary-winning-team-icons
-  // и отвяжет target от DOM — иначе .closest() вернёт null и trigger не сработает.
-  function bindVisibilityTriggers() {
-    document.addEventListener(
-      'click',
-      function (e) {
-        if (!e.target || !e.target.closest) return;
-        if (
-          e.target.closest('[data-action="game-side-toggle-roles"]') ||
-          e.target.closest('#summary-winning-team-icons')
-        ) {
-          // setTimeout 0 — даём оригинальному хендлеру сначала обновить флаг state.
-          setTimeout(updateSectionVisibility, 0);
-        }
-      },
-      true
-    );
-  }
-
-  // Автосейв роли при клике по любой радио-кнопке (Подготовка/Итоги).
-  // Capture-фаза по той же причине: оригинальный handler пересоздаёт radio-row.
-  function bindRolePickerAutosave() {
-    document.addEventListener(
-      'click',
-      function (e) {
-        if (!e.target || !e.target.closest) return;
-        if (e.target.closest('[data-action="player-prepare-role-pick"]')) {
-          setTimeout(function () {
-            savePlayerRoleAndSync(ROLE_ROW_PREPARE);
-          }, 0);
-        } else if (e.target.closest('#' + ROLE_ROW_SUMMARY + ' [role="radio"]')) {
-          setTimeout(function () {
-            savePlayerRoleAndSync(ROLE_ROW_SUMMARY);
-          }, 0);
-        }
-      },
-      true
-    );
+    });
+    // Перерасчёт видимости секций: «Показать роли» (game-screen) и выбор
+    // победителя (summary-screen) эмитят событие из своих обработчиков.
+    app.on('roles-visibility-changed', updateSectionVisibility);
+    // Автосейв роли при пике в любой radio-группе: обработчики пиков эмитят
+    // событие ПОСЛЕ обновления row — читаем выбранное напрямую, без
+    // capture-слушателей и setTimeout(0).
+    app.on('player-role-picked', savePlayerRoleAndSync);
   }
 
   // Шорткаты 1..9, 0 → открыть/закрыть панель игрока соответствующего номера.
@@ -720,11 +668,8 @@
     var initSlot = document.querySelector('.unified-player-slot');
     if (initSlot && unified) initSlot.appendChild(unified);
     hideAllOverlays();
-    hookModalSetOpen();
-    hookNavigateToScreen();
+    registerCoreIntegration();
     registerCloseAction();
-    bindVisibilityTriggers();
-    bindRolePickerAutosave();
     bindPlayerNumberShortcuts();
   }
 

@@ -14,7 +14,10 @@
   app.uiActionHandlers['player-prepare-role-pick'] = function (el) {
     if (!app.pickPrepareModalRole) return;
     var roleCode = el.getAttribute('data-role-code');
-    if (roleCode) app.pickPrepareModalRole(roleCode);
+    if (!roleCode) return;
+    app.pickPrepareModalRole(roleCode);
+    // Десктоп-панель игрока автосейвит роль и пересинхронизирует radio-группы.
+    app.emit('player-role-picked', 'modal-player-prepare-role-icons');
   };
 
   app.uiActionHandlers['player-modal-foul'] = function (_el, _event, ui) {
@@ -68,6 +71,8 @@
 
   app.uiActionHandlers['game-side-toggle-roles'] = function () {
     if (app.toggleGameSideRoles) app.toggleGameSideRoles();
+    // Десктоп-панель игрока гейтит секции по видимости ролей.
+    app.emit('roles-visibility-changed');
   };
 
   app.uiActionHandlers['game-side-toggle-notes'] = function () {

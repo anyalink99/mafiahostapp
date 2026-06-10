@@ -8,14 +8,8 @@
 
   app.uiActionHandlers = app.uiActionHandlers || {};
 
-  app.uiActionHandlers['game-side-toggle-roles'] = function (_el, _event, ui) {
-    if (!ui.isScreenActive('game-screen')) return;
-    if (app.toggleGameSideRoles) app.toggleGameSideRoles();
-  };
-  app.uiActionHandlers['game-side-toggle-notes'] = function (_el, _event, ui) {
-    if (!ui.isScreenActive('game-screen')) return;
-    if (app.toggleGameSideNotes) app.toggleGameSideNotes();
-  };
+  // Обработчики game-side-toggle-roles/notes живут в events/host/player.js
+  // (раньше были продублированы здесь, но затирались поздней регистрацией).
 
   app.uiActionHandlers['summary-player-open-from-game'] = function (el, _event, ui) {
     if (!ui.isScreenActive('game-screen')) return;
