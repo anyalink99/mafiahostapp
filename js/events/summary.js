@@ -47,6 +47,21 @@
       });
   };
 
+  // Радио «победившая команда» на экране итогов (кнопки строит summary/summary.js).
+  app.uiActionHandlers['summary-team-pick'] = function (el) {
+    var val = el && el.dataset ? el.dataset.summaryTeam : '';
+    app.winningTeam = val === 'mafia' || val === 'peaceful' ? val : null;
+    app.saveState();
+    app.renderSummary();
+  };
+
+  // Радио роли в модалке игрока итогов (кнопки строит summary/modals.js).
+  app.uiActionHandlers['summary-role-pick'] = function (el) {
+    if (!el || el.disabled) return;
+    var code = el.dataset ? el.dataset.summaryRole : null;
+    if (code && app.renderModalSummaryRoleRadios) app.renderModalSummaryRoleRadios(code, true);
+  };
+
   app.uiActionHandlers['summary-player-open'] = function (el, _event, ui) {
     if (!ui.isScreenActive('summary-screen')) return;
     var spid = ui.getIntAttr(el, 'data-player-id');

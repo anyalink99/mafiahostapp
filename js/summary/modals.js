@@ -94,12 +94,7 @@
       wrap.className = S.roleIconWrapClass(o.value);
       wrap.innerHTML = S.teamIconHtml(S.roleCodeToIconId(o.value));
       b.appendChild(wrap);
-      b.onclick = (function (val, en) {
-        return function () {
-          if (!en) return;
-          renderModalSummaryRoleRadios(val, en);
-        };
-      })(o.value, enabled);
+      b.setAttribute('data-action', 'summary-role-pick');
       row.appendChild(b);
     }
   }

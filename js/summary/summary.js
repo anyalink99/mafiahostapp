@@ -49,13 +49,7 @@
         wrap.innerHTML = S.teamIconHtml('icon-mafia');
       }
       b.appendChild(wrap);
-      b.onclick = (function (val) {
-        return function () {
-          app.winningTeam = val === 'mafia' || val === 'peaceful' ? val : null;
-          app.saveState();
-          app.renderSummary();
-        };
-      })(o.value);
+      b.setAttribute('data-action', 'summary-team-pick');
       row.appendChild(b);
     }
   }
