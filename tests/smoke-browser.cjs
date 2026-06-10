@@ -177,6 +177,36 @@ function findChrome() {
   });
   if (missingInternals.length) errors.push('нет _autoInternals: ' + missingInternals.join(', '));
 
+  // Логика голосования (host): креативный попил 3/3/3/1 → 5/5/0 → 5/5.
+  // Циклы переголосования не лимитированы; «подъём» — только при повторе.
+  var voteFlow = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var out = [];
+    app.gameLog = [];
+    app.activeVoteRound = null;
+    app.nomineeQueue = [1, 4, 6, 9];
+    app.startVoteRoundFromNomineeQueue();
+    function applyVotes(votes) {
+      var s = app.activeVoteRound;
+      for (var i = 0; i < votes.length; i++) s.votes[i] = votes[i];
+      app.tryFinalizeVoteRound();
+    }
+    applyVotes([3, 3, 3, 1]);
+    var s1 = app.activeVoteRound;
+    out.push('r1:' + s1.phase + ':' + s1.candidateIds.join(','));
+    applyVotes([5, 5, 0]);
+    var s2 = app.activeVoteRound;
+    out.push('r2:' + s2.phase + ':' + s2.candidateIds.join(','));
+    applyVotes([5, 5]);
+    var s3 = app.activeVoteRound;
+    out.push('r3:' + s3.phase + ':' + (s3.raiseCandidateIds || []).join(','));
+    return out.join(' | ');
+  });
+  var voteFlowExpected = 'r1:counting:1,4,6 | r2:counting:1,4 | r3:raiseAll:1,4';
+  if (voteFlow !== voteFlowExpected) {
+    errors.push('голосование: ожидалось «' + voteFlowExpected + '», получено «' + voteFlow + '»');
+  }
+
   // Запуск автономной игры (полный путь setup → reveal).
   var autoPhase = await page.evaluate(function () {
     window.MafiaApp.startFreshAutoGame();

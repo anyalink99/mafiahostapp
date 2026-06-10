@@ -1,5 +1,5 @@
 // BUILD:PRECACHE-BEGIN (автогенерация scripts/build-sw.cjs — не редактировать руками)
-var CACHE_NAME = 'mafia-host-static-a218fd0d5190';
+var CACHE_NAME = 'mafia-host-static-05f9f9f3baee';
 var ASSETS = [
   './',
   './audio/1.mp3',
@@ -71,6 +71,7 @@ var ASSETS = [
   './js/game/merlin.js',
   './js/game/standard.js',
   './js/game/variants.js',
+  './js/game/vote-rules.js',
   './js/main.js',
   './js/modes/auto/core.js',
   './js/modes/auto/day.js',
@@ -96,7 +97,10 @@ var ASSETS = [
   './js/mu-utils.js',
   './js/mu-vote-reconstruct.js',
   './js/summary/export.js',
+  './js/summary/log.js',
+  './js/summary/modals.js',
   './js/summary/mu-export.js',
+  './js/summary/player-data.js',
   './js/summary/summary.js',
   './js/ui/desktop-player-panel.js',
   './js/ui/desktop-setup-slot.js',

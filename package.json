@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node tests/test-mu-vote-roundtrip.cjs",
+    "test": "node tests/test-mu-vote-roundtrip.cjs && node tests/test-vote-rules.cjs",
     "test:smoke": "node tests/smoke-browser.cjs"
   },
   "devDependencies": {

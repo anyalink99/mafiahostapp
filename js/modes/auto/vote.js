@@ -211,53 +211,48 @@
   function tryFinalizeAutoVote() {
     var s = app.autoState;
     if (!s.vote || s.vote.phase !== 'counting') return;
-    // Пул исчерпан (0 голосов осталось) → оставшимся кандидатам 0, раунд завершается.
-    var used = 0;
-    for (var u = 0; u < s.vote.votes.length; u++) {
-      if (s.vote.votes[u] !== null && s.vote.votes[u] !== undefined) used += s.vote.votes[u];
-    }
-    if (used >= s.vote.poolTotal) {
-      for (var z = 0; z < s.vote.votes.length; z++) {
-        if (s.vote.votes[z] === null || s.vote.votes[z] === undefined) s.vote.votes[z] = 0;
-      }
-    }
-    for (var i = 0; i < s.vote.votes.length; i++) {
-      if (s.vote.votes[i] === null || s.vote.votes[i] === undefined) return;
-    }
-    var maxV = -1;
-    for (var k = 0; k < s.vote.votes.length; k++)
-      if (s.vote.votes[k] > maxV) maxV = s.vote.votes[k];
-    var tied = [];
-    for (var t = 0; t < s.vote.candidateIds.length; t++) {
-      if (s.vote.votes[t] === maxV) tied.push(s.vote.candidateIds[t]);
-    }
-    if (tied.length >= 2) {
-      if (!s.vote.tieRevote) {
-        s.vote.candidateIds = tied;
-        s.vote.votes = tied.map(function () {
-          return null;
-        });
-        s.vote.tieRevote = true;
-        s.vote.baseVotingOrder = tied.slice();
-        if (s.day) {
-          s.day.nominees = tied.slice();
-          s.day.timeLeft = A.REVOTE_SEC;
-        }
-        s.phase = 'day';
-        A.saveAuto();
-        app.navigateToScreen('auto-day-screen');
-        return;
-      }
-      s.vote = {
-        phase: 'raiseAll',
-        poolTotal: s.vote.poolTotal,
-        raiseCandidateIds: tied.slice(),
-      };
-      A.saveAuto();
-      app.renderAutoVote();
+    // Исход раунда считает чистая логика (js/game/vote-rules.js): авто-нули при
+    // исчерпанном пуле, лидер/ничья; циклы переголосования не лимитированы —
+    // «поднятие» встаёт только когда голосование повторилось (ничья между
+    // ВСЕМИ участниками переголосования).
+    var outcome = app.VoteRules.resolveVoteRound(
+      s.vote.candidateIds,
+      s.vote.votes,
+      s.vote.poolTotal,
+      !!s.vote.tieRevote
+    );
+    if (outcome.status === 'pending') return;
+    if (outcome.status === 'hang') {
+      finalizeHang(outcome.seatId);
       return;
     }
-    finalizeHang(tied[0]);
+    var tied = outcome.tied;
+    if (outcome.status === 'revote') {
+      // Новый цикл: лидеры получают речи (день с коротким таймером), затем
+      // переголосование между ними.
+      s.vote.candidateIds = tied;
+      s.vote.votes = tied.map(function () {
+        return null;
+      });
+      s.vote.tieRevote = true;
+      s.vote.baseVotingOrder = tied.slice();
+      if (s.day) {
+        s.day.nominees = tied.slice();
+        s.day.timeLeft = A.REVOTE_SEC;
+      }
+      s.phase = 'day';
+      A.saveAuto();
+      app.navigateToScreen('auto-day-screen');
+      return;
+    }
+    // raiseAll — голосование повторилось.
+    s.vote = {
+      phase: 'raiseAll',
+      poolTotal: s.vote.poolTotal,
+      raiseCandidateIds: tied.slice(),
+    };
+    A.saveAuto();
+    app.renderAutoVote();
   }
 
   app.applyAutoRaisePick = function (value) {

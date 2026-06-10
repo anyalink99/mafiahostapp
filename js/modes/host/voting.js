@@ -181,67 +181,59 @@
   app.tryFinalizeVoteRound = function () {
     var s = app.activeVoteRound;
     if (!s || s.phase !== 'counting') return;
-    // Если пул голосов исчерпан (0 осталось) — оставшимся кандидатам ставим 0
-    // (за них уже некому голосовать) и завершаем раунд, не требуя ручных нулей.
-    var used = 0;
-    for (var u = 0; u < s.votes.length; u++) {
-      if (s.votes[u] !== null && s.votes[u] !== undefined) used += s.votes[u];
-    }
-    if (used >= s.poolTotal) {
-      for (var z = 0; z < s.votes.length; z++) {
-        if (s.votes[z] === null || s.votes[z] === undefined) s.votes[z] = 0;
-      }
-    }
-    for (var i = 0; i < s.votes.length; i++) {
-      if (s.votes[i] === null || s.votes[i] === undefined) return;
-    }
-    var maxV = -1;
-    for (var k = 0; k < s.votes.length; k++) {
-      if (s.votes[k] > maxV) maxV = s.votes[k];
-    }
-    var tied = [];
-    for (var t = 0; t < s.candidateIds.length; t++) {
-      if (s.votes[t] === maxV) tied.push(s.candidateIds[t]);
-    }
-    if (tied.length >= 2) {
-      app.gameLog.push({
-        type: 'vote_tie',
-        ts: Date.now(),
-        candidateIds: s.candidateIds.slice(),
-        votes: s.votes.slice(),
-        tiedIds: tied.slice(),
-        isRevote: !!s.tieRevote,
-      });
-      if (!s.tieRevote) {
-        s.candidateIds = tied;
-        s.votes = tied.map(function () {
-          return null;
-        });
-        s.tieRevote = true;
-        s.baseVotingOrder = tied.slice();
-        app.nomineeQueue = tied.slice();
-        app.saveState();
-        app.navigateToScreen('game-screen');
-        app.resetTimer(
-          typeof app.timerShortSec === 'number' && app.timerShortSec > 0 ? app.timerShortSec : 30
-        );
-        return;
-      }
-      app.gameLog.push({
-        type: 'vote_raise_all',
-        ts: Date.now(),
-        poolTotal: s.poolTotal,
-        tiedIds: tied.slice(),
-      });
-      app.activeVoteRound = {
-        phase: 'raiseAll',
-        poolTotal: s.poolTotal,
-        raiseCandidateIds: tied.slice(),
-      };
-      app.saveState();
+    // Исход раунда считает чистая логика (js/game/vote-rules.js): авто-нули при
+    // исчерпанном пуле, лидер/ничья, и главное — циклы переголосования не
+    // лимитированы: «поднятие всех» встаёт только когда голосование повторилось
+    // (ничья между ВСЕМИ участниками переголосования).
+    var outcome = app.VoteRules.resolveVoteRound(
+      s.candidateIds,
+      s.votes,
+      s.poolTotal,
+      !!s.tieRevote
+    );
+    if (outcome.status === 'pending') return;
+    if (outcome.status === 'hang') {
+      app.finalizeVoteHang([outcome.seatId]);
       return;
     }
-    app.finalizeVoteHang([tied[0]]);
+    var tied = outcome.tied;
+    app.gameLog.push({
+      type: 'vote_tie',
+      ts: Date.now(),
+      candidateIds: s.candidateIds.slice(),
+      votes: s.votes.slice(),
+      tiedIds: tied.slice(),
+      isRevote: !!s.tieRevote,
+    });
+    if (outcome.status === 'revote') {
+      // Новый цикл: лидеры получают речи, затем переголосование между ними.
+      s.candidateIds = tied;
+      s.votes = tied.map(function () {
+        return null;
+      });
+      s.tieRevote = true;
+      s.baseVotingOrder = tied.slice();
+      app.nomineeQueue = tied.slice();
+      app.saveState();
+      app.navigateToScreen('game-screen');
+      app.resetTimer(
+        typeof app.timerShortSec === 'number' && app.timerShortSec > 0 ? app.timerShortSec : 30
+      );
+      return;
+    }
+    // raiseAll — голосование повторилось.
+    app.gameLog.push({
+      type: 'vote_raise_all',
+      ts: Date.now(),
+      poolTotal: s.poolTotal,
+      tiedIds: tied.slice(),
+    });
+    app.activeVoteRound = {
+      phase: 'raiseAll',
+      poolTotal: s.poolTotal,
+      raiseCandidateIds: tied.slice(),
+    };
+    app.saveState();
   };
 
   app.hideVoteCountModal = function () {

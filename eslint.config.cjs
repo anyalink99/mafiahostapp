@@ -58,8 +58,8 @@ module.exports = [
     languageOptions: { globals: { Spotify: 'readonly' } },
   },
   {
-    // Двухсредный модуль: работает и в браузере, и в node-тестах через module.exports.
-    files: ['js/mu-vote-reconstruct.js', 'js/mu-utils.js'],
+    // Двухсредные модули: работают и в браузере, и в node-тестах через module.exports.
+    files: ['js/mu-vote-reconstruct.js', 'js/mu-utils.js', 'js/game/vote-rules.js'],
     languageOptions: { globals: { module: 'writable' } },
   },
   {
