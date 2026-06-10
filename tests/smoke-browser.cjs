@@ -62,7 +62,12 @@ function findChrome() {
   var errors = [];
   var browser = await chromium.launch({ executablePath: chromePath, headless: true });
   // Мобильный viewport: на lg-экранах desktop-shell сам уводит с меню на game-screen.
-  var page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  // serviceWorkers: 'block' — иначе SW активируется с clients.claim(), main.js на
+  // controllerchange перезагружает страницу, и evaluate падает посреди теста (гонка).
+  var page = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: 'block',
+  });
   page.on('console', function (msg) {
     if (msg.type() === 'error') errors.push('console.error: ' + msg.text());
   });
