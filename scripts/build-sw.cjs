@@ -57,10 +57,18 @@ config.appDirs.forEach(function (d) {
 assets.sort();
 
 // Хэш содержимого всех прекэшируемых файлов → версия кэша.
+// Текстовые файлы нормализуем к LF: в Windows-чекаутах (autocrlf) рабочая
+// копия CRLF, на CI — LF, и без нормализации хэш у всех разный.
+var TEXT_EXT = /\.(js|css|html|json|webmanifest|svg|txt|md)$/i;
+function fileBytesForHash(rel) {
+  var buf = fs.readFileSync(path.join(root, rel));
+  if (!TEXT_EXT.test(rel)) return buf;
+  return Buffer.from(buf.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+}
 var hash = crypto.createHash('sha1');
 assets.forEach(function (rel) {
   hash.update(rel);
-  hash.update(fs.readFileSync(path.join(root, rel)));
+  hash.update(fileBytesForHash(rel));
 });
 var version = hash.digest('hex').slice(0, 12);
 
