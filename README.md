@@ -101,7 +101,7 @@ mafia-host-app/
 │   ├── ui/                prepare-screen, desktop-*
 │   ├── summary/           итоги, экспорт, MU-экспорт
 │   ├── events/            обработчики data-action (menu, prepare, host/*, auto/*)
-│   ├── audio/             music, music-store, voice, spotify-*
+│   ├── audio/             music-* (плеер/превью/модалки/настройки), music-store, voice, spotify-*
 │   ├── mu-*.js            интеграция с MafiaUniverse
 │   └── vendor/            jszip, niokit (локальные копии)
 ├── scripts/
