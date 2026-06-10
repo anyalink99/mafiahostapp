@@ -1,0 +1,12 @@
+<div id="modal-music-empty" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-music-empty-title" data-slot="">
+    <div class="absolute inset-0" data-action="music-empty-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-border rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <h2 id="modal-music-empty-title" class="font-display text-mafia-gold text-lg text-center tracking-widest mb-2">Нет треков для этого режима</h2>
+        <p class="text-mafia-cream/60 text-sm text-center mb-4">Загрузите аудиофайлы с устройства.</p>
+        <label class="block w-full py-3 text-center bg-mafia-blood/80 hover:bg-mafia-blood border border-mafia-gold/50 text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer mb-3">
+            Выбрать файлы
+            <input type="file" id="music-files-empty" class="hidden" accept="audio/*" multiple>
+        </label>
+        <button type="button" data-action="music-empty-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+    </div>
+</div>

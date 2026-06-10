@@ -1,0 +1,23 @@
+<div id="auto-last-words-screen" class="screen flex flex-col p-4 sm:p-6 overflow-hidden">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <span class="text-mafia-cream/60 text-sm sm:text-base uppercase tracking-wider">Последние слова</span>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest"><span id="auto-last-words-day-label">День 1</span></span>
+    </div>
+    <div class="flex-1 min-h-0 flex flex-col items-center justify-center text-center max-w-md w-full mx-auto">
+        <p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Повешен игрок</p>
+        <h1 id="auto-last-words-num" class="font-display font-bold text-7xl sm:text-8xl text-mafia-blood drop-shadow-[0_0_10px_rgba(127,29,29,0.4)] mb-1 tabular-nums">№1</h1>
+        <p id="auto-last-words-nick" class="text-mafia-cream/85 text-base mb-5"></p>
+        <p class="text-mafia-cream/75 text-sm mb-2">Прощальная речь</p>
+        <div class="timer-control-frame inline-flex flex-row flex-nowrap items-center justify-center gap-3 sm:gap-4 max-w-full min-w-0 rounded-lg border border-mafia-border/60 bg-mafia-black/25 px-3 py-2 sm:px-5 sm:py-3 mb-5">
+            <div id="auto-last-words-timer-pill" class="timer-pill player-slot__foul-pill flex shrink-0 items-center justify-center rounded border border-mafia-border/35 bg-black/25 px-2 py-1 transition-[background-color,border-color] duration-[118ms] ease-out">
+                <div id="auto-last-words-countdown" class="font-sans font-semibold tabular-nums leading-none text-mafia-cream/95 transition-colors duration-[88ms] ease-out">60</div>
+            </div>
+            <div class="flex gap-2 sm:gap-3 items-center shrink-0">
+                <button type="button" id="auto-last-words-start-btn" data-action="auto-last-words-toggle-timer" aria-pressed="false" class="px-3 py-2 sm:px-5 sm:py-3 bg-green-800 hover:bg-green-700 border border-green-600 text-white font-semibold rounded uppercase text-xs sm:text-sm tracking-wider cursor-pointer transition-[background-color,border-color,box-shadow,transform,color] duration-[118ms] ease-out">Старт</button>
+                <button type="button" data-action="auto-last-words-reset-timer" data-seconds="60" class="px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-xs sm:text-sm cursor-pointer">60 с</button>
+                <button type="button" data-action="auto-last-words-reset-timer" data-seconds="30" class="px-2.5 py-1.5 sm:px-4 sm:py-2.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream rounded text-xs sm:text-sm cursor-pointer">30 с</button>
+            </div>
+        </div>
+        <button type="button" data-action="auto-last-words-finish" class="w-full max-w-xs py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Завершить → ночь</button>
+    </div>
+</div>

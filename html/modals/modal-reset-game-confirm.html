@@ -1,0 +1,12 @@
+<div id="modal-reset-game-confirm" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-reset-game-title">
+    <div class="absolute inset-0" data-action="reset-game-confirm-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-sm w-full shadow-xl">
+        <h2 id="modal-reset-game-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-3">Сброс игры</h2>
+        <p class="text-mafia-cream/70 text-sm text-center mb-4">Выберите нужный вариант сброса.</p>
+        <div class="flex flex-col gap-2.5">
+            <button type="button" data-action="reset-game-confirm-apply" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Сброс игры</button>
+            <button type="button" data-action="reset-game-confirm-apply-with-nicks" class="w-full py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream font-semibold uppercase tracking-wider rounded cursor-pointer">Сброс игры и псевдонимов</button>
+            <button type="button" data-action="reset-game-confirm-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+        </div>
+    </div>
+</div>

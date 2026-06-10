@@ -1,0 +1,17 @@
+<div id="auto-merlin-guess-screen" class="screen flex flex-col p-4 sm:p-6 overflow-auto">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <span class="text-mafia-cream/60 text-sm sm:text-base uppercase tracking-wider">Попытка чёрных</span>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Мерлин</span>
+    </div>
+    <div class="max-w-md w-full mx-auto mt-6 space-y-5 flex-shrink-0 pb-8">
+        <div class="bg-mafia-coal border-2 border-mafia-gold/60 rounded-lg p-5 text-center">
+            <p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Красные победили</p>
+            <p class="text-mafia-cream/85 text-sm">Последний повешенный чёрный — игрок <span id="auto-merlin-guesser-num" class="text-mafia-gold font-semibold tabular-nums">№?</span> — может назвать Мерлина. Угадает — победа уходит к чёрным.</p>
+        </div>
+        <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Кто Мерлин?</h2>
+            <div id="auto-merlin-guess-grid" class="auto-target-grid"></div>
+        </div>
+        <button type="button" data-action="auto-merlin-guess-skip" class="w-full py-2 text-mafia-cream/55 hover:text-mafia-cream/85 text-sm uppercase tracking-wider cursor-pointer">Пропустить — оставить красных</button>
+    </div>
+</div>

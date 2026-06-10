@@ -1,0 +1,18 @@
+<div id="auto-end-screen" class="screen flex flex-col p-4 sm:p-6 overflow-auto">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Финал</span>
+    </div>
+    <div class="max-w-md w-full mx-auto mt-6 space-y-5 flex-shrink-0">
+        <div class="bg-mafia-coal border-2 border-mafia-gold/60 rounded-lg p-6 text-center">
+            <p class="font-display text-mafia-gold/80 text-base tracking-widest uppercase mb-2">Победили</p>
+            <h1 id="auto-end-team" class="font-display font-bold text-4xl sm:text-5xl text-mafia-gold tracking-wider"></h1>
+            <p id="auto-end-subtitle" class="hidden mt-3 text-mafia-cream/80 text-sm"></p>
+        </div>
+        <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Роли</h2>
+            <div id="auto-end-roles" class="space-y-1.5"></div>
+        </div>
+        <button type="button" data-action="auto-restart" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Новая игра</button>
+    </div>
+</div>

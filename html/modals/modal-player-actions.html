@@ -1,0 +1,62 @@
+<div id="modal-player-actions" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-player-actions-title">
+    <div class="absolute inset-0" data-action="player-modal-save" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-sm w-full shadow-xl max-h-[90dvh] overflow-y-auto">
+        <button type="button" class="modal-panel__close-x" data-action="player-modal-save" aria-label="Закрыть">×</button>
+        <h2 id="modal-player-actions-title" class="font-display text-mafia-gold text-2xl text-center font-bold tracking-wide leading-tight mb-3">Игрок</h2>
+        <div class="mb-4 flex flex-col gap-1.5">
+            <label for="modal-player-nick" class="font-display text-xs text-mafia-gold/90">Псевдоним</label>
+            <input type="text" id="modal-player-nick" maxlength="32" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Не указан" class="w-full rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none transition-colors placeholder:text-mafia-cream/35 focus:border-mafia-gold/45">
+        </div>
+        <div id="modal-player-prepare-role-section" class="mb-4 hidden">
+            <div class="font-display text-xs text-mafia-gold/90 mb-2">Роль</div>
+            <div id="modal-player-prepare-role-icons" class="flex flex-wrap items-center justify-start gap-2 sm:gap-2.5" role="radiogroup" aria-label="Роль игрока"></div>
+        </div>
+        <div id="modal-player-actions-when-active">
+            <div class="flex flex-col gap-2">
+                <button type="button" data-action="player-modal-foul" class="w-full py-3 rounded border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Фол (+1)</button>
+                <button type="button" data-action="player-modal-vote" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Выставить</button>
+            </div>
+            <div class="mt-5 flex flex-wrap justify-center gap-3">
+                <button type="button" data-action="player-modal-elim" data-elim="disqual" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Удалён" aria-label="Удалён">
+                    <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-disqual"/></svg>
+                </button>
+                <button type="button" data-action="player-modal-elim" data-elim="hang" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Казнён" aria-label="Казнён">
+                    <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-hang"/></svg>
+                </button>
+                <button type="button" data-action="player-modal-elim" data-elim="shot" class="modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer" title="Убит" aria-label="Убит">
+                    <svg class="w-6 h-6 pointer-events-none" aria-hidden="true"><use href="#icon-elim-shot"/></svg>
+                </button>
+            </div>
+        </div>
+        <div id="modal-player-actions-when-out" class="hidden">
+            <button type="button" data-action="player-modal-revive" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Вернуть игрока</button>
+        </div>
+        <div id="modal-player-game-extras" class="mt-5 flex flex-col gap-3 border-t border-mafia-border/60 pt-4 lg:hidden">
+            <div id="modal-player-bestmove-wrap" class="flex flex-col gap-1 text-xs text-mafia-cream/70">
+                <span class="font-display text-mafia-gold/90">Лучший ход</span>
+                <input type="text" id="modal-player-bestmove" data-numlist inputmode="numeric" autocomplete="off" placeholder="напр. 3, 7, 9" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+            </div>
+            <div class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
+                <div class="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-1.5">
+                    <span></span>
+                    <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Протокол</span>
+                    <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Мнение</span>
+                    <span class="text-[11px] text-mafia-cream/75">Мирный</span>
+                    <input type="text" id="modal-player-protocol-peaceful" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: мирный" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                    <input type="text" id="modal-player-opinion-peaceful" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: мирный" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                    <span class="text-[11px] text-mafia-cream/75">Мафия</span>
+                    <input type="text" id="modal-player-protocol-mafia" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: мафия" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                    <input type="text" id="modal-player-opinion-mafia" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: мафия" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                    <span class="text-[11px] text-mafia-cream/75">Шериф</span>
+                    <input type="text" id="modal-player-protocol-sheriff" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: шериф" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                    <input type="text" id="modal-player-opinion-sheriff" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: шериф" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                </div>
+            </div>
+            <label class="flex flex-col gap-1 text-xs text-mafia-cream/70">
+                <span class="font-display text-mafia-gold/90">Примечание</span>
+                <textarea id="modal-player-note" rows="2" class="w-full resize-y rounded border border-mafia-border bg-mafia-card px-2 py-2 text-sm text-mafia-cream/90"></textarea>
+            </label>
+        </div>
+        <button type="button" data-action="player-modal-save" class="w-full mt-4 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Сохранить</button>
+    </div>
+</div>

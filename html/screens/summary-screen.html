@@ -1,0 +1,49 @@
+<div id="summary-screen" class="screen flex flex-col min-h-0 p-4 sm:p-6 overflow-hidden gap-4">
+    <div class="flex items-center justify-between flex-shrink-0 py-2 lg:hidden">
+        <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
+        <span class="screen-title-label font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Подведение итогов</span>
+    </div>
+    <div id="summary-scroll" class="mh-content-cap flex-1 min-h-0 flex flex-col lg:flex-row gap-4 lg:gap-4 overflow-y-auto overflow-x-hidden lg:overflow-hidden pb-6 lg:pb-0">
+        <!-- Колонка 1: ведущий, победитель, гармошка игроков -->
+        <div class="flex-shrink-0 lg:flex-1 min-w-0 min-h-0 flex flex-col gap-4 lg:overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0">
+            <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5 flex-shrink-0">
+                <div class="flex min-w-0 flex-nowrap items-center gap-3 sm:gap-4">
+                    <label for="summary-host-name" class="font-display text-mafia-gold text-base tracking-widest shrink-0 leading-none">Ведущий:</label>
+                    <input type="text" id="summary-host-name" maxlength="120" autocomplete="off" spellcheck="false" enterkeyhint="done" class="min-w-0 flex-1 rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none transition-colors placeholder:text-mafia-cream/35 focus:border-mafia-gold/45">
+                </div>
+            </section>
+            <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5 flex-shrink-0">
+                <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                    <h2 class="font-display text-mafia-gold text-base tracking-widest shrink-0 leading-none">Победитель</h2>
+                    <div id="summary-winning-team-icons" class="flex flex-wrap items-center gap-2 sm:gap-2.5" role="radiogroup" aria-label="Победитель"></div>
+                </div>
+            </section>
+            <section class="bg-mafia-coal border border-mafia-border rounded-lg p-3 sm:p-4 flex flex-col min-h-0 max-h-[min(55vh,28rem)] lg:max-h-none flex-shrink-0 lg:flex-1">
+                <div id="summary-roles-grid" class="flex-1 min-h-[12rem] overflow-hidden"></div>
+            </section>
+        </div>
+        <!-- Панель игрока — между колонками (открывается inline) -->
+        <aside class="k-slot player-detail-slot unified-player-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative order-2 lg:order-none"></aside>
+        <!-- Колонка 2: экспорт + ход игры -->
+        <div class="flex-shrink-0 lg:flex-1 min-w-0 min-h-0 flex flex-col gap-4 lg:overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0 order-3 lg:order-none">
+            <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
+                <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Экспорт</h2>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button type="button" data-action="export-copy-text" class="w-full sm:flex-1 py-2.5 border-2 border-mafia-gold/50 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Скопировать текст</button>
+                    <button type="button" data-action="export-download-csv" class="w-full sm:flex-1 py-2.5 border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream/90 font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Экспортировать таблицу</button>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 mt-2 mu-hide-in-mu">
+                    <button type="button" data-action="export-copy-mu-json" class="w-full py-2.5 border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream/90 font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Скопировать MU JSON</button>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 mt-2 mu-show-in-mu">
+                    <button type="button" data-action="export-apply-mu" class="w-full py-2.5 border-2 border-mafia-gold/50 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Применить к форме MafiaUniverse</button>
+                </div>
+            </section>
+            <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex flex-col min-h-0 lg:flex-1 lg:overflow-hidden">
+                <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3 flex-shrink-0">Ход игры</h2>
+                <ul id="summary-history" class="text-sm text-mafia-cream/85 space-y-1.5 list-disc pl-5 marker:text-mafia-gold/60 lg:flex-1 lg:min-h-0 lg:overflow-y-auto"></ul>
+                <p id="summary-history-empty" class="text-sm text-mafia-cream/50">Пока нет записей: голосования и выбывания появятся здесь автоматически.</p>
+            </section>
+        </div>
+    </div>
+</div>

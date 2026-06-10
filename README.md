@@ -79,12 +79,13 @@ npx serve .
 
 ```
 mafia-host-app/
-├── index.html             вся разметка экранов + список <script>
+├── index.html             СГЕНЕРИРОВАНО из html/ (npm run build:html), коммитится
 ├── manifest.webmanifest
 ├── service-worker.js      прекэш генерируется (npm run build:sw), руками не править
 ├── tailwind.config.cjs    тема Tailwind (сборка: npm run build:css)
 ├── capacitor.config.json
 ├── package.json
+├── html/                  исходники разметки: index.template.html + screens/ + modals/
 ├── audio/                 встроенные треки и голосовые реплики
 ├── icons/                 icon.png (исходник) + сгенерированные PNG
 ├── css/
@@ -94,7 +95,8 @@ mafia-host-app/
 ├── js/
 │   ├── core/              state, utils, screens (реестр рендереров), dispatch
 │   ├── game/              variants + standard/kasper/merlin/donskaya
-│   ├── modes/host/        обычный ведущий: cards, players, timer, voting, side, tools
+│   ├── modes/host/        обычный ведущий: cards, players (стол), prepare-players,
+│   │                      player-modal, timer, voting, side, tools
 │   ├── modes/auto/        автономный ведущий: core (app._auto), setup, reveal,
 │   │                      intro, night, day, vote, last-words, endgame, gestures,
 │   │                      mode (init + _autoInternals), migration

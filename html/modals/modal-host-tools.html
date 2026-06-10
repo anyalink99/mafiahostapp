@@ -1,0 +1,17 @@
+<div id="modal-host-tools" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-host-tools-title">
+    <div class="absolute inset-0" data-action="host-tools-close" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-5 max-w-sm w-full shadow-xl">
+        <h2 id="modal-host-tools-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-4">Инструменты ведущего</h2>
+        <div class="flex flex-col gap-3">
+            <div>
+                <button type="button" data-action="host-tools-roles" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-colors">Назвать роли</button>
+                <div id="host-tools-roles-result" class="hidden mt-3 space-y-1 text-sm text-mafia-cream/90"></div>
+            </div>
+            <div id="host-tools-sheriff-section" class="hidden">
+                <button type="button" data-action="host-tools-sheriff-random" class="w-full py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-gold/55 text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer transition-colors">Рандомная проверка шерифа</button>
+                <div id="host-tools-sheriff-result" class="hidden mt-3 text-sm text-mafia-cream/95 text-center"></div>
+            </div>
+        </div>
+        <button type="button" data-action="host-tools-close" class="w-full mt-4 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Закрыть</button>
+    </div>
+</div>

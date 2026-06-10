@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<!-- AUTO-GENERATED из html/ (npm run build:html) — править html/index.template.html и html/{screens,modals}/*, не этот файл. -->
+<html lang="ru" data-theme="mafia">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0c0a09">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Мафия — Ведущий</title>
+    <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+    <link rel="icon" href="icons/icon-512.png" type="image/png" sizes="512x512">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Niokit: shared design tokens + .k-slot — локальный vendor (js/vendor/niokit/,
+         версия v0.3.0). Берём ТОЛЬКО tokens.css + components.css; reset.css не грузим
+         (его `button { border: 0 }` конфликтует с Tailwind preflight'ом —
+         все .border-* классы перестают рендерить рамки). motion.css тоже
+         не нужен — у нас .k-slot на transition, не на @keyframes. -->
+    <link rel="stylesheet" href="js/vendor/niokit/tokens.css">
+    <link rel="stylesheet" href="js/vendor/niokit/components.css">
+    <script src="js/vendor/niokit/niokit.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Tailwind собирается заранее: npm run build:css (tailwind.config.cjs).
+         Подключается ПОСЛЕ styles.css — как раньше runtime-CDN инжектил
+         свой <style> в конец head, сохраняем порядок каскада. -->
+    <link rel="stylesheet" href="css/tailwind.css">
+</head>
+<body class="bg-mafia-black text-mafia-cream antialiased">
+
+<!-- @include sprite.html -->
+
+<!-- @include screens/menu-screen.html -->
+
+<!-- @include screens/settings-screen.html -->
+
+<!-- @include screens/prepare-mode-screen.html -->
+
+<!-- @include screens/setup-screen.html -->
+
+<!-- @include screens/prepare-screen.html -->
+
+<!-- @include screens/role-screen.html -->
+
+<!-- @include screens/game-screen.html -->
+
+<!-- @include screens/vote-screen.html -->
+
+<!-- @include screens/summary-screen.html -->
+
+<!-- @include modals/modal-player-actions.html -->
+
+<!-- @include modals/modal-summary-player.html -->
+
+<!-- @include modals/modal-summary-log.html -->
+
+<!-- @include modals/modal-vote-count.html -->
+
+<!-- @include modals/modal-music-slot.html -->
+<!-- @include modals/modal-music-empty.html -->
+
+<!-- @include modals/modal-music-control.html -->
+
+<!-- @include modals/modal-host-tools.html -->
+
+<!-- @include modals/modal-timer-voice.html -->
+
+<!-- @include modals/modal-author-links.html -->
+
+<!-- @include modals/modal-reset-game-confirm.html -->
+
+<!-- @include screens/auto-setup-screen.html -->
+
+<!-- @include screens/auto-reveal-screen.html -->
+
+<!-- @include screens/auto-night-intro-screen.html -->
+
+<!-- @include screens/auto-night-pass-screen.html -->
+
+<!-- @include screens/auto-night-action-screen.html -->
+
+<!-- @include screens/auto-night-result-screen.html -->
+
+<!-- @include screens/auto-day-screen.html -->
+
+<!-- @include screens/auto-vote-screen.html -->
+
+<!-- @include screens/auto-last-words-screen.html -->
+
+<!-- @include screens/auto-merlin-guess-screen.html -->
+
+<!-- @include screens/auto-end-screen.html -->
+
+<!-- @include modals/modal-auto-player-actions.html -->
+
+<!-- @include modals/modal-auto-switch-host.html -->
+
+<!-- @include modals/modal-auto-vote-count.html -->
+
+<audio id="bg-music" preload="none" playsinline></audio>
+<audio id="timer-voice" preload="auto" playsinline></audio>
+<audio id="sfx-voice" preload="auto" playsinline></audio>
+<audio id="music-preview" preload="none" playsinline></audio>
+
+<!-- MU-режим: мост между нашим UI в iframe и content-script расширения -->
+<script src="js/mu-utils.js"></script>
+<script src="js/mu-vote-reconstruct.js"></script>
+<script src="js/mu-bridge.js"></script>
+<script src="js/mu-state-apply.js"></script>
+<script src="js/mu-autocomplete.js"></script>
+
+<script src="js/vendor/jszip.min.js"></script>
+
+<!-- core: state, utils, navigation, dispatch -->
+<script src="js/core/state.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/core/screens.js"></script>
+
+<!-- audio: music + tts -->
+<script src="js/audio/spotify-auth.js"></script>
+<script src="js/audio/spotify-store.js"></script>
+<script src="js/audio/spotify-player.js"></script>
+<script src="js/audio/music-store.js"></script>
+<script src="js/audio/music-volume.js"></script>
+<script src="js/audio/music-player.js"></script>
+<script src="js/audio/music-preview.js"></script>
+<script src="js/audio/music-control.js"></script>
+<script src="js/audio/music-settings-html.js"></script>
+<script src="js/audio/music-settings.js"></script>
+<script src="js/audio/voice.js"></script>
+
+<!-- game rules: variant registry + per-variant definitions -->
+<script src="js/game/vote-rules.js"></script>
+<script src="js/game/variants.js"></script>
+<script src="js/game/standard.js"></script>
+<script src="js/game/kasper.js"></script>
+<script src="js/game/merlin.js"></script>
+<script src="js/game/donskaya.js"></script>
+
+<!-- modes: host flow + auto flow -->
+<script src="js/modes/host/cards.js"></script>
+<script src="js/modes/host/timer.js"></script>
+<script src="js/modes/host/players.js"></script>
+<script src="js/modes/host/side.js"></script>
+<script src="js/modes/host/voting.js"></script>
+<script src="js/modes/host/tools.js"></script>
+<script src="js/modes/auto/core.js"></script>
+<script src="js/modes/auto/setup.js"></script>
+<script src="js/modes/auto/reveal.js"></script>
+<script src="js/modes/auto/intro.js"></script>
+<script src="js/modes/auto/night.js"></script>
+<script src="js/modes/auto/day.js"></script>
+<script src="js/modes/auto/vote.js"></script>
+<script src="js/modes/auto/last-words.js"></script>
+<script src="js/modes/auto/endgame.js"></script>
+<script src="js/modes/auto/gestures.js"></script>
+<script src="js/modes/auto/mode.js"></script>
+<script src="js/modes/auto/migration.js"></script>
+
+<!-- shared UI screens -->
+<script src="js/ui/prepare-screen.js"></script>
+<script src="js/ui/desktop-shell.js"></script>
+<script src="js/ui/desktop-player-panel.js"></script>
+<script src="js/ui/desktop-vote-count.js"></script>
+<script src="js/ui/desktop-setup-slot.js"></script>
+
+<!-- post-game -->
+<script src="js/summary/log.js"></script>
+<script src="js/summary/player-data.js"></script>
+<script src="js/summary/modals.js"></script>
+<script src="js/summary/summary.js"></script>
+<script src="js/summary/export.js"></script>
+<script src="js/summary/mu-export.js"></script>
+
+<!-- event handlers (data-action → app.uiActionHandlers) -->
+<script src="js/events/menu.js"></script>
+<script src="js/events/prepare.js"></script>
+<script src="js/events/voice.js"></script>
+<script src="js/events/music.js"></script>
+<script src="js/events/summary.js"></script>
+<script src="js/events/host/timer.js"></script>
+<script src="js/events/host/tools.js"></script>
+<script src="js/events/host/side.js"></script>
+<script src="js/events/host/player.js"></script>
+<script src="js/events/host/vote.js"></script>
+<script src="js/events/auto/flow.js"></script>
+<script src="js/events/auto/intro.js"></script>
+<script src="js/events/auto/night.js"></script>
+<script src="js/events/auto/day.js"></script>
+<script src="js/events/auto/vote.js"></script>
+<script src="js/events/auto/player.js"></script>
+<script src="js/events/auto/merlin-guess.js"></script>
+
+<!-- dispatcher binds DOM → uiActionHandlers; must load after all handler files -->
+<script src="js/core/dispatch.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

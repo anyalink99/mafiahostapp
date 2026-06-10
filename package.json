@@ -4,10 +4,11 @@
   "version": "1.0.0",
   "description": "Мафия — ведущий: веб и Android (Capacitor)",
   "scripts": {
+    "build:html": "node scripts/build-html.cjs",
     "build:css": "tailwindcss -c tailwind.config.cjs -i css/tailwind.input.css -o css/tailwind.css --minify",
     "build:sw": "node scripts/build-sw.cjs",
-    "build:extension": "npm run build:css && npm run build:sw && node chrome-extension-mu/build-app.cjs",
-    "copy:www": "npm run build:css && npm run build:sw && node scripts/copy-www.cjs",
+    "build:extension": "npm run build:html && npm run build:css && npm run build:sw && node chrome-extension-mu/build-app.cjs",
+    "copy:www": "npm run build:html && npm run build:css && npm run build:sw && node scripts/copy-www.cjs",
     "cap:sync": "npm run copy:www && npx cap sync",
     "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-icons.ps1",
     "lint": "eslint .",

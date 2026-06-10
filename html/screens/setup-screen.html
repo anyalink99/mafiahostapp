@@ -1,0 +1,11 @@
+<div id="setup-screen" class="screen flex flex-col p-4 sm:p-6">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <button type="button" data-goto="prepare-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider flex items-center gap-2 cursor-pointer">← Подготовка</button>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Просмотр ролей</span>
+    </div>
+    <div id="card-dealer-hint" class="flex-shrink-0 mx-auto w-full max-w-md mt-2 hidden rounded-lg border border-mafia-gold/40 bg-mafia-blood/20 px-4 py-2.5 text-center">
+        <span class="font-display text-mafia-gold/70 text-xs sm:text-sm uppercase tracking-widest">Тянет карту: </span>
+        <span id="card-dealer-name" class="font-display text-mafia-gold text-base sm:text-lg font-bold"></span>
+    </div>
+    <div id="card-container" class="cards-grid w-full max-w-md mx-auto overflow-hidden mt-2"></div>
+</div>

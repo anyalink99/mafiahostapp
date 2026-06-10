@@ -1,0 +1,12 @@
+<div id="modal-music-slot" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-music-slot-title">
+    <div class="absolute inset-0" data-action="music-pick-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <h2 id="modal-music-slot-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-4">Музыка</h2>
+        <div class="flex flex-col gap-3">
+            <button type="button" data-action="music-pick-slot" data-slot="1" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Раздача карт</button>
+            <button type="button" data-action="music-pick-intro" data-slot="2" class="w-full py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream font-semibold uppercase tracking-wider rounded cursor-pointer">Знакомство мафии</button>
+            <button type="button" data-action="music-pick-slot" data-slot="2" class="w-full py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream font-semibold uppercase tracking-wider rounded cursor-pointer">Ночные действия</button>
+            <button type="button" data-action="music-pick-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+        </div>
+    </div>
+</div>

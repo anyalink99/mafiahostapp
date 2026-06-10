@@ -1,0 +1,12 @@
+<div id="vote-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <button type="button" data-goto="game-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Игровой стол</button>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Голосование</span>
+    </div>
+    <!-- vote-body переезжает во встроенную панель игрового стола на ПК (см. enterPcVoting). -->
+    <div id="vote-body" class="flex-1 min-h-0 flex flex-col gap-4">
+        <div id="vote-revote-banner" class="hidden flex-shrink-0 rounded-lg border border-mafia-gold/40 bg-mafia-blood/20 px-3 py-2 text-center text-sm text-mafia-gold/90"></div>
+        <div id="vote-pool-hint" class="flex-shrink-0 text-center text-mafia-cream/60 text-xs sm:text-sm"></div>
+        <div id="vote-candidates" class="flex-1 min-h-0 overflow-auto flex flex-wrap content-start justify-center gap-3 sm:gap-4 py-2"></div>
+    </div>
+</div>

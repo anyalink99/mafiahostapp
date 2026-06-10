@@ -3,7 +3,7 @@
 // Раньше тема жила в js/tailwind.config.js и скармливалась runtime-CDN — теперь
 // CSS генерируется заранее, CDN-скрипт из index.html убран.
 module.exports = {
-  content: ['./index.html', './js/**/*.js'],
+  content: ['./index.html', './html/**/*.html', './js/**/*.js'],
   theme: {
     extend: {
       colors: {

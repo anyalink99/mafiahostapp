@@ -1,0 +1,22 @@
+<div id="prepare-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6">
+    <div class="flex items-center justify-between flex-shrink-0 py-2 w-full max-w-2xl mx-auto lg:hidden">
+        <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
+        <span class="screen-title-label font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Подготовка</span>
+    </div>
+    <div class="mh-content-cap flex-1 min-h-0 flex flex-col lg:flex-row gap-3 lg:gap-4 overflow-hidden">
+        <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-4 overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0">
+            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div id="prepare-players-list" class="grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden"></div>
+            </div>
+            <div class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
+                <div class="flex flex-col gap-2">
+                    <button type="button" data-action="shuffle-seating" class="w-full py-2.5 border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream/90 font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Случайная посадка</button>
+                    <button type="button" data-goto="setup-screen" class="w-full py-2.5 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-all active:scale-[0.98]">Раздать роли</button>
+                    <button type="button" data-action="reset-game-confirm-open" class="hidden lg:block w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer transition-transform active:scale-95">Сброс игры</button>
+                </div>
+            </div>
+        </div>
+        <aside class="k-slot player-detail-slot unified-player-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative"></aside>
+        <aside id="setup-slot" class="k-slot player-detail-slot lg:flex hidden lg:flex-col min-h-0 overflow-hidden relative"></aside>
+    </div>
+</div>

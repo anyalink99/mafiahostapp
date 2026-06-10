@@ -1,0 +1,22 @@
+<div id="modal-music-control" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-music-control-title">
+    <div class="absolute inset-0" data-action="music-control-close" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-6 max-w-sm w-full shadow-xl">
+        <h2 id="modal-music-control-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-2">Музыка</h2>
+        <p id="modal-music-control-track" class="text-mafia-cream/85 text-sm text-center mb-1 truncate"></p>
+        <p id="modal-music-control-drop" class="hidden text-mafia-gold/85 text-sm text-center mb-3 tabular-nums">До дропа: <span id="modal-music-control-drop-time">0:00</span></p>
+        <div class="mb-4">
+            <input type="range" id="modal-music-control-seek" min="0" max="1000" step="1" value="0" class="w-full accent-mafia-gold cursor-pointer">
+            <div class="flex justify-between text-xs text-mafia-cream/60 tabular-nums mt-1">
+                <span id="modal-music-control-time-current">0:00</span>
+                <span id="modal-music-control-time-total">0:00</span>
+            </div>
+        </div>
+        <div class="flex items-stretch gap-2 mb-2">
+            <button type="button" id="modal-music-control-prev" data-action="music-control-prev" aria-label="Предыдущий трек" title="Предыдущий трек" class="px-4 py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream text-lg rounded cursor-pointer">⏮</button>
+            <button type="button" id="modal-music-control-pause" data-action="music-control-pause" class="flex-1 py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream font-semibold uppercase tracking-wider rounded cursor-pointer">Пауза</button>
+            <button type="button" id="modal-music-control-next" data-action="music-control-next" aria-label="Следующий трек" title="Следующий трек" class="px-4 py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream text-lg rounded cursor-pointer">⏭</button>
+        </div>
+        <button type="button" data-action="music-control-stop" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Стоп</button>
+        <button type="button" data-action="music-control-close" class="w-full mt-3 py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Закрыть</button>
+    </div>
+</div>
