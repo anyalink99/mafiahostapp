@@ -48,7 +48,10 @@
       bg.className =
         'absolute inset-0 ' + (A.isMafiaSide(role) ? 'bg-mafia-black' : 'bg-mafia-blood');
     var iconWrap = el('auto-reveal-overlay-icon');
-    if (iconWrap) iconWrap.innerHTML = A.renderRoleIcon(role, 'role-icon--large');
+    if (iconWrap) {
+      iconWrap.innerHTML = '';
+      iconWrap.appendChild(A.roleIconEl(role, 'role-icon--large'));
+    }
     var nameEl = el('auto-reveal-overlay-name');
     if (nameEl) nameEl.textContent = A.ROLE_NAMES[role] || role;
   }

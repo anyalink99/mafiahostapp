@@ -185,24 +185,42 @@
     blacks.sort(function (a, b) {
       return a.id - b.id;
     });
-    var html = '';
-    html += '<div class="text-mafia-cream/85 text-sm">Чёрные:</div>';
-    html += '<div class="flex justify-center gap-2 flex-wrap">';
-    for (var bi = 0; bi < blacks.length; bi++) {
-      html +=
-        '<span class="font-display font-bold text-3xl sm:text-4xl text-mafia-blood tabular-nums px-3 py-1 rounded border border-mafia-blood/55 bg-mafia-blood/15">№' +
-        blacks[bi].id +
-        '</span>';
-    }
-    html += '</div>';
+    var h = app.h;
+    revealEl.innerHTML = '';
+    revealEl.appendChild(h('div', { className: 'text-mafia-cream/85 text-sm' }, 'Чёрные:'));
+    revealEl.appendChild(
+      h(
+        'div',
+        { className: 'flex justify-center gap-2 flex-wrap' },
+        blacks.map(function (b) {
+          return h(
+            'span',
+            {
+              className:
+                'font-display font-bold text-3xl sm:text-4xl text-mafia-blood tabular-nums px-3 py-1 rounded border border-mafia-blood/55 bg-mafia-blood/15',
+            },
+            '№' + b.id
+          );
+        })
+      )
+    );
     if (sheriff) {
-      html += '<div class="text-mafia-cream/85 text-sm mt-3">Шериф:</div>';
-      html +=
-        '<div class="flex justify-center"><span class="font-display font-bold text-3xl sm:text-4xl text-mafia-gold tabular-nums px-3 py-1 rounded border border-mafia-gold/55 bg-mafia-gold/10">№' +
-        sheriff.id +
-        '</span></div>';
+      revealEl.appendChild(h('div', { className: 'text-mafia-cream/85 text-sm mt-3' }, 'Шериф:'));
+      revealEl.appendChild(
+        h(
+          'div',
+          { className: 'flex justify-center' },
+          h(
+            'span',
+            {
+              className:
+                'font-display font-bold text-3xl sm:text-4xl text-mafia-gold tabular-nums px-3 py-1 rounded border border-mafia-gold/55 bg-mafia-gold/10',
+            },
+            '№' + sheriff.id
+          )
+        )
+      );
     }
-    revealEl.innerHTML = html;
   };
 
   app.handleMerlinActionDone = function () {

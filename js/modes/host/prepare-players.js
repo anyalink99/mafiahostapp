@@ -9,7 +9,7 @@
   'use strict';
 
   var H = (app._host = app._host || {});
-  var escapeHtml = app.escapeHtml;
+  var h = app.h;
 
   function prepareRoleCodeToLabel(code) {
     return app.roleLabelRu(code);
@@ -132,44 +132,57 @@
       var roleLabel = prepareRoleCodeToLabel(roleCode);
       var iconId = prepareRoleCodeToIconId(roleCode);
 
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className =
-        'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5';
-      btn.setAttribute('data-action', 'player-slot-open');
-      btn.setAttribute('data-player-id', String(p.id));
-      btn.setAttribute(
-        'aria-label',
-        (nickTrim ? 'Игрок №' + p.id + ', псевдоним ' + nickTrim : 'Игрок №' + p.id) +
-          ', роль ' +
-          roleLabel
+      list.appendChild(
+        h(
+          'button',
+          {
+            type: 'button',
+            className:
+              'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5',
+            'data-action': 'player-slot-open',
+            'data-player-id': String(p.id),
+            'aria-label':
+              (nickTrim ? 'Игрок №' + p.id + ', псевдоним ' + nickTrim : 'Игрок №' + p.id) +
+              ', роль ' +
+              roleLabel,
+          },
+          [
+            h(
+              'div',
+              {
+                className:
+                  'player-slot__row grid w-full min-h-0 shrink-0 grid-cols-3 items-center gap-x-2',
+              },
+              [
+                h(
+                  'div',
+                  { className: prepareRoleIconWrapClass(roleCode), 'aria-hidden': 'true' },
+                  app.svgIcon(iconId, 'h-5 w-5 pointer-events-none sm:h-[1.35rem] sm:w-[1.35rem]')
+                ),
+                h(
+                  'span',
+                  {
+                    className:
+                      'font-display text-2xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-3xl text-center',
+                  },
+                  '№' + p.id
+                ),
+                h('div', { className: 'invisible h-8 w-8 sm:h-9 sm:w-9', 'aria-hidden': 'true' }),
+              ]
+            ),
+            h(
+              'div',
+              {
+                className:
+                  'player-slot-nick mt-1 mb-1 min-h-[1.6rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
+                  (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30'),
+                role: 'presentation',
+              },
+              nickTrim || 'Псевдоним'
+            ),
+          ]
+        )
       );
-
-      var nickRowClass =
-        'player-slot-nick mt-1 mb-1 min-h-[1.6rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
-        (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30');
-
-      btn.innerHTML =
-        '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-3 items-center gap-x-2">' +
-        '<div class="' +
-        prepareRoleIconWrapClass(roleCode) +
-        '" aria-hidden="true">' +
-        '<svg class="h-5 w-5 pointer-events-none sm:h-[1.35rem] sm:w-[1.35rem]" aria-hidden="true"><use href="#' +
-        iconId +
-        '"/></svg>' +
-        '</div>' +
-        '<span class="font-display text-2xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-3xl text-center">№' +
-        p.id +
-        '</span>' +
-        '<div class="invisible h-8 w-8 sm:h-9 sm:w-9" aria-hidden="true"></div>' +
-        '</div>' +
-        '<div class="' +
-        nickRowClass +
-        '" role="presentation">' +
-        (nickTrim ? escapeHtml(nickTrim) : 'Псевдоним') +
-        '</div>';
-
-      list.appendChild(btn);
     }
     return true;
   };

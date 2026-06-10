@@ -7,7 +7,7 @@
 
   var A = app._auto;
   var el = A.el;
-  var escapeHtml = A.escapeHtml;
+  var h = app.h;
 
   function voteAvailableForIndex(session, index) {
     var used = 0;
@@ -107,25 +107,40 @@
       var seat = A.seatById(pid);
       var nick = seat && seat.nick && seat.nick.trim() ? seat.nick.trim() : '';
       var assigned = s.vote.votes[i];
-      var tile = document.createElement('button');
-      tile.type = 'button';
-      tile.setAttribute('data-action', 'auto-vote-open-count');
-      tile.setAttribute('data-candidate-index', String(i));
-      tile.className =
-        'flex flex-col items-center justify-center rounded-lg border-2 border-mafia-gold/50 bg-mafia-coal text-mafia-gold p-4 sm:p-5 min-w-[6.5rem] cursor-pointer transition-colors hover:border-mafia-gold/80 active:scale-[0.97]';
-      tile.innerHTML =
-        '<span class="font-display font-bold text-4xl sm:text-5xl tabular-nums">№' +
-        pid +
-        '</span>' +
-        (nick
-          ? '<span class="text-mafia-cream/75 text-xs mt-1 max-w-[8rem] truncate">' +
-            escapeHtml(nick) +
-            '</span>'
-          : '') +
-        '<span class="mt-2 text-mafia-gold/90 text-sm uppercase tracking-wider">голосов: <span class="tabular-nums">' +
-        (assigned !== null && assigned !== undefined ? assigned : 0) +
-        '</span></span>';
-      grid.appendChild(tile);
+      grid.appendChild(
+        h(
+          'button',
+          {
+            type: 'button',
+            'data-action': 'auto-vote-open-count',
+            'data-candidate-index': String(i),
+            className:
+              'flex flex-col items-center justify-center rounded-lg border-2 border-mafia-gold/50 bg-mafia-coal text-mafia-gold p-4 sm:p-5 min-w-[6.5rem] cursor-pointer transition-colors hover:border-mafia-gold/80 active:scale-[0.97]',
+          },
+          [
+            h(
+              'span',
+              { className: 'font-display font-bold text-4xl sm:text-5xl tabular-nums' },
+              '№' + pid
+            ),
+            nick
+              ? h(
+                  'span',
+                  { className: 'text-mafia-cream/75 text-xs mt-1 max-w-[8rem] truncate' },
+                  nick
+                )
+              : null,
+            h('span', { className: 'mt-2 text-mafia-gold/90 text-sm uppercase tracking-wider' }, [
+              'голосов: ',
+              h(
+                'span',
+                { className: 'tabular-nums' },
+                String(assigned !== null && assigned !== undefined ? assigned : 0)
+              ),
+            ]),
+          ]
+        )
+      );
     }
   };
 

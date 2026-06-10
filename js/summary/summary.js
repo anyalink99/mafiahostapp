@@ -9,7 +9,6 @@
   'use strict';
 
   var S = (app._summary = app._summary || {});
-  var escapeHtml = app.escapeHtml;
   var parseBonusFloat = app.parseBonusFloat;
 
   function renderSummaryWinningTeamRow(teamVal) {
@@ -200,7 +199,7 @@
         var nickRow = document.createElement('div');
         nickRow.className = nickRowClass;
         nickRow.setAttribute('role', 'presentation');
-        nickRow.innerHTML = nickTrim ? escapeHtml(nickTrim) : 'Псевдоним';
+        nickRow.textContent = nickTrim || 'Псевдоним';
 
         slotBtn.appendChild(topRow);
         slotBtn.appendChild(nickRow);

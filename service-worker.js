@@ -1,5 +1,5 @@
 // BUILD:PRECACHE-BEGIN (автогенерация scripts/build-sw.cjs — не редактировать руками)
-var CACHE_NAME = 'mafia-host-static-cbec45a008f8';
+var CACHE_NAME = 'mafia-host-static-77e3983206f7';
 var ASSETS = [
   './',
   './audio/1.mp3',

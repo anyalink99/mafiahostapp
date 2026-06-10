@@ -7,7 +7,7 @@
 
   var A = app._auto;
   var el = A.el;
-  var escapeHtml = A.escapeHtml;
+  var h = app.h;
 
   A.transitionToDay = function (dayNum) {
     var s = app.autoState;
@@ -121,20 +121,21 @@
     A.saveAuto();
   };
 
-  function autoPlayerStatusHtml(seat) {
+  function autoPlayerStatusEl(seat) {
     var s = app.autoState;
-    var inQueue = s.day && s.day.nominees.indexOf(seat.id) !== -1;
-    if (seat.eliminationReason) {
-      return (
-        '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-blood/50 bg-mafia-blood/10 text-mafia-blood" aria-hidden="true"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-elim-' +
-        seat.eliminationReason +
-        '"/></svg></div>'
-      );
-    }
-    if (inQueue) {
-      return '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-gold/70 bg-mafia-blood/15 text-mafia-gold" title="Выставлен" aria-label="Выставлен"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-nominated"/></svg></div>';
-    }
-    return '<div class="invisible flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-transparent" aria-hidden="true"></div>';
+    var inQueue = !!(s.day && s.day.nominees.indexOf(seat.id) !== -1);
+    return app.playerStatusBadge(seat.eliminationReason, inQueue);
+  }
+
+  var SLOT_ROW_CLASS =
+    'player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1';
+
+  function invisibleCell() {
+    return h(
+      'div',
+      { className: 'flex min-w-0 justify-start' },
+      h('div', { className: 'invisible h-8 w-8', 'aria-hidden': 'true' })
+    );
   }
 
   function renderAutoDayPlayers() {
@@ -151,55 +152,98 @@
       if (!seat) return;
       var out = !!seat.eliminationReason || seat.alive === false;
       var phantom = A.isPhantomSeat(seat);
-      var btn = document.createElement('button');
-      btn.type = 'button';
       var phantomCls = phantom ? ' opacity-[0.4] cursor-not-allowed' : out ? ' opacity-[0.55]' : '';
       var hoverCls = phantom ? '' : ' hover:border-mafia-gold/35 active:scale-[0.98]';
-      btn.className =
-        'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
-        hoverCls +
-        phantomCls;
-      if (!phantom) btn.setAttribute('data-action', 'auto-day-player-slot-open');
-      btn.setAttribute('data-player-id', String(seat.id));
       var nickTrim = seat.nick ? seat.nick.trim() : '';
-      var foulPillClass =
-        'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
-        (seat.fouls > 2
-          ? 'border-mafia-blood/55 bg-mafia-blood'
-          : 'border-mafia-border/35 bg-black/25');
+
+      var children;
       if (phantom) {
-        btn.innerHTML =
-          '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
-          '<div class="flex min-w-0 justify-start"><div class="invisible h-8 w-8" aria-hidden="true"></div></div>' +
-          '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold/55 tabular-nums sm:text-4xl">№' +
-          seat.id +
-          '</span>' +
-          '<div class="flex min-w-0 justify-end"><div class="invisible h-8 w-8" aria-hidden="true"></div></div>' +
-          '</div>' +
-          '<div class="player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/40 bg-black/20 px-2 py-1 text-center font-sans text-sm leading-snug text-mafia-gold/75 italic">Каспер</div>';
+        children = [
+          h('div', { className: SLOT_ROW_CLASS }, [
+            invisibleCell(),
+            h(
+              'span',
+              {
+                className:
+                  'font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold/55 tabular-nums sm:text-4xl',
+              },
+              '№' + seat.id
+            ),
+            h(
+              'div',
+              { className: 'flex min-w-0 justify-end' },
+              h('div', { className: 'invisible h-8 w-8', 'aria-hidden': 'true' })
+            ),
+          ]),
+          h(
+            'div',
+            {
+              className:
+                'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/40 bg-black/20 px-2 py-1 text-center font-sans text-sm leading-snug text-mafia-gold/75 italic',
+            },
+            'Каспер'
+          ),
+        ];
       } else {
-        btn.innerHTML =
-          '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
-          '<div class="flex min-w-0 justify-start">' +
-          autoPlayerStatusHtml(seat) +
-          '</div>' +
-          '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl">№' +
-          seat.id +
-          '</span>' +
-          '<div class="flex min-w-0 justify-end">' +
-          '<div class="' +
-          foulPillClass +
-          '"><span class="font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95">ф: ' +
-          seat.fouls +
-          '</span></div>' +
-          '</div>' +
-          '</div>' +
-          '<div class="player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
-          (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30') +
-          '">' +
-          (nickTrim ? escapeHtml(nickTrim) : 'Псевдоним') +
-          '</div>';
+        children = [
+          h('div', { className: SLOT_ROW_CLASS }, [
+            h('div', { className: 'flex min-w-0 justify-start' }, autoPlayerStatusEl(seat)),
+            h(
+              'span',
+              {
+                className:
+                  'font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl',
+              },
+              '№' + seat.id
+            ),
+            h(
+              'div',
+              { className: 'flex min-w-0 justify-end' },
+              h(
+                'div',
+                {
+                  className:
+                    'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
+                    (seat.fouls > 2
+                      ? 'border-mafia-blood/55 bg-mafia-blood'
+                      : 'border-mafia-border/35 bg-black/25'),
+                },
+                h(
+                  'span',
+                  {
+                    className:
+                      'font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95',
+                  },
+                  'ф: ' + seat.fouls
+                )
+              )
+            ),
+          ]),
+          h(
+            'div',
+            {
+              className:
+                'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
+                (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30'),
+            },
+            nickTrim || 'Псевдоним'
+          ),
+        ];
       }
+
+      var btn = h(
+        'button',
+        {
+          type: 'button',
+          className:
+            'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
+            hoverCls +
+            phantomCls,
+          'data-action': phantom ? null : 'auto-day-player-slot-open',
+          'data-player-id': String(seat.id),
+        },
+        children
+      );
       list.appendChild(btn);
     });
     refreshAutoDaySwitchHostButton();
@@ -215,7 +259,8 @@
     if (!seat) return;
     var row = btn.querySelector('.player-slot__row');
     if (!row || !row.children[0]) return;
-    row.children[0].innerHTML = autoPlayerStatusHtml(seat);
+    row.children[0].innerHTML = '';
+    row.children[0].appendChild(autoPlayerStatusEl(seat));
   };
 
   function refreshAutoDaySwitchHostButton() {

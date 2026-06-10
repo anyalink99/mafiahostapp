@@ -40,6 +40,10 @@
     el.appendChild(child);
   }
 
+  // SVG-теги создаются через createElementNS (createElement даёт HTMLUnknownElement,
+  // который не рендерится); class на SVG ставится только атрибутом.
+  var H_SVG_TAGS = { svg: 1, use: 1, path: 1, circle: 1, g: 1, line: 1, ellipse: 1, rect: 1 };
+
   /**
    * Маленький DOM-билдер для рендереров — замена innerHTML-конкатенации.
    *   app.h('button', { className: '…', 'data-action': 'x', disabled: true }, [
@@ -50,20 +54,68 @@
    * children: строка/число (текстовый узел), Node, массив (включая вложенные).
    */
   app.h = function (tag, attrs, children) {
-    var el = document.createElement(tag);
+    var isSvg = H_SVG_TAGS[tag] === 1;
+    var el = isSvg
+      ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+      : document.createElement(tag);
     if (attrs) {
       for (var k in attrs) {
         if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
         var v = attrs[k];
         if (v === null || v === undefined || v === false) continue;
-        if (k === 'className') el.className = v;
-        else if (k === 'disabled' || k === 'checked' || k === 'value') el[k] = v;
+        if (k === 'className') {
+          if (isSvg) el.setAttribute('class', v);
+          else el.className = v;
+        } else if (!isSvg && (k === 'disabled' || k === 'checked' || k === 'value')) el[k] = v;
         else if (v === true) el.setAttribute(k, '');
         else el.setAttribute(k, String(v));
       }
     }
     appendHChildren(el, children);
     return el;
+  };
+
+  /** Иконка-ссылка на символ SVG-спрайта: <svg class><use href="#id"/></svg>. */
+  app.svgIcon = function (iconId, className) {
+    return app.h('svg', { className: className || '', 'aria-hidden': 'true' }, [
+      app.h('use', { href: '#' + iconId }),
+    ]);
+  };
+
+  /**
+   * Круглый бейдж статуса в слоте игрока: причина выбытия / «выставлен» /
+   * невидимый плейсхолдер (для выравнивания). Общий для стола хост-режима
+   * и дня автономного режима.
+   */
+  app.playerStatusBadge = function (eliminationReason, nominated) {
+    if (eliminationReason) {
+      return app.h(
+        'div',
+        {
+          className:
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-blood/50 bg-mafia-blood/10 text-mafia-blood',
+          'aria-hidden': 'true',
+        },
+        app.svgIcon('icon-elim-' + eliminationReason, 'pointer-events-none h-[18px] w-[18px]')
+      );
+    }
+    if (nominated) {
+      return app.h(
+        'div',
+        {
+          className:
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-gold/70 bg-mafia-blood/15 text-mafia-gold',
+          title: 'Выставлен',
+          'aria-label': 'Выставлен',
+        },
+        app.svgIcon('icon-nominated', 'pointer-events-none h-[18px] w-[18px]')
+      );
+    }
+    return app.h('div', {
+      className:
+        'invisible flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-transparent',
+      'aria-hidden': 'true',
+    });
   };
 
   app.parseBonusFloat = function (raw) {

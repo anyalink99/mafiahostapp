@@ -13,11 +13,6 @@
 
   var attached = new WeakSet();
   var MU_ORIGIN = 'https://mafiauniverse.org';
-  var escapeHtml =
-    (app.MuUtils && app.MuUtils.escapeHtml) ||
-    function (s) {
-      return String(s == null ? '' : s);
-    };
 
   function debounce(fn, ms) {
     var t;
@@ -46,49 +41,52 @@
     dd.style.minWidth = r.width + 'px';
   }
 
-  function renderState(dd, html) {
-    dd.innerHTML = html;
+  // Данные приходят с MafiaUniverse (ники, заметки, URL аватарок) — рендерим
+  // DOM-билдером app.h: текст и атрибуты безопасны по построению.
+  function renderState(dd, node) {
+    dd.innerHTML = '';
+    dd.appendChild(node);
     dd.style.display = '';
   }
 
-  function avatarHtml(item) {
+  function stateMessage(className, text) {
+    return app.h('div', { className: className }, text);
+  }
+
+  function avatarEl(item) {
     if (item.avatarUrl) {
       // extension отдаёт относительный путь '/Images/...', worker — абсолютный.
       var raw = item.avatarUrl;
       var url = /^https?:\/\//i.test(raw) ? raw : MU_ORIGIN + raw;
-      return '<img class="mu-ac-item__avatar" src="' + escapeHtml(url) + '" alt="" loading="lazy">';
+      return app.h('img', { className: 'mu-ac-item__avatar', src: url, alt: '', loading: 'lazy' });
     }
     var initial = (item.label || '?').charAt(0).toUpperCase();
-    return (
-      '<div class="mu-ac-item__avatar mu-ac-item__avatar--placeholder">' +
-      escapeHtml(initial) +
-      '</div>'
+    return app.h(
+      'div',
+      { className: 'mu-ac-item__avatar mu-ac-item__avatar--placeholder' },
+      initial
     );
   }
 
   function renderItems(dd, items) {
     if (!items.length) {
-      renderState(dd, '<div class="mu-ac-empty">Никого не нашли</div>');
+      renderState(dd, stateMessage('mu-ac-empty', 'Никого не нашли'));
       return;
     }
-    var html = '';
+    var frag = document.createDocumentFragment();
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
-      html +=
-        '<div class="mu-ac-item" data-mu-ac-index="' +
-        i +
-        '">' +
-        avatarHtml(it) +
-        '<div class="mu-ac-item__text">' +
-        '<div class="mu-ac-item__nick">' +
-        escapeHtml(it.label) +
-        '</div>' +
-        (it.note ? '<div class="mu-ac-item__note">' + escapeHtml(it.note) + '</div>' : '') +
-        '</div>' +
-        '</div>';
+      frag.appendChild(
+        app.h('div', { className: 'mu-ac-item', 'data-mu-ac-index': String(i) }, [
+          avatarEl(it),
+          app.h('div', { className: 'mu-ac-item__text' }, [
+            app.h('div', { className: 'mu-ac-item__nick' }, it.label),
+            it.note ? app.h('div', { className: 'mu-ac-item__note' }, it.note) : null,
+          ]),
+        ])
+      );
     }
-    dd.innerHTML = html;
-    dd.style.display = '';
+    renderState(dd, frag);
   }
 
   app.attachMUAutocomplete = function (input, options) {
@@ -136,17 +134,17 @@
         b.innerHTML = '';
         return;
       }
+      b.innerHTML = '';
       if (meta.logoId) {
         var url =
           MU_ORIGIN +
           '/Images/GetImage?imageId=' +
           encodeURIComponent(meta.logoId) +
           '&resizeWith=60';
-        b.innerHTML = '<img src="' + escapeHtml(url) + '" alt="">';
+        b.appendChild(app.h('img', { src: url, alt: '' }));
       } else {
         var initial = (nick.charAt(0) || '?').toUpperCase();
-        b.innerHTML =
-          '<span class="mu-ac-input-badge__placeholder">' + escapeHtml(initial) + '</span>';
+        b.appendChild(app.h('span', { className: 'mu-ac-input-badge__placeholder' }, initial));
       }
       b.title = meta.note ? nick + ' (' + meta.note + ')' : nick;
       b.style.display = '';
@@ -205,7 +203,7 @@
 
       if (!dd) dd = buildDropdown();
       positionDropdown(dd, input);
-      renderState(dd, '<div class="mu-ac-loading">Ищу…</div>');
+      renderState(dd, stateMessage('mu-ac-loading', 'Ищу…'));
 
       var mySeq = ++requestSeq;
       app.MU.searchPlayers(term)
@@ -217,10 +215,7 @@
         })
         .catch(function (err) {
           if (mySeq !== requestSeq) return;
-          renderState(
-            dd,
-            '<div class="mu-ac-error">' + escapeHtml((err && err.message) || err) + '</div>'
-          );
+          renderState(dd, stateMessage('mu-ac-error', String((err && err.message) || err)));
         });
     }, 200);
 

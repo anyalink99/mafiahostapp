@@ -188,9 +188,9 @@
     return !!(_player && _deviceId);
   };
 
-  /* ── Settings UI rendering ── */
+  /* ── Settings UI rendering (DOM-билдер app.h) ── */
 
-  var escapeHtml = app.escapeHtml;
+  var h = app.h;
 
   app.renderSpotifyGlobalSettings = function () {
     var container = document.getElementById('spotify-settings-container');
@@ -200,34 +200,69 @@
     var authed = app.spotifyIsAuthenticated ? app.spotifyIsAuthenticated() : false;
     var isFile = location.protocol === 'file:';
 
-    var html = '';
-    html +=
-      '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider mb-1">Client ID</label>';
-    html +=
-      '<input type="text" id="spotify-client-id" value="' +
-      escapeHtml(clientId) +
-      '" placeholder="Вставьте Client ID из Spotify Developer" class="w-full px-3 py-2 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm mb-3">';
+    container.innerHTML = '';
+    container.appendChild(
+      h(
+        'label',
+        { className: 'block text-xs text-mafia-cream/60 uppercase tracking-wider mb-1' },
+        'Client ID'
+      )
+    );
+    container.appendChild(
+      h('input', {
+        type: 'text',
+        id: 'spotify-client-id',
+        value: clientId,
+        placeholder: 'Вставьте Client ID из Spotify Developer',
+        className:
+          'w-full px-3 py-2 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm mb-3',
+      })
+    );
 
     if (isFile) {
-      html +=
-        '<p class="text-mafia-cream/50 text-xs mb-3">Spotify доступен только при запуске через веб-сервер (http/https).</p>';
+      container.appendChild(
+        h(
+          'p',
+          { className: 'text-mafia-cream/50 text-xs mb-3' },
+          'Spotify доступен только при запуске через веб-сервер (http/https).'
+        )
+      );
     } else if (authed) {
-      html += '<div class="flex items-center gap-3 mb-3">';
-      html += '<span class="text-green-400 text-sm">Подключен</span>';
-      html +=
-        '<button type="button" data-action="spotify-disconnect" class="px-3 py-1.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/80 text-xs uppercase tracking-wider rounded cursor-pointer">Отключить</button>';
-      html += '</div>';
+      container.appendChild(
+        h('div', { className: 'flex items-center gap-3 mb-3' }, [
+          h('span', { className: 'text-green-400 text-sm' }, 'Подключен'),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-action': 'spotify-disconnect',
+              className:
+                'px-3 py-1.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/80 text-xs uppercase tracking-wider rounded cursor-pointer',
+            },
+            'Отключить'
+          ),
+        ])
+      );
     } else {
-      html +=
-        '<button type="button" data-action="spotify-connect" class="px-4 py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black font-medium text-sm rounded cursor-pointer transition-colors' +
-        (clientId ? '' : ' opacity-50 pointer-events-none') +
-        '">Подключить Spotify</button>';
+      container.appendChild(
+        h(
+          'button',
+          {
+            type: 'button',
+            'data-action': 'spotify-connect',
+            className:
+              'px-4 py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black font-medium text-sm rounded cursor-pointer transition-colors' +
+              (clientId ? '' : ' opacity-50 pointer-events-none'),
+          },
+          'Подключить Spotify'
+        )
+      );
       if (!clientId) {
-        html += '<p class="text-mafia-cream/40 text-xs mt-2">Сначала введите Client ID.</p>';
+        container.appendChild(
+          h('p', { className: 'text-mafia-cream/40 text-xs mt-2' }, 'Сначала введите Client ID.')
+        );
       }
     }
-
-    container.innerHTML = html;
   };
 
   app.renderSpotifySlotSettings = function (slot) {
@@ -242,46 +277,81 @@
     }
 
     var info = app.spotifyGetSlotPlaylist(slot);
-    var html = '';
+    container.innerHTML = '';
 
     if (info && info.playlistId) {
-      html +=
-        '<div class="flex items-center gap-3 p-2.5 bg-[#1DB954]/10 border border-[#1DB954]/30 rounded">';
-      if (info.playlistImageUrl) {
-        html +=
-          '<img src="' +
-          escapeHtml(info.playlistImageUrl) +
-          '" alt="" class="w-10 h-10 rounded flex-shrink-0">';
-      }
-      html += '<div class="flex-1 min-w-0">';
-      html +=
-        '<p class="text-sm text-[#1DB954] font-medium truncate">' +
-        escapeHtml(info.playlistName || 'Плейлист') +
-        '</p>';
-      html += '<p class="text-xs text-mafia-cream/50">' + (info.trackCount || 0) + ' треков</p>';
-      html += '</div>';
-      html +=
-        '<button type="button" data-action="spotify-clear-playlist" data-slot="' +
-        escapeHtml(k) +
-        '" class="text-red-400/80 hover:text-red-300 text-xs uppercase tracking-wider cursor-pointer flex-shrink-0">Убрать</button>';
-      html += '</div>';
+      // Название/обложка приходят из Spotify API — DOM-билдер безопасен по построению.
+      container.appendChild(
+        h(
+          'div',
+          {
+            className:
+              'flex items-center gap-3 p-2.5 bg-[#1DB954]/10 border border-[#1DB954]/30 rounded',
+          },
+          [
+            info.playlistImageUrl
+              ? h('img', {
+                  src: info.playlistImageUrl,
+                  alt: '',
+                  className: 'w-10 h-10 rounded flex-shrink-0',
+                })
+              : null,
+            h('div', { className: 'flex-1 min-w-0' }, [
+              h(
+                'p',
+                { className: 'text-sm text-[#1DB954] font-medium truncate' },
+                info.playlistName || 'Плейлист'
+              ),
+              h(
+                'p',
+                { className: 'text-xs text-mafia-cream/50' },
+                (info.trackCount || 0) + ' треков'
+              ),
+            ]),
+            h(
+              'button',
+              {
+                type: 'button',
+                'data-action': 'spotify-clear-playlist',
+                'data-slot': k,
+                className:
+                  'text-red-400/80 hover:text-red-300 text-xs uppercase tracking-wider cursor-pointer flex-shrink-0',
+              },
+              'Убрать'
+            ),
+          ]
+        )
+      );
     } else {
-      html += '<div class="flex gap-2">';
-      html +=
-        '<input type="text" data-spotify-playlist-input data-slot="' +
-        escapeHtml(k) +
-        '" placeholder="https://open.spotify.com/playlist/..." class="flex-1 min-w-0 px-3 py-2 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">';
-      html +=
-        '<button type="button" data-action="spotify-paste-playlist" data-slot="' +
-        escapeHtml(k) +
-        '" class="px-3 py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black text-xs font-medium uppercase tracking-wider rounded cursor-pointer flex-shrink-0">Добавить</button>';
-      html += '</div>';
-      html +=
-        '<div id="spotify-slot-' +
-        escapeHtml(k) +
-        '-error" class="text-red-400/80 text-xs mt-1 hidden"></div>';
+      container.appendChild(
+        h('div', { className: 'flex gap-2' }, [
+          h('input', {
+            type: 'text',
+            'data-spotify-playlist-input': true,
+            'data-slot': k,
+            placeholder: 'https://open.spotify.com/playlist/...',
+            className:
+              'flex-1 min-w-0 px-3 py-2 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm',
+          }),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-action': 'spotify-paste-playlist',
+              'data-slot': k,
+              className:
+                'px-3 py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black text-xs font-medium uppercase tracking-wider rounded cursor-pointer flex-shrink-0',
+            },
+            'Добавить'
+          ),
+        ])
+      );
+      container.appendChild(
+        h('div', {
+          id: 'spotify-slot-' + k + '-error',
+          className: 'text-red-400/80 text-xs mt-1 hidden',
+        })
+      );
     }
-
-    container.innerHTML = html;
   };
 })(window.MafiaApp);

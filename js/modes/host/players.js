@@ -8,21 +8,11 @@
 (function (app) {
   'use strict';
 
-  var escapeHtml = app.escapeHtml;
+  var h = app.h;
 
-  function playerSlotStatusHtml(p) {
+  function playerSlotStatusEl(p) {
     var inVoteQueue = app.nomineeQueue.indexOf(p.id) !== -1;
-    if (p.eliminationReason) {
-      return (
-        '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-blood/50 bg-mafia-blood/10 text-mafia-blood" aria-hidden="true"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-elim-' +
-        p.eliminationReason +
-        '"/></svg></div>'
-      );
-    }
-    if (inVoteQueue) {
-      return '<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-mafia-gold/70 bg-mafia-blood/15 text-mafia-gold" title="Выставлен" aria-label="Выставлен"><svg class="pointer-events-none h-[18px] w-[18px]"><use href="#icon-nominated"/></svg></div>';
-    }
-    return '<div class="invisible flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-transparent" aria-hidden="true"></div>';
+    return app.playerStatusBadge(p.eliminationReason, inVoteQueue);
   }
 
   app.getActivePlayerCount = function () {
@@ -136,7 +126,8 @@
     if (!p) return;
     var row = btn.querySelector('.player-slot__row');
     if (!row || !row.children[0]) return;
-    row.children[0].innerHTML = playerSlotStatusHtml(p);
+    row.children[0].innerHTML = '';
+    row.children[0].appendChild(playerSlotStatusEl(p));
   };
 
   app.renderPlayers = function () {
@@ -155,52 +146,76 @@
     for (var qi = 0; qi < playOrder.length; qi++) {
       var p = app.players[playOrder[qi]];
       var out = !!p.eliminationReason;
-      var statusHtml = playerSlotStatusHtml(p);
-      var foulClass =
-        'font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95';
-      var foulInner = '<span class="' + foulClass + '">ф: ' + p.fouls + '</span>';
-      var foulPillClass =
-        'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
-        (p.fouls > 2
-          ? 'border-mafia-blood/55 bg-mafia-blood'
-          : 'border-mafia-border/35 bg-black/25');
       var nickTrim = p.nick != null ? String(p.nick).trim() : '';
 
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className =
-        'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
-        (out ? ' opacity-[0.55]' : '');
-      btn.setAttribute('data-action', 'player-slot-open');
-      btn.setAttribute('data-player-id', String(p.id));
-      btn.setAttribute(
-        'aria-label',
-        nickTrim ? 'Игрок №' + p.id + ', псевдоним ' + nickTrim : 'Игрок №' + p.id
+      list.appendChild(
+        h(
+          'button',
+          {
+            type: 'button',
+            className:
+              'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
+              (out ? ' opacity-[0.55]' : ''),
+            'data-action': 'player-slot-open',
+            'data-player-id': String(p.id),
+            'aria-label': nickTrim
+              ? 'Игрок №' + p.id + ', псевдоним ' + nickTrim
+              : 'Игрок №' + p.id,
+          },
+          [
+            h(
+              'div',
+              {
+                className:
+                  'player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1',
+              },
+              [
+                h('div', { className: 'flex min-w-0 justify-start' }, playerSlotStatusEl(p)),
+                h(
+                  'span',
+                  {
+                    className:
+                      'font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl',
+                  },
+                  '№' + p.id
+                ),
+                h(
+                  'div',
+                  { className: 'flex min-w-0 justify-end' },
+                  h(
+                    'div',
+                    {
+                      className:
+                        'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
+                        (p.fouls > 2
+                          ? 'border-mafia-blood/55 bg-mafia-blood'
+                          : 'border-mafia-border/35 bg-black/25'),
+                    },
+                    h(
+                      'span',
+                      {
+                        className:
+                          'font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95',
+                      },
+                      'ф: ' + p.fouls
+                    )
+                  )
+                ),
+              ]
+            ),
+            h(
+              'div',
+              {
+                className:
+                  'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
+                  (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30'),
+                role: 'presentation',
+              },
+              nickTrim || 'Псевдоним'
+            ),
+          ]
+        )
       );
-      var nickRowClass =
-        'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
-        (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30');
-      btn.innerHTML =
-        '<div class="player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">' +
-        '<div class="flex min-w-0 justify-start">' +
-        statusHtml +
-        '</div>' +
-        '<span class="font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl">№' +
-        p.id +
-        '</span>' +
-        '<div class="flex min-w-0 justify-end">' +
-        '<div class="' +
-        foulPillClass +
-        '">' +
-        foulInner +
-        '</div></div></div>' +
-        '<div class="' +
-        nickRowClass +
-        '" role="presentation">' +
-        (nickTrim ? escapeHtml(nickTrim) : 'Псевдоним') +
-        '</div>';
-
-      list.appendChild(btn);
     }
     return true;
   };

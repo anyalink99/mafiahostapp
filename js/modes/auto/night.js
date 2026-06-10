@@ -8,7 +8,7 @@
 
   var A = app._auto;
   var el = A.el;
-  var escapeHtml = A.escapeHtml;
+  var h = app.h;
 
   function buildNightTurnOrder(nightNum) {
     var s = app.autoState;
@@ -119,16 +119,52 @@
     var labelEl = el('auto-night-action-label');
     if (labelEl) labelEl.textContent = 'Ночь ' + s.night.nightNum;
     var body = el('auto-night-action-body');
-    if (body) body.innerHTML = renderNightActionBodyHtml(seat);
+    if (body) {
+      body.innerHTML = '';
+      renderNightActionSections(seat).forEach(function (node) {
+        body.appendChild(node);
+      });
+    }
   };
 
-  function renderNightActionBodyHtml(seat) {
+  function renderNightActionSections(seat) {
     var role = seat.role;
-    if (role === 'mafia') return renderMafiaSection(seat, false);
-    if (role === 'don') return renderMafiaSection(seat, true) + renderDonCheckSection(seat);
-    if (role === 'sheriff') return renderSheriffSection(seat);
-    if (role === 'merlin') return renderMerlinSection(seat);
-    return renderPeacefulSection();
+    if (role === 'mafia') return [renderMafiaSection(seat, false)];
+    if (role === 'don') return [renderMafiaSection(seat, true), renderDonCheckSection(seat)];
+    if (role === 'sheriff') return [renderSheriffSection(seat)];
+    if (role === 'merlin') return [renderMerlinSection(seat)];
+    return [renderPeacefulSection()];
+  }
+
+  function sectionEl(extraClass, children) {
+    return h('div', { className: 'auto-night-section' + (extraClass || '') }, children);
+  }
+
+  function sectionTitle(text, mb) {
+    return h(
+      'h2',
+      { className: 'font-display text-mafia-gold text-lg tracking-widest ' + (mb || 'mb-1') },
+      text
+    );
+  }
+
+  // «№N (ник)» — № золотым, ник обычным текстом.
+  function seatRefNodes(id) {
+    var t = A.seatById(id);
+    var nick = t && t.nick && t.nick.trim() ? ' (' + t.nick.trim() + ')' : '';
+    return [h('span', { className: 'text-mafia-gold font-semibold' }, '№' + id), nick];
+  }
+
+  // Баннер результата проверки: «№N (ник) — мафия/шериф/не …».
+  function checkResultBanner(targetId, positive, positiveLabel, negativeLabel) {
+    var t = A.seatById(targetId);
+    var nick = t && t.nick && t.nick.trim() ? ' (' + t.nick.trim() + ')' : '';
+    return h('div', { className: 'auto-night-result-banner' }, [
+      '№' + targetId + nick + ' — ',
+      positive
+        ? h('span', { className: 'text-mafia-gold font-semibold' }, positiveLabel)
+        : negativeLabel,
+    ]);
   }
 
   function renderMerlinSection(seat) {
@@ -144,84 +180,74 @@
     blacks.sort(function (a, b) {
       return a - b;
     });
-    function fmtSeat(id) {
-      var t = A.seatById(id);
-      var nick = t && t.nick && t.nick.trim() ? ' (' + escapeHtml(t.nick.trim()) + ')' : '';
-      return '<span class="text-mafia-gold font-semibold">№' + id + '</span>' + nick;
+    var blacksLine = ['Чёрные: '];
+    for (var bi = 0; bi < blacks.length; bi++) {
+      if (bi > 0) blacksLine.push(', ');
+      blacksLine.push(seatRefNodes(blacks[bi]));
     }
-    var blacksList = blacks.map(fmtSeat).join(', ');
-    var sheriffPart =
-      sheriffNum !== null ? '<div class="mt-2">Шериф: ' + fmtSeat(sheriffNum) + '</div>' : '';
-    return (
-      '<div class="auto-night-section">' +
-      '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">Ход Мерлина</h2>' +
-      '<p class="text-mafia-cream/65 text-xs mb-3">В первую активную ночь Мерлин узнаёт тройку чёрных и шерифа. Запомни и не выдавай себя.</p>' +
-      '<div class="auto-night-result-banner text-left">' +
-      '<div>Чёрные: ' +
-      blacksList +
-      '</div>' +
-      sheriffPart +
-      '</div>' +
-      '</div>'
-    );
+    return sectionEl('', [
+      sectionTitle('Ход Мерлина'),
+      h(
+        'p',
+        { className: 'text-mafia-cream/65 text-xs mb-3' },
+        'В первую активную ночь Мерлин узнаёт тройку чёрных и шерифа. Запомни и не выдавай себя.'
+      ),
+      h('div', { className: 'auto-night-result-banner text-left' }, [
+        h('div', null, blacksLine),
+        sheriffNum !== null
+          ? h('div', { className: 'mt-2' }, ['Шериф: ', seatRefNodes(sheriffNum)])
+          : null,
+      ]),
+    ]);
   }
 
   function renderTargetGrid(candidates, selectedId, action) {
-    if (!candidates.length)
-      return '<p class="text-mafia-cream/60 text-sm text-center py-4">Целей нет.</p>';
-    var out = '<div class="auto-target-grid">';
-    for (var i = 0; i < candidates.length; i++) {
-      var c = candidates[i];
-      var isSel = selectedId === c.id;
-      var nick =
-        c.nick && c.nick.trim()
-          ? '<span class="auto-target-nick">' + escapeHtml(c.nick.trim()) + '</span>'
-          : '';
-      out +=
-        '<button type="button" class="auto-target-tile' +
-        (isSel ? ' auto-target-selected' : '') +
-        '" data-action="' +
-        action +
-        '" data-target-id="' +
-        c.id +
-        '">№' +
-        c.id +
-        nick +
-        '</button>';
+    if (!candidates.length) {
+      return h('p', { className: 'text-mafia-cream/60 text-sm text-center py-4' }, 'Целей нет.');
     }
-    out += '</div>';
-    return out;
+    return h(
+      'div',
+      { className: 'auto-target-grid' },
+      candidates.map(function (c) {
+        var nickTrim = c.nick && c.nick.trim() ? c.nick.trim() : '';
+        return h(
+          'button',
+          {
+            type: 'button',
+            className: 'auto-target-tile' + (selectedId === c.id ? ' auto-target-selected' : ''),
+            'data-action': action,
+            'data-target-id': String(c.id),
+          },
+          ['№' + c.id, nickTrim ? h('span', { className: 'auto-target-nick' }, nickTrim) : null]
+        );
+      })
+    );
   }
 
   function renderMafiaSection(seat, isDon) {
     var s = app.autoState;
+    var heading = isDon ? 'Выстрел мафии (ты — Дон)' : 'Выстрел мафии';
     if (A.isKasperKillNight(s)) {
-      var heading0 = isDon ? 'Выстрел мафии (ты — Дон)' : 'Выстрел мафии';
-      return (
-        '<div class="auto-night-section">' +
-        '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">' +
-        heading0 +
-        '</h2>' +
-        '<p class="text-mafia-cream/85 text-sm">В первую активную ночь мафия не стреляет — 10-й считается убитым. Просто передавай дальше.</p>' +
-        '</div>'
-      );
+      return sectionEl('', [
+        sectionTitle(heading),
+        h(
+          'p',
+          { className: 'text-mafia-cream/85 text-sm' },
+          'В первую активную ночь мафия не стреляет — 10-й считается убитым. Просто передавай дальше.'
+        ),
+      ]);
     }
     var candidates = A.aliveActiveSeats();
     var sel = s.night.mafiaVotes[seat.id] || null;
-    var heading = isDon ? 'Выстрел мафии (ты — Дон)' : 'Выстрел мафии';
-    var sub =
-      'Тапни № жертвы (можно любого живого, включая себя). Выстрелы других мафов скрыты — нужно единогласие, иначе промах.';
-    return (
-      '<div class="auto-night-section">' +
-      '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">' +
-      heading +
-      '</h2>' +
-      '<p class="text-mafia-cream/65 text-xs mb-3">' +
-      sub +
-      '</p>' +
-      renderTargetGrid(candidates, sel, 'auto-mafia-pick') +
-      '</div>'
-    );
+    return sectionEl('', [
+      sectionTitle(heading),
+      h(
+        'p',
+        { className: 'text-mafia-cream/65 text-xs mb-3' },
+        'Тапни № жертвы (можно любого живого, включая себя). Выстрелы других мафов скрыты — нужно единогласие, иначе промах.'
+      ),
+      renderTargetGrid(candidates, sel, 'auto-mafia-pick'),
+    ]);
   }
 
   function renderDonCheckSection(seat) {
@@ -231,97 +257,60 @@
       return x.id !== seat.id;
     });
     var donCheck = s.night.donCheck;
-    var resultBanner = '';
-    if (donCheck && donCheck.by === seat.id) {
-      var checkedSeat = A.seatById(donCheck.target);
-      var nickPart =
-        checkedSeat && checkedSeat.nick && checkedSeat.nick.trim()
-          ? ' (' + escapeHtml(checkedSeat.nick.trim()) + ')'
-          : '';
-      resultBanner =
-        '<div class="auto-night-result-banner">' +
-        '№' +
-        donCheck.target +
-        nickPart +
-        ' — ' +
-        (donCheck.isSheriff
-          ? '<span class="text-mafia-gold font-semibold">шериф</span>'
-          : 'не шериф') +
-        '</div>';
-    }
-    var sel = donCheck && donCheck.by === seat.id ? donCheck.target : null;
-    return (
-      '<div class="auto-night-section' +
-      (locked ? ' auto-section-locked' : '') +
-      '">' +
-      '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">Проверка на шерифа</h2>' +
-      '<p class="text-mafia-cream/65 text-xs mb-3">Тапни №, чтобы проверить, шериф ли он.</p>' +
-      renderTargetGrid(candidates, sel, 'auto-don-check') +
-      resultBanner +
-      '</div>'
-    );
+    var mine = donCheck && donCheck.by === seat.id;
+    return sectionEl(locked ? ' auto-section-locked' : '', [
+      sectionTitle('Проверка на шерифа'),
+      h(
+        'p',
+        { className: 'text-mafia-cream/65 text-xs mb-3' },
+        'Тапни №, чтобы проверить, шериф ли он.'
+      ),
+      renderTargetGrid(candidates, mine ? donCheck.target : null, 'auto-don-check'),
+      mine ? checkResultBanner(donCheck.target, donCheck.isSheriff, 'шериф', 'не шериф') : null,
+    ]);
   }
 
   function renderSheriffSection(seat) {
     var s = app.autoState;
     if (A.isSheriffRandomCheckNight(s) && s.night.sheriffPredetermined) {
       var pre = s.night.sheriffPredetermined;
-      var preSeat = A.seatById(pre.target);
-      var preNick =
-        preSeat && preSeat.nick && preSeat.nick.trim()
-          ? ' (' + escapeHtml(preSeat.nick.trim()) + ')'
-          : '';
-      return (
-        '<div class="auto-night-section">' +
-        '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">Случайная проверка шерифа</h2>' +
-        '<p class="text-mafia-cream/85 text-sm mb-3">В первую активную ночь шериф не выбирает цель — проверка случайна.</p>' +
-        '<div class="auto-night-result-banner">№' +
-        pre.target +
-        preNick +
-        ' — ' +
-        (pre.isMafia ? '<span class="text-mafia-gold font-semibold">мафия</span>' : 'не мафия') +
-        '</div>' +
-        '</div>'
-      );
+      return sectionEl('', [
+        sectionTitle('Случайная проверка шерифа'),
+        h(
+          'p',
+          { className: 'text-mafia-cream/85 text-sm mb-3' },
+          'В первую активную ночь шериф не выбирает цель — проверка случайна.'
+        ),
+        checkResultBanner(pre.target, pre.isMafia, 'мафия', 'не мафия'),
+      ]);
     }
     var candidates = A.aliveActiveSeats().filter(function (x) {
       return x.id !== seat.id;
     });
     var check = s.night.sheriffCheck;
-    var resultBanner = '';
-    if (check && check.by === seat.id) {
-      var t = A.seatById(check.target);
-      var nickPart = t && t.nick && t.nick.trim() ? ' (' + escapeHtml(t.nick.trim()) + ')' : '';
-      resultBanner =
-        '<div class="auto-night-result-banner">' +
-        '№' +
-        check.target +
-        nickPart +
-        ' — ' +
-        (check.isMafia ? '<span class="text-mafia-gold font-semibold">мафия</span>' : 'не мафия') +
-        '</div>';
-    }
-    var sel = check && check.by === seat.id ? check.target : null;
-    return (
-      '<div class="auto-night-section">' +
-      '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-1">Проверка шерифа</h2>' +
-      '<p class="text-mafia-cream/65 text-xs mb-3">Тапни №, чтобы проверить, мафия ли он.</p>' +
-      renderTargetGrid(candidates, sel, 'auto-sheriff-check') +
-      resultBanner +
-      '</div>'
-    );
+    var mine = check && check.by === seat.id;
+    return sectionEl('', [
+      sectionTitle('Проверка шерифа'),
+      h(
+        'p',
+        { className: 'text-mafia-cream/65 text-xs mb-3' },
+        'Тапни №, чтобы проверить, мафия ли он.'
+      ),
+      renderTargetGrid(candidates, mine ? check.target : null, 'auto-sheriff-check'),
+      mine ? checkResultBanner(check.target, check.isMafia, 'мафия', 'не мафия') : null,
+    ]);
   }
 
   function renderPeacefulSection() {
-    return (
-      '<div class="auto-night-section">' +
-      '<h2 class="font-display text-mafia-gold text-lg tracking-widest mb-2">Твой ход</h2>' +
-      '<p class="text-mafia-cream/85 text-sm leading-relaxed">' +
-      'Сделай вид, что обдумываешь действие. Не показывай экран соседям. Жми «Готово», когда таймер истечёт.' +
-      '</p>' +
-      '<div class="mt-4 text-center text-mafia-gold/60 font-display text-7xl">♠</div>' +
-      '</div>'
-    );
+    return sectionEl('', [
+      sectionTitle('Твой ход', 'mb-2'),
+      h(
+        'p',
+        { className: 'text-mafia-cream/85 text-sm leading-relaxed' },
+        'Сделай вид, что обдумываешь действие. Не показывай экран соседям. Жми «Готово», когда таймер истечёт.'
+      ),
+      h('div', { className: 'mt-4 text-center text-mafia-gold/60 font-display text-7xl' }, '♠'),
+    ]);
   }
 
   app.handleNightTurnDone = function () {
@@ -486,30 +475,48 @@
     var bm = el('auto-night-result-bestmove');
     if (bm) bm.classList.add('hidden');
     if (!body) return;
+    body.innerHTML = '';
+    function killedNodes(victimId, nick, fallback) {
+      return [
+        h(
+          'p',
+          { className: 'font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1' },
+          'Ночью убит'
+        ),
+        h(
+          'h1',
+          {
+            className:
+              'font-display font-bold text-6xl text-mafia-blood drop-shadow-[0_0_10px_rgba(127,29,29,0.4)] mb-2',
+          },
+          '№' + victimId
+        ),
+        nick || fallback
+          ? h('p', { className: 'text-mafia-cream/85 text-base' }, nick || fallback)
+          : null,
+      ];
+    }
+    var nodes;
     if (A.isKasperKillNight(s)) {
       var seat10 = A.seatById(10);
-      var nick10 =
-        seat10 && seat10.nick && seat10.nick.trim() ? escapeHtml(seat10.nick.trim()) : '';
-      body.innerHTML =
-        '<p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Ночью убит</p>' +
-        '<h1 class="font-display font-bold text-6xl text-mafia-blood drop-shadow-[0_0_10px_rgba(127,29,29,0.4)] mb-2">№10</h1>' +
-        (nick10
-          ? '<p class="text-mafia-cream/85 text-base">' + nick10 + '</p>'
-          : '<p class="text-mafia-cream/85 text-base">мирный житель</p>');
+      var nick10 = seat10 && seat10.nick && seat10.nick.trim() ? seat10.nick.trim() : '';
+      nodes = killedNodes(10, nick10, 'мирный житель');
     } else if (s.night && s.night.victimId) {
       var v = A.seatById(s.night.victimId);
-      var nick = v && v.nick && v.nick.trim() ? escapeHtml(v.nick.trim()) : '';
-      body.innerHTML =
-        '<p class="font-display text-mafia-gold/80 text-sm tracking-widest uppercase mb-1">Ночью убит</p>' +
-        '<h1 class="font-display font-bold text-6xl text-mafia-blood drop-shadow-[0_0_10px_rgba(127,29,29,0.4)] mb-2">№' +
-        s.night.victimId +
-        '</h1>' +
-        (nick ? '<p class="text-mafia-cream/85 text-base">' + nick + '</p>' : '');
+      nodes = killedNodes(s.night.victimId, v && v.nick && v.nick.trim() ? v.nick.trim() : '', '');
     } else {
-      body.innerHTML =
-        '<h1 class="font-display font-bold text-4xl text-mafia-gold mb-2">Промах</h1>' +
-        '<p class="text-mafia-cream/75 text-sm">Этой ночью никто не погиб — мафия не договорилась.</p>';
+      nodes = [
+        h('h1', { className: 'font-display font-bold text-4xl text-mafia-gold mb-2' }, 'Промах'),
+        h(
+          'p',
+          { className: 'text-mafia-cream/75 text-sm' },
+          'Этой ночью никто не погиб — мафия не договорилась.'
+        ),
+      ];
     }
+    nodes.forEach(function (n) {
+      if (n) body.appendChild(n);
+    });
   };
 
   app.continueAfterNightResult = function () {

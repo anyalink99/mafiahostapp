@@ -1,5 +1,4 @@
 (function (app) {
-  var escapeHtml = app.escapeHtml;
   var SIDE_ROLE_ICON_BY_CODE = {
     don: 'icon-don',
     sheriff: 'icon-sheriff',
@@ -107,7 +106,7 @@
         'player-slot-nick mt-0.5 mb-0.5 min-h-[1.25rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-1.5 py-0.5 text-center font-sans text-[11px] leading-snug ' +
         (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30');
       nickRow.setAttribute('role', 'presentation');
-      nickRow.innerHTML = nickTrim ? escapeHtml(nickTrim) : 'Псевдоним';
+      nickRow.textContent = nickTrim || 'Псевдоним';
 
       btn.appendChild(topRow);
       btn.appendChild(nickRow);

@@ -414,10 +414,9 @@
     );
   };
 
-  A.renderRoleIcon = function (role, size) {
+  A.roleIconEl = function (role, size) {
     var iconId = ROLE_ICONS[role] || ROLE_ICONS.peaceful;
-    var cls = 'role-icon' + (size ? ' ' + size : '');
-    return '<svg class="' + cls + '" aria-hidden="true"><use href="#' + iconId + '"/></svg>';
+    return app.svgIcon(iconId, 'role-icon' + (size ? ' ' + size : ''));
   };
 
   A.phaseLabel = function (phase) {

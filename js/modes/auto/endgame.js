@@ -8,7 +8,7 @@
 
   var A = app._auto;
   var el = A.el;
-  var escapeHtml = A.escapeHtml;
+  var h = app.h;
 
   function endGame(team) {
     var s = app.autoState;
@@ -62,28 +62,28 @@
     for (var i = 0; i < s.seats.length; i++) {
       var seat = s.seats[i];
       if (seat.role === 'mafia' || seat.role === 'don') continue;
-      var nick =
-        seat.nick && seat.nick.trim()
-          ? '<span class="auto-target-nick">' + escapeHtml(seat.nick.trim()) + '</span>'
-          : '';
+      var nickTrim = seat.nick && seat.nick.trim() ? seat.nick.trim() : '';
       var isPicked = result && result.target === seat.id;
       var revealRole = result ? A.ROLE_NAMES[seat.role] || seat.role : '';
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      if (!result) {
-        btn.setAttribute('data-action', 'auto-merlin-guess-pick');
-        btn.setAttribute('data-target-id', String(seat.id));
-      }
-      btn.disabled = !!result;
-      btn.className = 'auto-target-tile' + (isPicked ? ' auto-target-selected' : '');
-      btn.innerHTML =
-        '№' +
-        seat.id +
-        nick +
-        (revealRole
-          ? '<span class="auto-target-nick text-mafia-gold/85">' + revealRole + '</span>'
-          : '');
-      grid.appendChild(btn);
+      grid.appendChild(
+        h(
+          'button',
+          {
+            type: 'button',
+            className: 'auto-target-tile' + (isPicked ? ' auto-target-selected' : ''),
+            'data-action': result ? null : 'auto-merlin-guess-pick',
+            'data-target-id': result ? null : String(seat.id),
+            disabled: !!result,
+          },
+          [
+            '№' + seat.id,
+            nickTrim ? h('span', { className: 'auto-target-nick' }, nickTrim) : null,
+            revealRole
+              ? h('span', { className: 'auto-target-nick text-mafia-gold/85' }, revealRole)
+              : null,
+          ]
+        )
+      );
     }
     if (result) {
       var done = document.createElement('button');
@@ -144,17 +144,17 @@
         subEl.classList.remove('hidden');
         var guesser = s.merlinGuess.by;
         if (s.merlinGuess.skipped) {
-          subEl.innerHTML =
+          subEl.textContent =
             '№' + guesser + ' отказался называть Мерлина — победа красных подтверждена.';
         } else if (s.merlinGuess.correct) {
-          subEl.innerHTML =
+          subEl.textContent =
             '№' +
             guesser +
             ' угадал Мерлина (№' +
             s.merlinGuess.target +
             ') — победа уходит чёрным.';
         } else {
-          subEl.innerHTML =
+          subEl.textContent =
             '№' +
             guesser +
             ' назвал №' +
@@ -170,23 +170,27 @@
     if (rolesEl) {
       rolesEl.innerHTML = '';
       s.seats.forEach(function (seat) {
-        var nick = seat.nick && seat.nick.trim() ? ' — ' + escapeHtml(seat.nick.trim()) : '';
-        var aliveLabel = seat.alive ? '' : ' <span class="text-mafia-cream/45">(выбыл)</span>';
-        var wrap = document.createElement('div');
-        wrap.className = 'flex items-center gap-2 text-sm';
-        wrap.innerHTML =
-          '<span class="text-mafia-gold flex-shrink-0">' +
-          A.renderRoleIcon(seat.role, 'role-icon--small') +
-          '</span>' +
-          '<span class="font-display text-mafia-gold/90 font-bold tabular-nums">№' +
-          seat.id +
-          '</span>' +
-          '<span class="text-mafia-cream/85 truncate">' +
-          escapeHtml(A.ROLE_NAMES[seat.role] || seat.role) +
-          nick +
-          '</span>' +
-          aliveLabel;
-        rolesEl.appendChild(wrap);
+        var nick = seat.nick && seat.nick.trim() ? ' — ' + seat.nick.trim() : '';
+        rolesEl.appendChild(
+          h('div', { className: 'flex items-center gap-2 text-sm' }, [
+            h(
+              'span',
+              { className: 'text-mafia-gold flex-shrink-0' },
+              A.roleIconEl(seat.role, 'role-icon--small')
+            ),
+            h(
+              'span',
+              { className: 'font-display text-mafia-gold/90 font-bold tabular-nums' },
+              '№' + seat.id
+            ),
+            h(
+              'span',
+              { className: 'text-mafia-cream/85 truncate' },
+              (A.ROLE_NAMES[seat.role] || seat.role) + nick
+            ),
+            seat.alive ? null : h('span', { className: 'text-mafia-cream/45' }, ' (выбыл)'),
+          ])
+        );
       });
     }
   };
