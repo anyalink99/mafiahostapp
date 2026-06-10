@@ -1,0 +1,14 @@
+# Сгенерированное и вендорное — не форматируем
+node_modules/
+www/
+android/
+ios/
+js/vendor/
+chrome-extension-mu/app/
+chrome-extension-mu/mu-reskin-css.js
+css/tailwind.css
+service-worker.js
+package-lock.json
+# Разметка большая и чувствительная к диффам — форматируем только JS/CSS
+index.html
+chrome-extension-mu/popup.html

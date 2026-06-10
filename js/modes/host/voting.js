@@ -1,12 +1,4 @@
 (function (app) {
-  app.arraysEqual = function (a, b) {
-    if (!a || !b || a.length !== b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false;
-    }
-    return true;
-  };
-
   app.startVoteRoundFromNomineeQueue = function () {
     var q = app.nomineeQueue;
     app.activeVoteRound = {
@@ -143,8 +135,10 @@
       votes: vts,
       tieRevote: !!(vsSnap && vsSnap.tieRevote),
       viaRaiseAll: viaRA,
-      raiseAllVotes: viaRA && typeof raiseAllPickedVotes === 'number' ? raiseAllPickedVotes : undefined,
-      raiseAllPoolTotal: viaRA && vsSnap && typeof vsSnap.poolTotal === 'number' ? vsSnap.poolTotal : undefined,
+      raiseAllVotes:
+        viaRA && typeof raiseAllPickedVotes === 'number' ? raiseAllPickedVotes : undefined,
+      raiseAllPoolTotal:
+        viaRA && vsSnap && typeof vsSnap.poolTotal === 'number' ? vsSnap.poolTotal : undefined,
     });
     for (var hi = 0; hi < ids.length; hi++) {
       var p = app.players.find(function (x) {
@@ -228,7 +222,9 @@
         app.nomineeQueue = tied.slice();
         app.saveState();
         app.navigateToScreen('game-screen');
-        app.resetTimer(typeof app.timerShortSec === 'number' && app.timerShortSec > 0 ? app.timerShortSec : 30);
+        app.resetTimer(
+          typeof app.timerShortSec === 'number' && app.timerShortSec > 0 ? app.timerShortSec : 30
+        );
         return;
       }
       app.gameLog.push({
@@ -389,16 +385,21 @@
       tile.className =
         'vote-candidate-tile flex flex-col items-center justify-center min-w-[4.5rem] sm:min-w-[5.5rem] px-4 py-4 rounded-lg border-2 border-mafia-gold/50 bg-mafia-coal hover:border-mafia-gold hover:bg-mafia-blood/20 transition-colors cursor-pointer active:scale-[0.98]';
       var num = document.createElement('span');
-      num.className = 'font-display font-bold text-4xl sm:text-5xl text-mafia-gold tabular-nums leading-none';
+      num.className =
+        'font-display font-bold text-4xl sm:text-5xl text-mafia-gold tabular-nums leading-none';
       num.textContent = String(pid);
       var sub = document.createElement('span');
       sub.className = 'mt-2 text-xs text-mafia-cream/70 text-center max-w-[6rem]';
-      sub.textContent =
-        'Голосов: ' + (assigned !== null && assigned !== undefined ? assigned : 0);
+      sub.textContent = 'Голосов: ' + (assigned !== null && assigned !== undefined ? assigned : 0);
       tile.appendChild(num);
       tile.appendChild(sub);
       wrap.appendChild(tile);
     }
     app.refreshNomineeQueueUi();
   };
+
+  app.registerScreenRenderer('vote-screen', function () {
+    app.prepareVoteRoundScreen();
+    app.renderVoteScreen();
+  });
 })(window.MafiaApp);

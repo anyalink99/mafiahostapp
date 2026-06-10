@@ -2,13 +2,7 @@
   var SUMMARY_SYNTHETIC_FIRST_DAY_DEFAULT =
     '#1 - никто не был выставлен или был выставлен один игрок, голосование пропущено';
   var escapeHtml = app.escapeHtml;
-  var SUMMARY_ROLE_ICON_BY_CODE = {
-    don: 'icon-don',
-    sheriff: 'icon-sheriff',
-    mafia: 'icon-mafia',
-    peaceful: 'icon-like',
-    merlin: 'icon-merlin',
-  };
+  var SUMMARY_ROLE_ICON_BY_CODE = app.UI_ROLE_ICONS;
 
   app.rolesFromDealForSeats = function () {
     if (!app.revealedIndices || app.revealedIndices.length !== app.players.length) return null;
@@ -32,10 +26,14 @@
 
   app.setPlayerSpecialOverride = function (playerId, value) {
     var key = app.getPlayerRoleOverrideKey(playerId);
-    if (!app.playerRoleOverrides || typeof app.playerRoleOverrides !== 'object') app.playerRoleOverrides = {};
+    if (!app.playerRoleOverrides || typeof app.playerRoleOverrides !== 'object')
+      app.playerRoleOverrides = {};
     if (value === 'don' || value === 'sheriff') {
       for (var k in app.playerRoleOverrides) {
-        if (Object.prototype.hasOwnProperty.call(app.playerRoleOverrides, k) && app.playerRoleOverrides[k] === value) {
+        if (
+          Object.prototype.hasOwnProperty.call(app.playerRoleOverrides, k) &&
+          app.playerRoleOverrides[k] === value
+        ) {
           delete app.playerRoleOverrides[k];
         }
       }
@@ -80,7 +78,12 @@
     });
     for (var i = 0; i < sorted.length; i++) {
       var ev = sorted[i];
-      if (ev && ev.type === 'elimination' && ev.reason === 'shot' && typeof ev.playerId === 'number') {
+      if (
+        ev &&
+        ev.type === 'elimination' &&
+        ev.reason === 'shot' &&
+        typeof ev.playerId === 'number'
+      ) {
         return ev.playerId;
       }
     }
@@ -255,7 +258,7 @@
     if (e.type === 'vote_no_elimination') {
       var tc = (e.tiedIds || []).length;
       var raHead = raiseAllHeadFromTiedCount(tc > 0 ? tc : 3);
-      var pfx = '';
+      var pfx;
       if (typeof roundNum === 'number' && roundNum > 0) pfx = raHead + ' #' + roundNum + ' — ';
       else pfx = raHead + ' — ';
       if (typeof e.votesCast === 'number' && typeof e.poolTotal === 'number') {
@@ -282,7 +285,11 @@
         }
         return 'Игрок №' + e.playerId + ' — казнён (вне голосования: единственный выставленный)';
       }
-      var lab = { hang: 'казнён (вне голосования)', shot: 'убит', disqual: 'удалён (фолы / дисквалификация)' };
+      var lab = {
+        hang: 'казнён (вне голосования)',
+        shot: 'убит',
+        disqual: 'удалён (фолы / дисквалификация)',
+      };
       return 'Игрок №' + e.playerId + ' — ' + (lab[e.reason] || 'выбыл');
     }
     return typeof e === 'object' ? JSON.stringify(e) : String(e);
@@ -341,8 +348,7 @@
     ];
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i];
-      var selected =
-        o.value === teamVal || (o.value === '' && teamVal === '');
+      var selected = o.value === teamVal || (o.value === '' && teamVal === '');
       var b = document.createElement('button');
       b.type = 'button';
       b.setAttribute('role', 'radio');
@@ -379,22 +385,20 @@
     }
   }
 
-  var SUMMARY_ROLE_LABELS = {
-    peaceful: 'Мирный житель',
-    mafia: 'Мафия',
-    don: 'Дон',
-    sheriff: 'Шериф',
-    merlin: 'Мерлин',
-  };
+  var SUMMARY_ROLE_LABELS = app.ROLE_LABELS_FULL;
 
   function summaryAllowedRoles() {
-    var roles = (app.variantConfig && app.prepareConfig)
-      ? app.variantConfig(app.prepareConfig.variant).manualRoles.slice()
-      : ['peaceful', 'mafia', 'don', 'sheriff'];
+    var roles =
+      app.variantConfig && app.prepareConfig
+        ? app.variantConfig(app.prepareConfig.variant).manualRoles.slice()
+        : ['peaceful', 'mafia', 'don', 'sheriff'];
     // Show Merlin in summary too if any seat already has it (e.g. migrated game).
     if (roles.indexOf('merlin') === -1 && app.summaryRoleByPlayerId) {
       for (var k in app.summaryRoleByPlayerId) {
-        if (Object.prototype.hasOwnProperty.call(app.summaryRoleByPlayerId, k) && app.summaryRoleByPlayerId[k] === 'merlin') {
+        if (
+          Object.prototype.hasOwnProperty.call(app.summaryRoleByPlayerId, k) &&
+          app.summaryRoleByPlayerId[k] === 'merlin'
+        ) {
           roles.push('merlin');
           break;
         }
@@ -468,14 +472,16 @@
 
   app.stableIndexedLog = function (log) {
     if (!Array.isArray(log)) return [];
-    return log.map(function (e, i) {
-      return { e: e, i: i };
-    }).sort(function (a, b) {
-      var ta = typeof a.e.ts === 'number' ? a.e.ts : 0;
-      var tb = typeof b.e.ts === 'number' ? b.e.ts : 0;
-      if (ta !== tb) return ta - tb;
-      return a.i - b.i;
-    });
+    return log
+      .map(function (e, i) {
+        return { e: e, i: i };
+      })
+      .sort(function (a, b) {
+        var ta = typeof a.e.ts === 'number' ? a.e.ts : 0;
+        var tb = typeof b.e.ts === 'number' ? b.e.ts : 0;
+        if (ta !== tb) return ta - tb;
+        return a.i - b.i;
+      });
   };
 
   app.parseExportRounds = function (log) {
@@ -490,12 +496,23 @@
         j++;
         continue;
       }
-      if (t === 'vote_tie' || t === 'vote_raise_all' || t === 'vote_hang' || t === 'vote_no_elimination') {
+      if (
+        t === 'vote_tie' ||
+        t === 'vote_raise_all' ||
+        t === 'vote_hang' ||
+        t === 'vote_no_elimination'
+      ) {
         var cluster = [];
         while (j < indexed.length) {
           var ee = indexed[j].e;
           var tt = ee.type;
-          if (tt !== 'vote_tie' && tt !== 'vote_raise_all' && tt !== 'vote_hang' && tt !== 'vote_no_elimination') break;
+          if (
+            tt !== 'vote_tie' &&
+            tt !== 'vote_raise_all' &&
+            tt !== 'vote_hang' &&
+            tt !== 'vote_no_elimination'
+          )
+            break;
           cluster.push(ee);
           j++;
           if (tt === 'vote_hang' || tt === 'vote_no_elimination') break;
@@ -642,7 +659,10 @@
   }
 
   app.getSummarySyntheticFirstDayDisplayText = function () {
-    if (app.summarySyntheticFirstDayLine != null && String(app.summarySyntheticFirstDayLine).trim() !== '') {
+    if (
+      app.summarySyntheticFirstDayLine != null &&
+      String(app.summarySyntheticFirstDayLine).trim() !== ''
+    ) {
       return String(app.summarySyntheticFirstDayLine);
     }
     return SUMMARY_SYNTHETIC_FIRST_DAY_DEFAULT;
@@ -659,7 +679,9 @@
     return syntheticPairSkipDefaultText(roundNum);
   }
 
-  app.buildSummaryHistoryRows = function () { return buildSummaryHistoryRows(); };
+  app.buildSummaryHistoryRows = function () {
+    return buildSummaryHistoryRows();
+  };
 
   function buildSummaryHistoryRows() {
     var log = sortedLog();
@@ -747,8 +769,8 @@
     if (ta) {
       var wm = gameLogEntryToRoundNumWeakMap();
       var rn2 = wm.get(entry);
-      var auto = app.formatHistoryItemAuto(entry, rn2);
-      ta.value = typeof entry.textOverride === 'string' ? entry.textOverride : auto;
+      var autoText = app.formatHistoryItemAuto(entry, rn2);
+      ta.value = typeof entry.textOverride === 'string' ? entry.textOverride : autoText;
     }
     app.modalSetOpen(m, true);
   };
@@ -830,12 +852,18 @@
     if (nickInp) nickInp.value = p.nick != null ? String(p.nick) : '';
     m.dataset.playerId = String(playerId);
     var bk = String(playerId);
-    if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object') app.bonusPointsByPlayerId = {};
-    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object') app.bonusNoteByPlayerId = {};
-    if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') app.summaryRoleByPlayerId = {};
-    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
-    if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object') app.protocolByPlayerId = {};
-    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object') app.opinionByPlayerId = {};
+    if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object')
+      app.bonusPointsByPlayerId = {};
+    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object')
+      app.bonusNoteByPlayerId = {};
+    if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object')
+      app.summaryRoleByPlayerId = {};
+    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object')
+      app.bestMoveByPlayerId = {};
+    if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object')
+      app.protocolByPlayerId = {};
+    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object')
+      app.opinionByPlayerId = {};
     var bmWrap = document.getElementById('modal-summary-bestmove-wrap');
     var bm = document.getElementById('modal-summary-bestmove');
     var showBm = app.showSummaryBestMoveField(playerId);
@@ -844,8 +872,14 @@
       bm.value = app.normalizeNumberListText(app.bestMoveByPlayerId[bk]);
       bm.disabled = !showBm;
     }
-    fillNumGroupFields('modal-summary-protocol-', app.getPlayerNumGroup(app.protocolByPlayerId, playerId));
-    fillNumGroupFields('modal-summary-opinion-', app.getPlayerNumGroup(app.opinionByPlayerId, playerId));
+    fillNumGroupFields(
+      'modal-summary-protocol-',
+      app.getPlayerNumGroup(app.protocolByPlayerId, playerId)
+    );
+    fillNumGroupFields(
+      'modal-summary-opinion-',
+      app.getPlayerNumGroup(app.opinionByPlayerId, playerId)
+    );
     var braw = app.bonusPointsByPlayerId[bk];
     var bnum = parseBonusFloat(braw);
     if (bonusInp) {
@@ -855,7 +889,8 @@
     for (var db = 0; db < deltaBtns.length; db++) {
       deltaBtns[db].disabled = !unlocked;
     }
-    if (noteTa) noteTa.value = app.bonusNoteByPlayerId[bk] != null ? String(app.bonusNoteByPlayerId[bk]) : '';
+    if (noteTa)
+      noteTa.value = app.bonusNoteByPlayerId[bk] != null ? String(app.bonusNoteByPlayerId[bk]) : '';
     var bonusSection = document.getElementById('modal-summary-bonus-section');
     if (bonusSection) bonusSection.style.display = unlocked ? '' : 'none';
     // Примечание, лучший ход, протокол и мнение доступны всегда (в т.ч. во время игры).
@@ -891,8 +926,10 @@
     if (unlocked) {
       var bonusInp = document.getElementById('modal-summary-bonus');
       var v = bonusInp ? parseBonusFloat(bonusInp.value) : 0;
-      if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object') app.bonusPointsByPlayerId = {};
-      if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') app.summaryRoleByPlayerId = {};
+      if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object')
+        app.bonusPointsByPlayerId = {};
+      if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object')
+        app.summaryRoleByPlayerId = {};
       app.bonusPointsByPlayerId[String(pid)] = v;
       var roleCode = getModalSummarySelectedRoleCode();
       if (roleCode) {
@@ -911,10 +948,14 @@
    * (`modal-summary-`), и модалкой игрового стола (`modal-player-`) — данные общие.
    */
   app.savePlayerGameExtras = function (idPrefix, pid) {
-    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
-    if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object') app.protocolByPlayerId = {};
-    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object') app.opinionByPlayerId = {};
-    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object') app.bonusNoteByPlayerId = {};
+    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object')
+      app.bestMoveByPlayerId = {};
+    if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object')
+      app.protocolByPlayerId = {};
+    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object')
+      app.opinionByPlayerId = {};
+    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object')
+      app.bonusNoteByPlayerId = {};
     var key = String(pid);
     var bm = document.getElementById(idPrefix + 'bestmove');
     if (bm && app.showSummaryBestMoveField(pid)) {
@@ -928,10 +969,14 @@
 
   app.renderSummary = function () {
     if (!Array.isArray(app.gameLog)) app.gameLog = [];
-    if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object') app.bonusPointsByPlayerId = {};
-    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object') app.bonusNoteByPlayerId = {};
-    if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object') app.summaryRoleByPlayerId = {};
-    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object') app.bestMoveByPlayerId = {};
+    if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object')
+      app.bonusPointsByPlayerId = {};
+    if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object')
+      app.bonusNoteByPlayerId = {};
+    if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object')
+      app.summaryRoleByPlayerId = {};
+    if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object')
+      app.bestMoveByPlayerId = {};
     if (app.summaryHostName === undefined || app.summaryHostName === null) app.summaryHostName = '';
     if (app.summarySyntheticFirstDayLine === undefined) app.summarySyntheticFirstDayLine = null;
     if (!app.summarySkipLineOverrides || typeof app.summarySkipLineOverrides !== 'object') {
@@ -1000,13 +1045,13 @@
         var bnum = parseBonusFloat(braw);
         var bonusText = app.formatBonusForDisplay(braw);
 
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.setAttribute('data-action', 'summary-player-open');
-        btn.setAttribute('data-player-id', String(sid));
-        btn.className =
+        var slotBtn = document.createElement('button');
+        slotBtn.type = 'button';
+        slotBtn.setAttribute('data-action', 'summary-player-open');
+        slotBtn.setAttribute('data-player-id', String(sid));
+        slotBtn.className =
           'player-cell flex h-full min-h-0 min-w-0 w-full cursor-pointer flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-1.5 pt-1.5 pb-0.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2 sm:pt-2 sm:pb-1';
-        btn.setAttribute(
+        slotBtn.setAttribute(
           'aria-label',
           nickTrim ? 'Игрок №' + sid + ', псевдоним ' + nickTrim : 'Игрок №' + sid
         );
@@ -1049,7 +1094,9 @@
         var pillWrap = document.createElement('div');
         pillWrap.className =
           'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
-          (bnum > 2 ? 'border-mafia-blood/55 bg-mafia-blood' : 'border-mafia-border/35 bg-black/25');
+          (bnum > 2
+            ? 'border-mafia-blood/55 bg-mafia-blood'
+            : 'border-mafia-border/35 bg-black/25');
         pillWrap.appendChild(bonusInner);
 
         var rightCol = document.createElement('div');
@@ -1068,13 +1115,14 @@
         nickRow.setAttribute('role', 'presentation');
         nickRow.innerHTML = nickTrim ? escapeHtml(nickTrim) : 'Псевдоним';
 
-        btn.appendChild(topRow);
-        btn.appendChild(nickRow);
-        grid.appendChild(btn);
+        slotBtn.appendChild(topRow);
+        slotBtn.appendChild(nickRow);
+        grid.appendChild(slotBtn);
       }
     }
 
-    var teamVal = app.winningTeam === 'mafia' || app.winningTeam === 'peaceful' ? app.winningTeam : '';
+    var teamVal =
+      app.winningTeam === 'mafia' || app.winningTeam === 'peaceful' ? app.winningTeam : '';
     renderSummaryWinningTeamRow(teamVal);
 
     var gs = document.getElementById('game-screen');
@@ -1082,4 +1130,8 @@
       app.renderGameSidePanels();
     }
   };
+
+  app.registerScreenRenderer('summary-screen', function () {
+    app.renderSummary();
+  });
 })(window.MafiaApp);

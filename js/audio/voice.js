@@ -11,7 +11,7 @@
   var TIMER_VOICE_FILES = {
     discuss10: 'you-have-10-seconds.mp3',
     discuss0: 'thank-you-stop.mp3',
-    mafia10: 'mafia-10-seconds acquaintance.mp3',
+    mafia10: 'mafia-10-seconds-acquaintance.mp3',
     mafia0: 'mafia-leaves.mp3',
   };
 
@@ -225,7 +225,8 @@
         return;
       }
     } catch (e) {}
-    if (typeof app.timerVoiceVolume !== 'number' || isNaN(app.timerVoiceVolume)) app.timerVoiceVolume = 0.92;
+    if (typeof app.timerVoiceVolume !== 'number' || isNaN(app.timerVoiceVolume))
+      app.timerVoiceVolume = 0.92;
   };
 
   app.saveTimerVoiceVolumePref = function () {
@@ -328,7 +329,10 @@
   function syncNightActionsWaitControls() {
     var inp = document.getElementById('setting-night-wait');
     var lab = document.getElementById('setting-night-wait-label');
-    var v = typeof app.nightActionsWaitSec === 'number' && !isNaN(app.nightActionsWaitSec) ? app.nightActionsWaitSec : 10;
+    var v =
+      typeof app.nightActionsWaitSec === 'number' && !isNaN(app.nightActionsWaitSec)
+        ? app.nightActionsWaitSec
+        : 10;
     v = Math.round(v);
     if (v < 0) v = 0;
     if (v > 20) v = 20;
@@ -352,7 +356,8 @@
     var shouldDuck = night && app.timerVoiceDuckEnabled;
     if (night) {
       filename = kind === '10' ? TIMER_VOICE_FILES.mafia10 : TIMER_VOICE_FILES.mafia0;
-      if (shouldDuck && app.duckBackgroundMusicForTimerVoice) app.duckBackgroundMusicForTimerVoice();
+      if (shouldDuck && app.duckBackgroundMusicForTimerVoice)
+        app.duckBackgroundMusicForTimerVoice();
     } else {
       filename = kind === '10' ? TIMER_VOICE_FILES.discuss10 : TIMER_VOICE_FILES.discuss0;
     }
@@ -469,7 +474,10 @@
       return;
     }
 
-    var wait = typeof app.nightActionsWaitSec === 'number' && !isNaN(app.nightActionsWaitSec) ? app.nightActionsWaitSec : 10;
+    var wait =
+      typeof app.nightActionsWaitSec === 'number' && !isNaN(app.nightActionsWaitSec)
+        ? app.nightActionsWaitSec
+        : 10;
     wait = Math.round(wait);
     if (wait < 0) wait = 0;
     if (wait > 20) wait = 20;

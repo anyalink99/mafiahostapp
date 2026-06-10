@@ -13,18 +13,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Niokit: shared design tokens + .k-slot (см. js/vendor/niokit/).
-         Берём ТОЛЬКО tokens.css + components.css; reset.css не грузим
+    <!-- Niokit: shared design tokens + .k-slot — локальный vendor (js/vendor/niokit/,
+         версия v0.3.0). Берём ТОЛЬКО tokens.css + components.css; reset.css не грузим
          (его `button { border: 0 }` конфликтует с Tailwind preflight'ом —
          все .border-* классы перестают рендерить рамки). motion.css тоже
-         не нужен — у нас .k-slot на transition, не на @keyframes.
-         В extension build URLs patch'атся на js/vendor/niokit/* (MV3 CSP). -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.3.0/css/tokens.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.3.0/css/components.css">
-    <script src="https://cdn.jsdelivr.net/gh/anyalink99/niokit@v0.3.0/dist/niokit.js"></script>
+         не нужен — у нас .k-slot на transition, не на @keyframes. -->
+    <link rel="stylesheet" href="js/vendor/niokit/tokens.css">
+    <link rel="stylesheet" href="js/vendor/niokit/components.css">
+    <script src="js/vendor/niokit/niokit.js"></script>
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="js/tailwind.config.js"></script>
+    <!-- Tailwind собирается заранее: npm run build:css (tailwind.config.cjs).
+         Подключается ПОСЛЕ styles.css — как раньше runtime-CDN инжектил
+         свой <style> в конец head, сохраняем порядок каскада. -->
+    <link rel="stylesheet" href="css/tailwind.css">
 </head>
 <body class="bg-mafia-black text-mafia-cream antialiased">
 
@@ -1086,6 +1087,16 @@
 <script src="js/modes/host/side.js"></script>
 <script src="js/modes/host/voting.js"></script>
 <script src="js/modes/host/tools.js"></script>
+<script src="js/modes/auto/core.js"></script>
+<script src="js/modes/auto/setup.js"></script>
+<script src="js/modes/auto/reveal.js"></script>
+<script src="js/modes/auto/intro.js"></script>
+<script src="js/modes/auto/night.js"></script>
+<script src="js/modes/auto/day.js"></script>
+<script src="js/modes/auto/vote.js"></script>
+<script src="js/modes/auto/last-words.js"></script>
+<script src="js/modes/auto/endgame.js"></script>
+<script src="js/modes/auto/gestures.js"></script>
 <script src="js/modes/auto/mode.js"></script>
 <script src="js/modes/auto/migration.js"></script>
 

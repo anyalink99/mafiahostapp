@@ -79,6 +79,13 @@
     if (m) app.modalSetOpen(m, true);
   };
 
+  // Реестр рендереров экранов: модуль-владелец экрана регистрирует функцию,
+  // которая вызывается при каждом переходе на экран. Контракт явный — если
+  // экран не отрисовался, значит никто не зарегистрировал рендерер.
+  app.screenRenderers = {};
+  app.registerScreenRenderer = function (screenId, fn) {
+    app.screenRenderers[screenId] = fn;
+  };
 
   app.navigateToScreen = function (screenId) {
     // Любой переход выходит из встроенного режима голосования (ПК) — раскладка стола
@@ -103,48 +110,27 @@
       var ae = document.activeElement;
       if (ae && gs && gs.contains(ae) && typeof ae.blur === 'function') ae.blur();
     }
-    if (screenId === 'menu-screen' && app.updateResetButtonVisibility) app.updateResetButtonVisibility();
-    if (screenId === 'setup-screen') app.initCards(app.revealedIndices.length > 0);
-    if (screenId === 'game-screen') {
-      app.renderPlayers();
-      if (app.syncTimerPresetButtons) app.syncTimerPresetButtons();
-      if (app.syncTimerControls) app.syncTimerControls();
-      else {
-        const timerEl = document.getElementById('timer');
-        if (timerEl) timerEl.textContent = app.timeLeft;
-        if (app.syncTimerAppearance) app.syncTimerAppearance();
-      }
-      app.refreshNomineeQueueUi();
-      if (app.renderGameSidePanels) app.renderGameSidePanels();
-    }
-    if (screenId === 'prepare-screen' && app.renderPreparePlayers) app.renderPreparePlayers();
-    if (screenId === 'vote-screen' && app.prepareVoteRoundScreen) app.prepareVoteRoundScreen();
-    if (screenId === 'vote-screen' && app.renderVoteScreen) app.renderVoteScreen();
-    if (screenId === 'summary-screen' && app.renderSummary) app.renderSummary();
-    if (screenId === 'settings-screen') {
-      if (app.setSettingsTab) app.setSettingsTab(app.settingsActiveTab);
-      if (app.renderSpotifyGlobalSettings) app.renderSpotifyGlobalSettings();
-      if (app.renderMusicSettings) app.renderMusicSettings();
-      if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
-      if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
-      if (app.syncMusicIntroControls) app.syncMusicIntroControls();
-      if (app.syncTimerDurationInputs) app.syncTimerDurationInputs();
-      if (app.syncExperimentalModesCheckbox) app.syncExperimentalModesCheckbox();
-      if (app.syncMuLookupCheckbox) app.syncMuLookupCheckbox();
-    }
-    if (screenId === 'prepare-mode-screen' && app.renderPrepareModeScreen) app.renderPrepareModeScreen();
-    if (screenId === 'auto-setup-screen' && app.renderAutoSetup) app.renderAutoSetup();
-    if (screenId === 'auto-reveal-screen' && app.renderAutoReveal) app.renderAutoReveal();
-    if (screenId === 'auto-night-intro-screen' && app.renderAutoNightIntro) app.renderAutoNightIntro();
-    if (screenId === 'auto-night-pass-screen' && app.renderAutoNightPass) app.renderAutoNightPass();
-    if (screenId === 'auto-night-action-screen' && app.renderAutoNightAction) app.renderAutoNightAction();
-    if (screenId === 'auto-night-result-screen' && app.renderAutoNightResult) app.renderAutoNightResult();
-    if (screenId === 'auto-day-screen' && app.renderAutoDay) app.renderAutoDay();
-    if (screenId === 'auto-vote-screen' && app.renderAutoVote) app.renderAutoVote();
-    if (screenId === 'auto-last-words-screen' && app.renderAutoLastWords) app.renderAutoLastWords();
-    if (screenId === 'auto-merlin-guess-screen' && app.renderAutoMerlinGuess) app.renderAutoMerlinGuess();
-    if (screenId === 'auto-end-screen' && app.renderAutoEnd) app.renderAutoEnd();
+    var render = app.screenRenderers[screenId];
+    if (render) render();
   };
+
+  app.registerScreenRenderer('menu-screen', function () {
+    if (app.updateResetButtonVisibility) app.updateResetButtonVisibility();
+  });
+
+  // Настройки размазаны по модулям (музыка, spotify, озвучка, таймер) — пока
+  // у экрана нет единого владельца, композитный рендерер живёт здесь.
+  app.registerScreenRenderer('settings-screen', function () {
+    if (app.setSettingsTab) app.setSettingsTab(app.settingsActiveTab);
+    if (app.renderSpotifyGlobalSettings) app.renderSpotifyGlobalSettings();
+    if (app.renderMusicSettings) app.renderMusicSettings();
+    if (app.syncTimerVoiceCheckbox) app.syncTimerVoiceCheckbox();
+    if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
+    if (app.syncMusicIntroControls) app.syncMusicIntroControls();
+    if (app.syncTimerDurationInputs) app.syncTimerDurationInputs();
+    if (app.syncExperimentalModesCheckbox) app.syncExperimentalModesCheckbox();
+    if (app.syncMuLookupCheckbox) app.syncMuLookupCheckbox();
+  });
 
   app.initGameFromMenu = function () {
     app.renderPlayers();

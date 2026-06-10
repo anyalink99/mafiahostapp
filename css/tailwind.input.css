@@ -1,0 +1,5 @@
+/* Вход для сборки Tailwind (npm run build:css → css/tailwind.css).
+   В рантайме НЕ подключается — это исходник, а не результат. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

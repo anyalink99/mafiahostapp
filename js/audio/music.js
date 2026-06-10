@@ -31,8 +31,7 @@
   // Под file:// Web Audio глушит медиа (непрозрачный origin → cross-origin taint),
   // поэтому усиление там невозможно — отключаем граф и играем нативно (cap 1.0).
   // По http(s)/localhost и в собранном приложении усиление работает.
-  var _webAudioBroken =
-    typeof location !== 'undefined' && location.protocol === 'file:';
+  var _webAudioBroken = typeof location !== 'undefined' && location.protocol === 'file:';
 
   function getAudioCtx() {
     if (_webAudioBroken) return null;
@@ -292,7 +291,8 @@
     if (duckedForTimerVoice) return;
     if (_spotifyActiveSlot) {
       var v = sessionVolumeMul !== null ? BASE_VOLUME * sessionVolumeMul : BASE_VOLUME;
-      if (app.spotifySetVolume) app.spotifySetVolume(Math.max(0, Math.min(1, v))).catch(function () {});
+      if (app.spotifySetVolume)
+        app.spotifySetVolume(Math.max(0, Math.min(1, v))).catch(function () {});
       return;
     }
     var a = getAudio();
@@ -305,8 +305,8 @@
       currentSeekStart !== null
         ? currentSeekStart
         : typeof item.offsetSec === 'number'
-        ? item.offsetSec
-        : 0;
+          ? item.offsetSec
+          : 0;
     if (typeof dur === 'number' && !isNaN(dur) && dur > 0) {
       if (off >= dur - 0.05) off = Math.max(0, dur - 0.05);
       a.currentTime = off;
@@ -370,7 +370,10 @@
       if (item.type !== 'playlist' || !Array.isArray(item.tracks)) return;
       var tr = null;
       for (var ti = 0; ti < item.tracks.length; ti++) {
-        if (item.tracks[ti] && item.tracks[ti].id === trackId) { tr = item.tracks[ti]; break; }
+        if (item.tracks[ti] && item.tracks[ti].id === trackId) {
+          tr = item.tracks[ti];
+          break;
+        }
       }
       if (!tr || !tr.blobId) return;
       var plVol = typeof item.volumeMul === 'number' ? item.volumeMul : 1;
@@ -548,7 +551,8 @@
     if (_spotifyActiveSlot) {
       if (duckedForTimerVoice) return;
       duckedForTimerVoice = true;
-      if (app.spotifySetVolume) app.spotifySetVolume(Math.max(0, BASE_VOLUME * mul)).catch(function () {});
+      if (app.spotifySetVolume)
+        app.spotifySetVolume(Math.max(0, BASE_VOLUME * mul)).catch(function () {});
       return;
     }
     var a = getAudio();
@@ -565,7 +569,8 @@
     duckFactor = 1;
     if (_spotifyActiveSlot) {
       var v = sessionVolumeMul !== null ? BASE_VOLUME * sessionVolumeMul : BASE_VOLUME;
-      if (app.spotifySetVolume) app.spotifySetVolume(Math.max(0, Math.min(1, v))).catch(function () {});
+      if (app.spotifySetVolume)
+        app.spotifySetVolume(Math.max(0, Math.min(1, v))).catch(function () {});
       return;
     }
     var a = getAudio();
@@ -671,7 +676,7 @@
   function syncMusicControlPauseBtn() {
     var els = getMusicControlEls();
     if (!els.pauseBtn) return;
-    var paused = false;
+    var paused;
     if (_spotifyActiveSlot) {
       paused = false;
     } else {
@@ -769,7 +774,7 @@
     var els = getMusicControlEls();
     if (!els.modal) return;
     if (els.title) {
-      var label = '';
+      var label;
       if (_spotifyActiveSlot) {
         label = 'Spotify плейлист';
       } else if (currentPlayItem && currentPlayItem.name) {
@@ -818,31 +823,37 @@
       else app.showMusicEmptyModal(slot);
     }
 
-    app.spotifyEnsurePlayer().then(function (result) {
-      if (!result) {
-        if (app.spotifyLastError === 'premium_required') {
-          if (app.showToast) app.showToast('Нужен Spotify Premium');
-        } else {
-          if (app.showToast) app.showToast('Spotify: не удалось подключить плеер');
+    app
+      .spotifyEnsurePlayer()
+      .then(function (result) {
+        if (!result) {
+          if (app.spotifyLastError === 'premium_required') {
+            if (app.showToast) app.showToast('Нужен Spotify Premium');
+          } else {
+            if (app.showToast) app.showToast('Spotify: не удалось подключить плеер');
+          }
+          fallbackToLocal();
+          return;
         }
-        fallbackToLocal();
-        return;
-      }
-      app.spotifyPlayPlaylist(playlist.playlistId, BASE_VOLUME).then(function () {
-        _spotifyActiveSlot = slotKey;
-        currentSlot = slotKey;
-        currentPlayItem = null;
-        setMusicButtonPlaying(true);
-      }).catch(function () {
-        if (app.showToast) app.showToast('Spotify: ошибка воспроизведения');
+        app
+          .spotifyPlayPlaylist(playlist.playlistId, BASE_VOLUME)
+          .then(function () {
+            _spotifyActiveSlot = slotKey;
+            currentSlot = slotKey;
+            currentPlayItem = null;
+            setMusicButtonPlaying(true);
+          })
+          .catch(function () {
+            if (app.showToast) app.showToast('Spotify: ошибка воспроизведения');
+            setMusicButtonPlaying(false);
+            fallbackToLocal();
+          });
+      })
+      .catch(function () {
+        if (app.showToast) app.showToast('Spotify: ошибка подключения');
         setMusicButtonPlaying(false);
         fallbackToLocal();
       });
-    }).catch(function () {
-      if (app.showToast) app.showToast('Spotify: ошибка подключения');
-      setMusicButtonPlaying(false);
-      fallbackToLocal();
-    });
   }
 
   // opts.intro — режим «знакомства мафии»: старт за «разгон» секунд до дропа с
@@ -863,7 +874,12 @@
     }
 
     var spotifyPlaylist = app.spotifyGetSlotPlaylist ? app.spotifyGetSlotPlaylist(slot) : null;
-    if (spotifyPlaylist && spotifyPlaylist.playlistId && app.spotifyIsAuthenticated && app.spotifyIsAuthenticated()) {
+    if (
+      spotifyPlaylist &&
+      spotifyPlaylist.playlistId &&
+      app.spotifyIsAuthenticated &&
+      app.spotifyIsAuthenticated()
+    ) {
       playSpotifySlot(slot, spotifyPlaylist);
       return;
     }
@@ -900,7 +916,10 @@
     var idx = -1;
     if (currentPlayItem) {
       for (var i = 0; i < pool.length; i++) {
-        if (pool[i].id === currentPlayItem.id) { idx = i; break; }
+        if (pool[i].id === currentPlayItem.id) {
+          idx = i;
+          break;
+        }
       }
     }
     var newIdx;
@@ -913,12 +932,15 @@
     var introOpts = currentIntroOpts;
     // Не даём stopMusic закрыть модалку — просто обновим её содержимое.
     suppressControlHide = true;
-    playItem(slot, pool[newIdx], introOpts).then(function (ok) {
-      suppressControlHide = false;
-      if (ok) updateMusicControlContent();
-    }, function () {
-      suppressControlHide = false;
-    });
+    playItem(slot, pool[newIdx], introOpts).then(
+      function (ok) {
+        suppressControlHide = false;
+        if (ok) updateMusicControlContent();
+      },
+      function () {
+        suppressControlHide = false;
+      }
+    );
   };
 
   app.musicOnEmptyFilesSelected = function (slot, fileList) {
@@ -933,14 +955,14 @@
 
   var escapeHtml = app.escapeHtml;
 
-  app.expandedMusicItemIdBySlot = { '1': '', '2': '' };
+  app.expandedMusicItemIdBySlot = { 1: '', 2: '' };
   // id плейлиста, у которого сейчас включён режим «Редактировать» (потрековые настройки).
   app.musicPlaylistEditId = '';
   // id развёрнутого трека внутри редактируемого плейлиста (открыт только один за раз).
   app.musicPlaylistTrackOpenId = '';
   // Режим выбора треков для объединения в плейлист (по слотам) + множество id.
-  app.musicSelectModeBySlot = { '1': false, '2': false };
-  app.musicSelectedIdsBySlot = { '1': {}, '2': {} };
+  app.musicSelectModeBySlot = { 1: false, 2: false };
+  app.musicSelectedIdsBySlot = { 1: {}, 2: {} };
 
   app.getMusicExpandedItemId = function (slot) {
     var k = String(slot) === '2' ? '2' : '1';
@@ -1190,7 +1212,9 @@
       btn.classList.toggle('cursor-pointer', n >= 2);
     }
     // Подсветка выбранной строки.
-    var li = container.querySelector('input[data-item-id="' + (window.CSS && CSS.escape ? CSS.escape(itemId) : itemId) + '"]');
+    var li = container.querySelector(
+      'input[data-item-id="' + (window.CSS && CSS.escape ? CSS.escape(itemId) : itemId) + '"]'
+    );
     li = li ? li.closest('li') : null;
     if (li) {
       li.classList.toggle('border-mafia-gold/60', !!checked);
@@ -1242,11 +1266,14 @@
 
   app.musicExportPlaylistWithFeedback = function (slot, itemId) {
     if (!app.musicExportPlaylistZip) return;
-    app.musicExportPlaylistZip(slot, itemId).then(function () {
-      if (app.showToast) app.showToast('Архив плейлиста готов');
-    }).catch(function () {
-      if (app.showToast) app.showToast('Не удалось выгрузить плейлист');
-    });
+    app
+      .musicExportPlaylistZip(slot, itemId)
+      .then(function () {
+        if (app.showToast) app.showToast('Архив плейлиста готов');
+      })
+      .catch(function () {
+        if (app.showToast) app.showToast('Не удалось выгрузить плейлист');
+      });
   };
 
   // Один потрековый блок (режим «Редактировать»): сворачиваемый, открыт только один за раз.
@@ -1359,7 +1386,10 @@
     var items = app.getMusicSlotItems(slot);
     var it = null;
     for (var i = 0; i < items.length; i++) {
-      if (items[i].id === itemId) { it = items[i]; break; }
+      if (items[i].id === itemId) {
+        it = items[i];
+        break;
+      }
     }
     var container = li.querySelector('[data-music-tracks]');
     var inner = li.querySelector('.music-item-settings-inner');
@@ -1369,7 +1399,11 @@
     }
     var oldH = inner ? inner.scrollHeight : 0;
     container.style.opacity = '0';
-    container.innerHTML = app.buildMusicPlaylistTracksHtml(slot, it, app.musicPlaylistEditId === itemId);
+    container.innerHTML = app.buildMusicPlaylistTracksHtml(
+      slot,
+      it,
+      app.musicPlaylistEditId === itemId
+    );
     if (mutateBtn) mutateBtn(li);
     requestAnimationFrame(function () {
       container.style.opacity = '1';
@@ -1404,7 +1438,8 @@
       rows += '</div>';
       return rows;
     }
-    var ol = '<ol class="mt-1 space-y-1 text-mafia-cream/80 text-xs list-decimal list-inside marker:text-mafia-gold/55">';
+    var ol =
+      '<ol class="mt-1 space-y-1 text-mafia-cream/80 text-xs list-decimal list-inside marker:text-mafia-gold/55">';
     for (var t = 0; t < tracks.length; t++) {
       var tr = tracks[t];
       if (!tr) continue;
@@ -1416,7 +1451,9 @@
         escapeHtml(tr.name || '') +
         '">' +
         escapeHtml(tr.name || '') +
-        (muted ? ' <span class="uppercase tracking-wider text-mafia-cream/40">· выкл.</span>' : '') +
+        (muted
+          ? ' <span class="uppercase tracking-wider text-mafia-cream/40">· выкл.</span>'
+          : '') +
         '</li>';
     }
     ol += '</ol>';
@@ -1675,8 +1712,7 @@
         html += app.buildMusicPlaylistRowHtml(slot, it, isOpen);
         continue;
       }
-      var srcLabel =
-        it.source && it.source.type === 'idb' ? 'с устройства' : '';
+      var srcLabel = it.source && it.source.type === 'idb' ? 'с устройства' : '';
       html +=
         '<li class="bg-mafia-black/40 border border-mafia-border rounded overflow-hidden text-left' +
         (offPool ? ' opacity-60' : '') +
@@ -1702,7 +1738,9 @@
           ? '<span data-music-off-badge class="text-mafia-cream/45 text-xs flex-shrink-0 uppercase tracking-wider">выкл.</span>'
           : '') +
         (srcLabel
-          ? '<span class="text-mafia-cream/40 text-xs flex-shrink-0">' + escapeHtml(srcLabel) + '</span>'
+          ? '<span class="text-mafia-cream/40 text-xs flex-shrink-0">' +
+            escapeHtml(srcLabel) +
+            '</span>'
           : '') +
         '</button>' +
         '<button type="button" data-action="music-preview" data-slot="' +

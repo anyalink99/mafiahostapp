@@ -62,38 +62,56 @@ npx serve .
 
 ## Скрипты npm
 
-| Скрипт | Назначение |
-|--------|------------|
-| `npm run copy:www` | Копирует статику в `www/` для Capacitor |
-| `npm run cap:sync` | `copy:www` + `npx cap sync` |
-| `npm run icons` | Генерация `icons/icon-192.png`, `icon-512.png` и `mipmap-*` для Android из `icons/icon.png` |
+| Скрипт                    | Назначение                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| `npm run build:css`       | Сборка Tailwind → `css/tailwind.css`                                                        |
+| `npm run build:sw`        | Генерация прекэша и версии кэша в `service-worker.js`                                       |
+| `npm run build:extension` | `build:css` + `build:sw` + копия приложения в `chrome-extension-mu/app/`                    |
+| `npm run copy:www`        | `build:css` + `build:sw` + копирование статики в `www/` для Capacitor                       |
+| `npm run cap:sync`        | `copy:www` + `npx cap sync`                                                                 |
+| `npm run icons`           | Генерация `icons/icon-192.png`, `icon-512.png` и `mipmap-*` для Android из `icons/icon.png` |
+| `npm run lint`            | ESLint                                                                                      |
+| `npm run format`          | Prettier (запись)                                                                           |
+| `npm test`                | Юнит-тесты                                                                                  |
+| `npm run test:smoke`      | Браузерный смоук-тест (Chrome)                                                              |
 
 ## Структура репозитория
 
 ```
-mafia-host-app.github.io/
-├── index.html
+mafia-host-app/
+├── index.html             вся разметка экранов + список <script>
 ├── manifest.webmanifest
-├── service-worker.js
+├── service-worker.js      прекэш генерируется (npm run build:sw), руками не править
+├── tailwind.config.cjs    тема Tailwind (сборка: npm run build:css)
 ├── capacitor.config.json
 ├── package.json
-├── audio/                 встроенные треки (track1–3.mp3), голосовые таймера (you-have-10-seconds.mp3, …)
+├── audio/                 встроенные треки и голосовые реплики
 ├── icons/                 icon.png (исходник) + сгенерированные PNG
-├── css/styles.css
+├── css/
+│   ├── styles.css         ручные стили
+│   ├── tailwind.input.css вход сборки Tailwind
+│   └── tailwind.css       СГЕНЕРИРОВАНО (npm run build:css), коммитится
 ├── js/
-│   ├── tailwind.config.js тема Tailwind для CDN
-│   ├── state.js           состояние игры → localStorage
-│   ├── music-store.js     метаданные музыки + IndexedDB
-│   ├── music.js
-│   ├── screens.js
-│   ├── cards.js
-│   ├── game.js            стол, голосование, модалки игрока и счёта
-│   ├── summary.js         экран итогов, лог, модалки сводки
-│   ├── events.js
-│   └── main.js
-└── scripts/
-    ├── copy-www.cjs
-    └── generate-icons.ps1
+│   ├── core/              state, utils, screens (реестр рендереров), dispatch
+│   ├── game/              variants + standard/kasper/merlin/donskaya
+│   ├── modes/host/        обычный ведущий: cards, players, timer, voting, side, tools
+│   ├── modes/auto/        автономный ведущий: core (app._auto), setup, reveal,
+│   │                      intro, night, day, vote, last-words, endgame, gestures,
+│   │                      mode (init + _autoInternals), migration
+│   ├── ui/                prepare-screen, desktop-*
+│   ├── summary/           итоги, экспорт, MU-экспорт
+│   ├── events/            обработчики data-action (menu, prepare, host/*, auto/*)
+│   ├── audio/             music, music-store, voice, spotify-*
+│   ├── mu-*.js            интеграция с MafiaUniverse
+│   └── vendor/            jszip, niokit (локальные копии)
+├── scripts/
+│   ├── build-config.cjs   ЕДИНЫЙ список файлов/папок статики
+│   ├── build-sw.cjs       генерация прекэша и версии кэша SW
+│   ├── copy-www.cjs       www/ для Capacitor
+│   └── generate-icons.ps1
+└── tests/
+    ├── test-mu-vote-roundtrip.cjs  юнит-тесты реконструкции голосований
+    └── smoke-browser.cjs           браузерный смоук (нужен Chrome)
 ```
 
 Папки `www/`, `android/`, `ios/` и `node_modules/` в `.gitignore`: после клона их нужно получить командами ниже.
@@ -108,7 +126,7 @@ mafia-host-app.github.io/
 
 Сервис-воркер **не** регистрируется в нативном приложении Capacitor (см. `js/main.js`).
 
-**Версия кэша:** при каждом коммите увеличивайте `CACHE_NAME` в `service-worker.js` (например `mafia-host-static-v4` → `v5`), иначе после деплоя пользователи могут видеть старую вёрстку/скрипты из кэша.
+**Версия кэша:** `CACHE_NAME` и список прекэша в `service-worker.js` генерируются автоматически (`npm run build:sw`, входит в `npm run build:extension` и `npm run copy:www`) — версия считается как хэш содержимого статики, руками ничего бампать не нужно. Просто прогоните сборку перед коммитом.
 
 ## Android (Capacitor)
 
@@ -129,7 +147,17 @@ mafia-host-app.github.io/
 
 ## Сборка фронтенда
 
-Статический фронтенд без бандлера: [Tailwind CSS](https://tailwindcss.com) подключается с CDN; кастомная тема — в `js/tailwind.config.js`. Шрифты: Google Fonts (Cormorant Garamond, Manrope).
+Статический фронтенд без бандлера. [Tailwind CSS](https://tailwindcss.com) собирается заранее: `npm run build:css` сканирует `index.html` и `js/**` и пишет минифицированный `css/tailwind.css` (коммитится в репозиторий, runtime-CDN не используется). Тема — в `tailwind.config.cjs`. Шрифты: Google Fonts (Cormorant Garamond, Manrope).
+
+После любой правки кода: `npm run build:extension` — пересоберёт CSS, прекэш service worker'а и копию приложения внутри расширения.
+
+## Качество кода
+
+- `npm run lint` — ESLint (конфиг `eslint.config.cjs`);
+- `npm run format` / `npm run format:check` — Prettier;
+- `npm test` — юнит-тесты MU-реконструкции;
+- `npm run test:smoke` — смоук в реальном Chrome: загрузка, обход экранов, реестр рендереров, старт автономной игры;
+- CI (`.github/workflows/ci.yml`) гоняет всё перечисленное на каждый push/PR и проверяет, что сгенерированные файлы не разошлись с исходниками.
 
 ## Атрибуции
 

@@ -4,15 +4,27 @@
   "version": "1.0.0",
   "description": "Мафия — ведущий: веб и Android (Capacitor)",
   "scripts": {
-    "copy:www": "node scripts/copy-www.cjs",
+    "build:css": "tailwindcss -c tailwind.config.cjs -i css/tailwind.input.css -o css/tailwind.css --minify",
+    "build:sw": "node scripts/build-sw.cjs",
+    "build:extension": "npm run build:css && npm run build:sw && node chrome-extension-mu/build-app.cjs",
+    "copy:www": "npm run build:css && npm run build:sw && node scripts/copy-www.cjs",
     "cap:sync": "npm run copy:www && npx cap sync",
     "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-icons.ps1",
-    "build:extension": "node chrome-extension-mu/build-app.cjs",
-    "test": "node tests/test-mu-vote-roundtrip.cjs"
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node tests/test-mu-vote-roundtrip.cjs",
+    "test:smoke": "node tests/smoke-browser.cjs"
   },
   "devDependencies": {
     "@capacitor/android": "^8.2.0",
     "@capacitor/cli": "^8.2.0",
-    "@capacitor/core": "^8.2.0"
+    "@capacitor/core": "^8.2.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.1",
+    "globals": "^17.6.0",
+    "playwright-core": "^1.60.0",
+    "prettier": "^3.8.4",
+    "tailwindcss": "^3.4.19"
   }
 }

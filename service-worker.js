@@ -1,80 +1,140 @@
-// Bump the CACHE_NAME suffix on each release to force clients to refresh cached static assets.
-var CACHE_NAME = 'mafia-host-static-v15';
+// BUILD:PRECACHE-BEGIN (автогенерация scripts/build-sw.cjs — не редактировать руками)
+var CACHE_NAME = 'mafia-host-static-f6960915ea9a';
 var ASSETS = [
   './',
-  './index.html',
-  './manifest.webmanifest',
-  './css/styles.css',
-  './js/tailwind.config.js',
-  './js/vendor/jszip.min.js',
-  './js/core/state.js',
-  './js/core/utils.js',
-  './js/core/screens.js',
-  './js/core/dispatch.js',
-  './js/audio/spotify-auth.js',
-  './js/audio/spotify-store.js',
-  './js/audio/spotify-player.js',
-  './js/audio/music-store.js',
-  './js/audio/music.js',
-  './js/audio/voice.js',
-  './js/game/variants.js',
-  './js/game/standard.js',
-  './js/game/kasper.js',
-  './js/game/merlin.js',
-  './js/game/donskaya.js',
-  './js/modes/host/cards.js',
-  './js/modes/host/timer.js',
-  './js/modes/host/players.js',
-  './js/modes/host/side.js',
-  './js/modes/host/voting.js',
-  './js/modes/host/tools.js',
-  './js/modes/auto/mode.js',
-  './js/modes/auto/migration.js',
-  './js/ui/prepare-screen.js',
-  './js/summary/summary.js',
-  './js/summary/export.js',
-  './js/summary/mu-export.js',
-  './js/events/menu.js',
-  './js/events/prepare.js',
-  './js/events/voice.js',
-  './js/events/music.js',
-  './js/events/summary.js',
-  './js/events/host/timer.js',
-  './js/events/host/tools.js',
-  './js/events/host/side.js',
-  './js/events/host/player.js',
-  './js/events/host/vote.js',
-  './js/events/auto/flow.js',
-  './js/events/auto/intro.js',
-  './js/events/auto/night.js',
-  './js/events/auto/day.js',
-  './js/events/auto/vote.js',
-  './js/events/auto/player.js',
-  './js/events/auto/merlin-guess.js',
-  './js/main.js',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './audio/you-have-10-seconds.mp3',
-  './audio/thank-you-stop.mp3',
-  './audio/mafia-10-seconds.mp3',
+  './audio/1.mp3',
+  './audio/10.mp3',
+  './audio/2.mp3',
+  './audio/3.mp3',
+  './audio/30-seconds-free-sit.mp3',
+  './audio/4.mp3',
+  './audio/5.mp3',
+  './audio/6.mp3',
+  './audio/7.mp3',
+  './audio/8.mp3',
+  './audio/9.mp3',
+  './audio/don-leaves.mp3',
+  './audio/don-wakes.mp3',
+  './audio/first-killed-best-predicition.mp3',
+  './audio/mafia-10-seconds-acquaintance.mp3',
+  './audio/mafia-leaves-acquaintance.mp3',
   './audio/mafia-leaves.mp3',
-  './audio/mafia shoots with a number.mp3',
-  './audio/mafia leaves.mp3',
-  './audio/don wakes.mp3',
-  './audio/don leaves.mp3',
-  './audio/sheriff wakes.mp3',
-  './audio/sheriff leaves.mp3',
+  './audio/mafia-shoots-with-a-number.mp3',
+  './audio/mafia-wakes-acquaintance.mp3',
+  './audio/morning-last-speech.mp3',
+  './audio/morning-miss.mp3',
+  './audio/morning.mp3',
+  './audio/sheriff-leaves.mp3',
+  './audio/sheriff-wakes.mp3',
+  './audio/thank-you-stop.mp3',
   './audio/track1.mp3',
   './audio/track2.mp3',
+  './audio/you-have-10-seconds.mp3',
+  './css/styles.css',
+  './css/tailwind.css',
+  './icons/github.svg',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon.png',
+  './icons/mafiauniverse.png',
+  './icons/telegram.svg',
+  './index.html',
+  './js/audio/music-store.js',
+  './js/audio/music.js',
+  './js/audio/spotify-auth.js',
+  './js/audio/spotify-player.js',
+  './js/audio/spotify-store.js',
+  './js/audio/voice.js',
+  './js/core/dispatch.js',
+  './js/core/screens.js',
+  './js/core/state.js',
+  './js/core/utils.js',
+  './js/events/auto/day.js',
+  './js/events/auto/flow.js',
+  './js/events/auto/intro.js',
+  './js/events/auto/merlin-guess.js',
+  './js/events/auto/night.js',
+  './js/events/auto/player.js',
+  './js/events/auto/vote.js',
+  './js/events/host/player.js',
+  './js/events/host/side.js',
+  './js/events/host/timer.js',
+  './js/events/host/tools.js',
+  './js/events/host/vote.js',
+  './js/events/menu.js',
+  './js/events/music.js',
+  './js/events/prepare.js',
+  './js/events/summary.js',
+  './js/events/voice.js',
+  './js/game/donskaya.js',
+  './js/game/kasper.js',
+  './js/game/merlin.js',
+  './js/game/standard.js',
+  './js/game/variants.js',
+  './js/main.js',
+  './js/modes/auto/core.js',
+  './js/modes/auto/day.js',
+  './js/modes/auto/endgame.js',
+  './js/modes/auto/gestures.js',
+  './js/modes/auto/intro.js',
+  './js/modes/auto/last-words.js',
+  './js/modes/auto/migration.js',
+  './js/modes/auto/mode.js',
+  './js/modes/auto/night.js',
+  './js/modes/auto/reveal.js',
+  './js/modes/auto/setup.js',
+  './js/modes/auto/vote.js',
+  './js/modes/host/cards.js',
+  './js/modes/host/players.js',
+  './js/modes/host/side.js',
+  './js/modes/host/timer.js',
+  './js/modes/host/tools.js',
+  './js/modes/host/voting.js',
+  './js/mu-autocomplete.js',
+  './js/mu-bridge.js',
+  './js/mu-state-apply.js',
+  './js/mu-utils.js',
+  './js/mu-vote-reconstruct.js',
+  './js/summary/export.js',
+  './js/summary/mu-export.js',
+  './js/summary/summary.js',
+  './js/ui/desktop-player-panel.js',
+  './js/ui/desktop-setup-slot.js',
+  './js/ui/desktop-shell.js',
+  './js/ui/desktop-vote-count.js',
+  './js/ui/prepare-screen.js',
+  './js/vendor/jszip.min.js',
+  './js/vendor/niokit/components.css',
+  './js/vendor/niokit/niokit.js',
+  './js/vendor/niokit/tokens.css',
+  './manifest.webmanifest',
 ];
+// BUILD:PRECACHE-END
 
 self.addEventListener('install', function (e) {
+  // Ядро приложения кэшируем строго (без него офлайн не работает),
+  // аудио — best-effort: один сорвавшийся трек не должен ломать установку SW.
+  var core = ASSETS.filter(function (a) {
+    return a.indexOf('./audio/') !== 0;
+  });
+  var media = ASSETS.filter(function (a) {
+    return a.indexOf('./audio/') === 0;
+  });
   e.waitUntil(
-    caches.open(CACHE_NAME).then(function (cache) {
-      return cache.addAll(ASSETS);
-    }).then(function () {
-      return self.skipWaiting();
-    })
+    caches
+      .open(CACHE_NAME)
+      .then(function (cache) {
+        return cache.addAll(core).then(function () {
+          return Promise.all(
+            media.map(function (a) {
+              return cache.add(a).catch(function () {});
+            })
+          );
+        });
+      })
+      .then(function () {
+        return self.skipWaiting();
+      })
   );
 });
 
@@ -132,11 +192,7 @@ function isCacheableRemoteAsset(req) {
   if (req.method !== 'GET') return false;
   try {
     var h = new URL(req.url).hostname;
-    return (
-      h === 'cdn.tailwindcss.com' ||
-      h === 'fonts.googleapis.com' ||
-      h === 'fonts.gstatic.com'
-    );
+    return h === 'fonts.googleapis.com' || h === 'fonts.gstatic.com';
   } catch (err) {
     return false;
   }

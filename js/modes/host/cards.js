@@ -50,7 +50,8 @@
         '<span class="text-mafia-gold/30 font-display text-6xl sm:text-7xl">♠</span>';
 
       const front = document.createElement('div');
-      front.className = 'card-front absolute inset-0 flex flex-col items-center justify-center rounded text-center p-1';
+      front.className =
+        'card-front absolute inset-0 flex flex-col items-center justify-center rounded text-center p-1';
       const role = app.roles[i];
       front.classList.add(cardFrontBgClass(role));
       const iconId = app.getRoleIconId(role);
@@ -190,4 +191,8 @@
       app.updateCardNumbers();
     }
   };
+
+  app.registerScreenRenderer('setup-screen', function () {
+    app.initCards(app.revealedIndices.length > 0);
+  });
 })(window.MafiaApp);

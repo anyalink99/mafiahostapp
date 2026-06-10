@@ -14,7 +14,7 @@ window.MafiaApp = window.MafiaApp || {};
   }
 
   function defaultMeta() {
-    return { version: 1, slots: { '1': [], '2': [] }, spotify: { '1': null, '2': null } };
+    return { version: 1, slots: { 1: [], 2: [] }, spotify: { 1: null, 2: null } };
   }
 
   app.loadMusicMeta = function () {
@@ -26,7 +26,7 @@ window.MafiaApp = window.MafiaApp || {};
       if (!data.slots || typeof data.slots !== 'object') data.slots = defaultMeta().slots;
       if (!Array.isArray(data.slots['1'])) data.slots['1'] = [];
       if (!Array.isArray(data.slots['2'])) data.slots['2'] = [];
-      if (!data.spotify || typeof data.spotify !== 'object') data.spotify = { '1': null, '2': null };
+      if (!data.spotify || typeof data.spotify !== 'object') data.spotify = { 1: null, 2: null };
       return data;
     } catch (e) {
       return defaultMeta();
@@ -108,7 +108,10 @@ window.MafiaApp = window.MafiaApp || {};
           db.close();
           reject(tx.error);
         };
-        tx.objectStore(STORE).put({ blob: blob, mimeType: mimeType || blob.type || 'audio/mpeg' }, blobId);
+        tx.objectStore(STORE).put(
+          { blob: blob, mimeType: mimeType || blob.type || 'audio/mpeg' },
+          blobId
+        );
       });
     });
   };
@@ -176,7 +179,8 @@ window.MafiaApp = window.MafiaApp || {};
     for (var i = 0; i < rawTracks.length; i++) {
       var t = rawTracks[i];
       if (!t || !t.blobId) continue;
-      var tOff = typeof t.offsetSec === 'number' && !isNaN(t.offsetSec) ? Math.max(0, t.offsetSec) : 0;
+      var tOff =
+        typeof t.offsetSec === 'number' && !isNaN(t.offsetSec) ? Math.max(0, t.offsetSec) : 0;
       tracks.push({
         id: t.id || newId(),
         name: String(t.name || 'Трек ' + (i + 1)),
@@ -342,7 +346,10 @@ window.MafiaApp = window.MafiaApp || {};
     var list = meta.slots[key];
     var idx = -1;
     for (var i = 0; i < list.length; i++) {
-      if (list[i] && list[i].id === itemId) { idx = i; break; }
+      if (list[i] && list[i].id === itemId) {
+        idx = i;
+        break;
+      }
     }
     if (idx === -1 || !list[idx] || list[idx].type !== 'playlist') return null;
     var pl = list[idx];
@@ -377,7 +384,7 @@ window.MafiaApp = window.MafiaApp || {};
   }
 
   function audioMimeForName(name) {
-    var ext = (name.match(/\.([a-z0-9]+)$/i) || [, ''])[1].toLowerCase();
+    var ext = (name.match(/\.([a-z0-9]+)$/i) || ['', ''])[1].toLowerCase();
     if (ext === 'mp3') return 'audio/mpeg';
     if (ext === 'm4a' || ext === 'aac') return 'audio/mp4';
     if (ext === 'ogg' || ext === 'oga') return 'audio/ogg';
@@ -469,7 +476,8 @@ window.MafiaApp = window.MafiaApp || {};
       return Promise.reject(new Error('JSZip not loaded'));
     }
     var key = String(slot) === '2' ? '2' : '1';
-    var playlistName = String(zipFile.name || 'Плейлист').replace(/\.(mhzip|zip)$/i, '') || 'Плейлист';
+    var playlistName =
+      String(zipFile.name || 'Плейлист').replace(/\.(mhzip|zip)$/i, '') || 'Плейлист';
 
     return JSZip.loadAsync(zipFile, {
       decodeFileName: function (bytes) {
@@ -480,7 +488,7 @@ window.MafiaApp = window.MafiaApp || {};
       var manifestEntry = zip.file(app.MUSIC_PLAYLIST_MANIFEST);
       if (manifestEntry) {
         return manifestEntry.async('string').then(function (txt) {
-          var manifest = null;
+          var manifest;
           try {
             manifest = JSON.parse(txt);
           } catch (e) {
@@ -555,7 +563,7 @@ window.MafiaApp = window.MafiaApp || {};
         return playlist;
       });
     });
-  };
+  }
 
   function extForMime(mime) {
     if (!mime) return 'mp3';
@@ -578,7 +586,10 @@ window.MafiaApp = window.MafiaApp || {};
     var list = meta.slots[key] || [];
     var it = null;
     for (var i = 0; i < list.length; i++) {
-      if (list[i] && list[i].id === itemId && list[i].type === 'playlist') { it = list[i]; break; }
+      if (list[i] && list[i].id === itemId && list[i].type === 'playlist') {
+        it = list[i];
+        break;
+      }
     }
     if (!it) return Promise.reject(new Error('not found'));
     var tracks = Array.isArray(it.tracks) ? it.tracks : [];
@@ -615,23 +626,30 @@ window.MafiaApp = window.MafiaApp || {};
         });
       });
     });
-    return chain.then(function () {
-      if (!manifest.tracks.length) throw new Error('empty playlist');
-      zip.file(app.MUSIC_PLAYLIST_MANIFEST, JSON.stringify(manifest, null, 2));
-      return zip.generateAsync({ type: 'blob' });
-    }).then(function (blob) {
-      var safe = String(it.name || 'playlist').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || 'playlist';
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = safe + '.zip';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function () {
-        try { URL.revokeObjectURL(a.href); } catch (e) {}
-      }, 1000);
-      return true;
-    });
+    return chain
+      .then(function () {
+        if (!manifest.tracks.length) throw new Error('empty playlist');
+        zip.file(app.MUSIC_PLAYLIST_MANIFEST, JSON.stringify(manifest, null, 2));
+        return zip.generateAsync({ type: 'blob' });
+      })
+      .then(function (blob) {
+        var safe =
+          String(it.name || 'playlist')
+            .replace(/[\\/:*?"<>|]+/g, '_')
+            .slice(0, 60) || 'playlist';
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = safe + '.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () {
+          try {
+            URL.revokeObjectURL(a.href);
+          } catch (e) {}
+        }, 1000);
+        return true;
+      });
   };
 
   app.musicGetSlotPlayablePool = function (slot) {

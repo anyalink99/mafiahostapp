@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      # Смоук в реальном Chrome (предустановлен на ubuntu-runner'ах);
+      # если Chrome не найден, тест сам выходит со skip.
+      - run: npm run test:smoke
+      # Сборка должна проходить и не оставлять диффа в генерируемых файлах
+      # (css/tailwind.css и прекэш service-worker.js коммитятся).
+      - run: npm run build:extension
+      - run: git diff --exit-code -- css/tailwind.css service-worker.js
