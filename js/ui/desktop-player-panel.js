@@ -260,13 +260,6 @@
     return (window.Kit && window.Kit.accordion) || null;
   }
 
-  function setSectionExpanded(section, expanded) {
-    var A = kitAcc();
-    if (!A || !section) return;
-    if (expanded) A.expand(section);
-    else A.collapse(section);
-  }
-
   function expandOnly(key) {
     var A = kitAcc();
     if (!A) return;

@@ -121,7 +121,6 @@
     for (var p = 0; p < n; p++) {
       var pl = app.players[p];
       var sid = pl.id;
-      var seatIndex = p;
       var nick = pl.nick != null ? String(pl.nick).trim() : '';
       var parts = [];
       if (nick) parts.push(nick);

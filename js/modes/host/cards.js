@@ -29,7 +29,6 @@
       app.roles = [...app.roles].sort(() => Math.random() - 0.5);
       app.revealedIndices = [];
     }
-    const total = app.getAvailableCount();
     for (let i = 0; i < app.roles.length; i++) {
       const wrap = document.createElement('div');
       wrap.className = 'card-wrap';

@@ -20,12 +20,6 @@
     return 'flex h-12 w-12 shrink-0 items-center justify-center rounded border border-mafia-gold/40 bg-mafia-blood text-mafia-gold';
   }
 
-  function parseBonus(raw) {
-    return typeof app.parseBonusFloat === 'function'
-      ? app.parseBonusFloat(raw)
-      : parseFloat(raw) || 0;
-  }
-
   app.syncGameSideRolesToggle = function () {
     var btn = document.getElementById('game-side-roles-toggle');
     if (!btn) return;

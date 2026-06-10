@@ -17,12 +17,6 @@
     return document.getElementById(SLOT_ID);
   }
 
-  function animateBodyToContent(s, body) {
-    var inner = body.firstElementChild || body;
-    var target = inner.scrollHeight;
-    body.style.maxHeight = target + 'px';
-  }
-
   function init() {
     if (!isLg()) return;
     var overlay = document.getElementById(MODAL_ID);

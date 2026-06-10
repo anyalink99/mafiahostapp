@@ -198,12 +198,6 @@
       activeIndex = -1;
     }
 
-    function open() {
-      if (!dd) dd = buildDropdown();
-      positionDropdown(dd, input);
-      dd.style.display = '';
-    }
-
     var doSearch = debounce(function () {
       var term = input.value.trim();
       if (term === lastTerm && dd && dd.style.display !== 'none') return;
