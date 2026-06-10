@@ -33,14 +33,18 @@
   };
 
   Object.defineProperty(app, 'SUPPORTED_VARIANTS', {
-    get: function () { return Object.keys(app.gameVariants); },
+    get: function () {
+      return Object.keys(app.gameVariants);
+    },
   });
 
   app.shuffleVariantPool = function (arr) {
     var a = arr.slice();
     for (var i = a.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
-      var t = a[i]; a[i] = a[j]; a[j] = t;
+      var t = a[i];
+      a[i] = a[j];
+      a[j] = t;
     }
     return a;
   };

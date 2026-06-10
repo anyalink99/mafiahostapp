@@ -2,7 +2,17 @@
   'use strict';
 
   // 9 живых игроков + 10-е место — фантом (всегда мирный), убивается ночью 1.
-  var POOL_9 = ['peaceful', 'peaceful', 'peaceful', 'peaceful', 'peaceful', 'sheriff', 'mafia', 'mafia', 'don'];
+  var POOL_9 = [
+    'peaceful',
+    'peaceful',
+    'peaceful',
+    'peaceful',
+    'peaceful',
+    'sheriff',
+    'mafia',
+    'mafia',
+    'don',
+  ];
 
   app.registerVariant({
     key: 'kasper',

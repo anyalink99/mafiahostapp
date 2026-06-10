@@ -5,7 +5,8 @@ window.MafiaApp = window.MafiaApp || {};
 
   function definePlayerModelAliases(player) {
     if (!player || typeof player !== 'object') return player;
-    if (!Object.prototype.hasOwnProperty.call(player, 'eliminationReason')) player.eliminationReason = null;
+    if (!Object.prototype.hasOwnProperty.call(player, 'eliminationReason'))
+      player.eliminationReason = null;
     return player;
   }
 
@@ -32,8 +33,23 @@ window.MafiaApp = window.MafiaApp || {};
     return players;
   }
 
-  app.roles = ['Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Шериф', 'Мафия', 'Мафия', 'Дон'];
-  app.players = ensurePlayersSchema(Array.from({ length: 10 }, function (_, i) { return createPlayer(i + 1, ''); }));
+  app.roles = [
+    'Мирный',
+    'Мирный',
+    'Мирный',
+    'Мирный',
+    'Мирный',
+    'Мирный',
+    'Шериф',
+    'Мафия',
+    'Мафия',
+    'Дон',
+  ];
+  app.players = ensurePlayersSchema(
+    Array.from({ length: 10 }, function (_, i) {
+      return createPlayer(i + 1, '');
+    })
+  );
   app.nomineeQueue = [];
   app.activeVoteRound = null;
   app.revealedIndices = [];
@@ -149,7 +165,8 @@ window.MafiaApp = window.MafiaApp || {};
           app.nomineeQueue = vs.candidateIds.slice();
         }
       }
-      if (data.revealedIndices && Array.isArray(data.revealedIndices)) app.revealedIndices = data.revealedIndices;
+      if (data.revealedIndices && Array.isArray(data.revealedIndices))
+        app.revealedIndices = data.revealedIndices;
       if (typeof data.timeLeft === 'number') app.timeLeft = data.timeLeft;
       app.timerRunning = !!data.timerRunning;
       app.timerEndsAt = typeof data.timerEndsAt === 'number' ? data.timerEndsAt : null;
@@ -158,42 +175,87 @@ window.MafiaApp = window.MafiaApp || {};
       app.gameLog = app.gameLog.filter(function (ev) {
         return ev && ev.type !== 'vote_round_skipped';
       });
-      if (data.playerRoleOverrides && typeof data.playerRoleOverrides === 'object' && !Array.isArray(data.playerRoleOverrides)) {
+      if (
+        data.playerRoleOverrides &&
+        typeof data.playerRoleOverrides === 'object' &&
+        !Array.isArray(data.playerRoleOverrides)
+      ) {
         app.playerRoleOverrides = data.playerRoleOverrides;
       } else app.playerRoleOverrides = {};
-      if (data.winningTeam === 'mafia' || data.winningTeam === 'peaceful' || data.winningTeam === null) {
+      if (
+        data.winningTeam === 'mafia' ||
+        data.winningTeam === 'peaceful' ||
+        data.winningTeam === null
+      ) {
         app.winningTeam = data.winningTeam;
-      } else if (data.summary && typeof data.summary === 'object' && typeof data.summary.winningTeam === 'string') {
+      } else if (
+        data.summary &&
+        typeof data.summary === 'object' &&
+        typeof data.summary.winningTeam === 'string'
+      ) {
         var wt = data.summary.winningTeam;
         if (wt === 'mafia') app.winningTeam = 'mafia';
         else if (wt === 'peaceful' || wt === 'civilian') app.winningTeam = 'peaceful';
         else app.winningTeam = null;
       } else app.winningTeam = null;
-      if (data.bonusPointsByPlayerId && typeof data.bonusPointsByPlayerId === 'object' && !Array.isArray(data.bonusPointsByPlayerId)) {
+      if (
+        data.bonusPointsByPlayerId &&
+        typeof data.bonusPointsByPlayerId === 'object' &&
+        !Array.isArray(data.bonusPointsByPlayerId)
+      ) {
         app.bonusPointsByPlayerId = data.bonusPointsByPlayerId;
-      } else if (data.summary && data.summary.bonusByPlayer && typeof data.summary.bonusByPlayer === 'object') {
+      } else if (
+        data.summary &&
+        data.summary.bonusByPlayer &&
+        typeof data.summary.bonusByPlayer === 'object'
+      ) {
         app.bonusPointsByPlayerId = data.summary.bonusByPlayer;
       } else app.bonusPointsByPlayerId = {};
-      if (data.summaryRoleByPlayerId && typeof data.summaryRoleByPlayerId === 'object' && !Array.isArray(data.summaryRoleByPlayerId)) {
+      if (
+        data.summaryRoleByPlayerId &&
+        typeof data.summaryRoleByPlayerId === 'object' &&
+        !Array.isArray(data.summaryRoleByPlayerId)
+      ) {
         app.summaryRoleByPlayerId = data.summaryRoleByPlayerId;
       } else app.summaryRoleByPlayerId = {};
-      if (data.bonusNoteByPlayerId && typeof data.bonusNoteByPlayerId === 'object' && !Array.isArray(data.bonusNoteByPlayerId)) {
+      if (
+        data.bonusNoteByPlayerId &&
+        typeof data.bonusNoteByPlayerId === 'object' &&
+        !Array.isArray(data.bonusNoteByPlayerId)
+      ) {
         app.bonusNoteByPlayerId = data.bonusNoteByPlayerId;
       } else app.bonusNoteByPlayerId = {};
-      if (data.bestMoveByPlayerId && typeof data.bestMoveByPlayerId === 'object' && !Array.isArray(data.bestMoveByPlayerId)) {
+      if (
+        data.bestMoveByPlayerId &&
+        typeof data.bestMoveByPlayerId === 'object' &&
+        !Array.isArray(data.bestMoveByPlayerId)
+      ) {
         app.bestMoveByPlayerId = data.bestMoveByPlayerId;
       } else app.bestMoveByPlayerId = {};
-      if (data.protocolByPlayerId && typeof data.protocolByPlayerId === 'object' && !Array.isArray(data.protocolByPlayerId)) {
+      if (
+        data.protocolByPlayerId &&
+        typeof data.protocolByPlayerId === 'object' &&
+        !Array.isArray(data.protocolByPlayerId)
+      ) {
         app.protocolByPlayerId = data.protocolByPlayerId;
       } else app.protocolByPlayerId = {};
-      if (data.opinionByPlayerId && typeof data.opinionByPlayerId === 'object' && !Array.isArray(data.opinionByPlayerId)) {
+      if (
+        data.opinionByPlayerId &&
+        typeof data.opinionByPlayerId === 'object' &&
+        !Array.isArray(data.opinionByPlayerId)
+      ) {
         app.opinionByPlayerId = data.opinionByPlayerId;
       } else app.opinionByPlayerId = {};
       if (typeof data.summaryHostName === 'string') app.summaryHostName = data.summaryHostName;
       else app.summaryHostName = '';
-      if (typeof data.summarySyntheticFirstDayLine === 'string') app.summarySyntheticFirstDayLine = data.summarySyntheticFirstDayLine;
+      if (typeof data.summarySyntheticFirstDayLine === 'string')
+        app.summarySyntheticFirstDayLine = data.summarySyntheticFirstDayLine;
       else app.summarySyntheticFirstDayLine = null;
-      if (data.summarySkipLineOverrides && typeof data.summarySkipLineOverrides === 'object' && !Array.isArray(data.summarySkipLineOverrides)) {
+      if (
+        data.summarySkipLineOverrides &&
+        typeof data.summarySkipLineOverrides === 'object' &&
+        !Array.isArray(data.summarySkipLineOverrides)
+      ) {
         app.summarySkipLineOverrides = data.summarySkipLineOverrides;
       } else app.summarySkipLineOverrides = {};
       app.gameSideShowRoles = !!data.gameSideShowRoles;
@@ -204,8 +266,10 @@ window.MafiaApp = window.MafiaApp || {};
           for (var rmi = 0; rmi < data.summary.rolesManual.length; rmi++) {
             var rm = data.summary.rolesManual[rmi];
             if (rm && typeof rm.playerId === 'number') {
-              if (rm.role === 'don' || rm.role === 'Дон') app.playerRoleOverrides[String(rm.playerId)] = 'don';
-              else if (rm.role === 'sheriff' || rm.role === 'Шериф') app.playerRoleOverrides[String(rm.playerId)] = 'sheriff';
+              if (rm.role === 'don' || rm.role === 'Дон')
+                app.playerRoleOverrides[String(rm.playerId)] = 'don';
+              else if (rm.role === 'sheriff' || rm.role === 'Шериф')
+                app.playerRoleOverrides[String(rm.playerId)] = 'sheriff';
             } else if (typeof rm === 'string') {
               var seat = rmi + 1;
               if (rm === 'Дон') app.playerRoleOverrides[String(seat)] = 'don';
@@ -226,7 +290,18 @@ window.MafiaApp = window.MafiaApp || {};
     var prevNicks = app.players.map(function (p) {
       return p && p.nick != null ? String(p.nick).slice(0, 32) : '';
     });
-    app.roles = ['Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Мирный', 'Шериф', 'Мафия', 'Мафия', 'Дон'];
+    app.roles = [
+      'Мирный',
+      'Мирный',
+      'Мирный',
+      'Мирный',
+      'Мирный',
+      'Мирный',
+      'Шериф',
+      'Мафия',
+      'Мафия',
+      'Дон',
+    ];
     app.players = ensurePlayersSchema(
       Array.from({ length: 10 }, function (_, i) {
         return createPlayer(i + 1, keepNicks ? prevNicks[i] || '' : '');
@@ -235,7 +310,8 @@ window.MafiaApp = window.MafiaApp || {};
     app.nomineeQueue = [];
     app.activeVoteRound = null;
     app.revealedIndices = [];
-    app.timeLeft = typeof app.timerMainSec === 'number' && app.timerMainSec > 0 ? app.timerMainSec : 60;
+    app.timeLeft =
+      typeof app.timerMainSec === 'number' && app.timerMainSec > 0 ? app.timerMainSec : 60;
     app.timerRunning = false;
     app.timerEndsAt = null;
     app.gameLog = [];
@@ -294,7 +370,8 @@ window.MafiaApp = window.MafiaApp || {};
     if (app.opinionByPlayerId && Object.keys(app.opinionByPlayerId).length > 0) return true;
     if (app.summaryHostName && app.summaryHostName.trim() !== '') return true;
     if (app.summarySyntheticFirstDayLine !== null) return true;
-    if (app.summarySkipLineOverrides && Object.keys(app.summarySkipLineOverrides).length > 0) return true;
+    if (app.summarySkipLineOverrides && Object.keys(app.summarySkipLineOverrides).length > 0)
+      return true;
     if (typeof app.gameSideNotes === 'string' && app.gameSideNotes.trim() !== '') return true;
     if (Array.isArray(app.players)) {
       for (var i = 0; i < app.players.length; i++) {

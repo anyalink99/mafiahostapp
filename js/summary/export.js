@@ -79,9 +79,7 @@
         if (ovr != null && String(ovr).trim() !== '') return String(ovr);
       }
       if (roundNum === 1) {
-        return (
-          '#1 - никто не был выставлен или был выставлен один игрок, голосование пропущено'
-        );
+        return '#1 - никто не был выставлен или был выставлен один игрок, голосование пропущено';
       }
       return '#' + roundNum + ': никто не был выставлен, голосование пропущено';
     }
@@ -142,9 +140,15 @@
       }
       var rest = parts.length ? parts.join(', ') : DASH;
       lines.push('Игрок ' + sid + ': ' + rest);
-      var protoLine = formatNumGroupLine('Протокол', app.getPlayerNumGroup(app.protocolByPlayerId, sid));
+      var protoLine = formatNumGroupLine(
+        'Протокол',
+        app.getPlayerNumGroup(app.protocolByPlayerId, sid)
+      );
       if (protoLine) lines.push(protoLine);
-      var opinLine = formatNumGroupLine('Мнение', app.getPlayerNumGroup(app.opinionByPlayerId, sid));
+      var opinLine = formatNumGroupLine(
+        'Мнение',
+        app.getPlayerNumGroup(app.opinionByPlayerId, sid)
+      );
       if (opinLine) lines.push(opinLine);
     }
 
@@ -294,7 +298,9 @@
     else if (app.winningTeam === 'peaceful') winCell = 'Мирные';
     rows.push(padStatRow(['Победа', winCell, '', '', '', '', '']));
     rows.push(emptyPaddedRow());
-    rows.push(padStatRow(['#', 'Игрок', 'Роль', 'ПУ', 'Доп +', 'Доп −', '∑', 'Протокол', 'Мнение']));
+    rows.push(
+      padStatRow(['#', 'Игрок', 'Роль', 'ПУ', 'Доп +', 'Доп −', '∑', 'Протокол', 'Мнение'])
+    );
 
     var n = app.players.length;
     for (var p = 0; p < n; p++) {
@@ -364,10 +370,7 @@
         var neOnly = cluster[0];
         rows.push(makeVoteRow('Голосование #' + rn, []));
         rows.push(makeVoteRow('Выставленные игроки', ['—']));
-        if (
-          typeof neOnly.votesCast === 'number' &&
-          typeof neOnly.poolTotal === 'number'
-        ) {
+        if (typeof neOnly.votesCast === 'number' && typeof neOnly.poolTotal === 'number') {
           rows.push(makeVoteRow('Голоса за игроков', [neOnly.votesCast, neOnly.poolTotal]));
         } else {
           rows.push(makeVoteRow('Голоса за игроков', ['—']));
@@ -393,9 +396,7 @@
           : [];
 
       var v1Source = firstTie || lastHang;
-      var slots1 = v1Source
-        ? slotsFromVotes(v1Source.candidateIds, v1Source.votes)
-        : [];
+      var slots1 = v1Source ? slotsFromVotes(v1Source.candidateIds, v1Source.votes) : [];
 
       var slots4 = [];
       if (secondTie) {
@@ -422,9 +423,11 @@
       );
     }
 
-    return rows.map(function (row) {
-      return row.join(',');
-    }).join('\r\n');
+    return rows
+      .map(function (row) {
+        return row.join(',');
+      })
+      .join('\r\n');
   }
 
   function copyTextToClipboard(text) {

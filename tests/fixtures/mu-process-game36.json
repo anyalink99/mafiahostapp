@@ -1,10 +1,30 @@
 {
   "_comment": "Реальный MU Process из сохранённой 'Игры 36' (Muzzle Mafia 2026). В нашем формате votings: candidates + playersGone. День 1: ничья 1-2 → переголосование ничья 1-2 → следующая запись с другими кандидатами (4,5) ⇒ оставили (no_elimination). День 2: ничья 4-5 → переголосование ничья 4-5 → Подняли обоих (raise_all).",
   "votings": [
-    { "candidates": [{ "playerNumber": 1, "votesCount": 5 }, { "playerNumber": 2, "votesCount": 5 }] },
-    { "candidates": [{ "playerNumber": 1, "votesCount": 5 }, { "playerNumber": 2, "votesCount": 5 }] },
-    { "candidates": [{ "playerNumber": 4, "votesCount": 5 }, { "playerNumber": 5, "votesCount": 5 }] },
-    { "candidates": [{ "playerNumber": 4, "votesCount": 5 }, { "playerNumber": 5, "votesCount": 5 }] },
+    {
+      "candidates": [
+        { "playerNumber": 1, "votesCount": 5 },
+        { "playerNumber": 2, "votesCount": 5 }
+      ]
+    },
+    {
+      "candidates": [
+        { "playerNumber": 1, "votesCount": 5 },
+        { "playerNumber": 2, "votesCount": 5 }
+      ]
+    },
+    {
+      "candidates": [
+        { "playerNumber": 4, "votesCount": 5 },
+        { "playerNumber": 5, "votesCount": 5 }
+      ]
+    },
+    {
+      "candidates": [
+        { "playerNumber": 4, "votesCount": 5 },
+        { "playerNumber": 5, "votesCount": 5 }
+      ]
+    },
     { "candidates": [], "playersGone": [4, 5] }
   ]
 }

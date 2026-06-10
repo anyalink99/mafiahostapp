@@ -22,7 +22,11 @@
   // чтобы пройти через handler — он умеет роутить в prepare-mode-screen при
   // включённых экспериментах. Для highlighting помечаем её активной также на
   // промежуточных prepare-/setup-экранах.
-  var PREPARE_RELATED_SCREENS = { 'prepare-screen': 1, 'prepare-mode-screen': 1, 'setup-screen': 1 };
+  var PREPARE_RELATED_SCREENS = {
+    'prepare-screen': 1,
+    'prepare-mode-screen': 1,
+    'setup-screen': 1,
+  };
 
   function syncNavActive() {
     var active = activeScreenId();
@@ -43,7 +47,9 @@
     if (!orig || orig.__desktopShellHooked) return;
     var wrapped = function () {
       var r = orig.apply(this, arguments);
-      try { syncNavActive(); } catch (e) {}
+      try {
+        syncNavActive();
+      } catch (e) {}
       return r;
     };
     wrapped.__desktopShellHooked = true;
@@ -65,11 +71,13 @@
     // насколько занимает таймер (плюс небольшой отступ).
     var setVar = function () {
       var h = host.getBoundingClientRect().height;
-      document.documentElement.style.setProperty('--global-timer-h', (Math.ceil(h) + 16) + 'px');
+      document.documentElement.style.setProperty('--global-timer-h', Math.ceil(h) + 16 + 'px');
     };
     requestAnimationFrame(setVar);
     if (window.ResizeObserver) {
-      try { new ResizeObserver(setVar).observe(host); } catch (e) {}
+      try {
+        new ResizeObserver(setVar).observe(host);
+      } catch (e) {}
     }
     return true;
   }
@@ -90,4 +98,4 @@
   } else {
     setTimeout(init, 0);
   }
-})(window.MafiaApp = window.MafiaApp || {});
+})((window.MafiaApp = window.MafiaApp || {}));

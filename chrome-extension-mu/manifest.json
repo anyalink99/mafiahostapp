@@ -11,26 +11,17 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://mafiauniverse.org/*",
-        "http://mafiauniverse.org/*"
-      ],
+      "matches": ["https://mafiauniverse.org/*", "http://mafiauniverse.org/*"],
       "js": ["mu-reskin-css.js", "mu-reskin.js"],
       "run_at": "document_start"
     },
     {
-      "matches": [
-        "https://mafiauniverse.org/*",
-        "http://mafiauniverse.org/*"
-      ],
+      "matches": ["https://mafiauniverse.org/*", "http://mafiauniverse.org/*"],
       "js": ["mu-cleanup.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": [
-        "https://mafiauniverse.org/Games/Edit*",
-        "http://mafiauniverse.org/Games/Edit*"
-      ],
+      "matches": ["https://mafiauniverse.org/Games/Edit*", "http://mafiauniverse.org/Games/Edit*"],
       "js": ["mu-form-io.js", "content.js"],
       "css": ["inject.css"],
       "run_at": "document_idle"

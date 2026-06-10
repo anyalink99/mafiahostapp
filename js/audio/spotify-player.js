@@ -107,22 +107,25 @@
   };
 
   function apiFetch(method, path, body) {
-    return app.spotifyGetAccessToken().then(function (token) {
-      if (!token) throw new Error('not authenticated');
-      var opts = {
-        method: method,
-        headers: { Authorization: 'Bearer ' + token },
-      };
-      if (body) {
-        opts.headers['Content-Type'] = 'application/json';
-        opts.body = JSON.stringify(body);
-      }
-      return fetch(API_BASE + path, opts);
-    }).then(function (res) {
-      if (res.status === 204 || res.status === 202) return null;
-      if (!res.ok) throw new Error('Spotify API ' + res.status);
-      return res.json();
-    });
+    return app
+      .spotifyGetAccessToken()
+      .then(function (token) {
+        if (!token) throw new Error('not authenticated');
+        var opts = {
+          method: method,
+          headers: { Authorization: 'Bearer ' + token },
+        };
+        if (body) {
+          opts.headers['Content-Type'] = 'application/json';
+          opts.body = JSON.stringify(body);
+        }
+        return fetch(API_BASE + path, opts);
+      })
+      .then(function (res) {
+        if (res.status === 204 || res.status === 202) return null;
+        if (!res.ok) throw new Error('Spotify API ' + res.status);
+        return res.json();
+      });
   }
 
   app.spotifyPlayPlaylist = function (playlistId, volume) {
@@ -132,11 +135,16 @@
 
     return apiFetch('PUT', '/me/player/play?device_id=' + encodeURIComponent(_deviceId), {
       context_uri: uri,
-    }).then(function () {
-      return apiFetch('PUT', '/me/player/shuffle?state=true&device_id=' + encodeURIComponent(_deviceId));
-    }).then(function () {
-      if (_player) return _player.setVolume(vol);
-    });
+    })
+      .then(function () {
+        return apiFetch(
+          'PUT',
+          '/me/player/shuffle?state=true&device_id=' + encodeURIComponent(_deviceId)
+        );
+      })
+      .then(function () {
+        if (_player) return _player.setVolume(vol);
+      });
   };
 
   app.spotifyPause = function () {
@@ -168,7 +176,9 @@
 
   app.spotifyDisconnect = function () {
     if (_player) {
-      try { _player.disconnect(); } catch (e) {}
+      try {
+        _player.disconnect();
+      } catch (e) {}
     }
     _player = null;
     _deviceId = null;
@@ -191,18 +201,27 @@
     var isFile = location.protocol === 'file:';
 
     var html = '';
-    html += '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider mb-1">Client ID</label>';
-    html += '<input type="text" id="spotify-client-id" value="' + escapeHtml(clientId) + '" placeholder="Вставьте Client ID из Spotify Developer" class="w-full px-3 py-2 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm mb-3">';
+    html +=
+      '<label class="block text-xs text-mafia-cream/60 uppercase tracking-wider mb-1">Client ID</label>';
+    html +=
+      '<input type="text" id="spotify-client-id" value="' +
+      escapeHtml(clientId) +
+      '" placeholder="Вставьте Client ID из Spotify Developer" class="w-full px-3 py-2 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm mb-3">';
 
     if (isFile) {
-      html += '<p class="text-mafia-cream/50 text-xs mb-3">Spotify доступен только при запуске через веб-сервер (http/https).</p>';
+      html +=
+        '<p class="text-mafia-cream/50 text-xs mb-3">Spotify доступен только при запуске через веб-сервер (http/https).</p>';
     } else if (authed) {
       html += '<div class="flex items-center gap-3 mb-3">';
       html += '<span class="text-green-400 text-sm">Подключен</span>';
-      html += '<button type="button" data-action="spotify-disconnect" class="px-3 py-1.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/80 text-xs uppercase tracking-wider rounded cursor-pointer">Отключить</button>';
+      html +=
+        '<button type="button" data-action="spotify-disconnect" class="px-3 py-1.5 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/80 text-xs uppercase tracking-wider rounded cursor-pointer">Отключить</button>';
       html += '</div>';
     } else {
-      html += '<button type="button" data-action="spotify-connect" class="px-4 py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black font-medium text-sm rounded cursor-pointer transition-colors' + (clientId ? '' : ' opacity-50 pointer-events-none') + '">Подключить Spotify</button>';
+      html +=
+        '<button type="button" data-action="spotify-connect" class="px-4 py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black font-medium text-sm rounded cursor-pointer transition-colors' +
+        (clientId ? '' : ' opacity-50 pointer-events-none') +
+        '">Подключить Spotify</button>';
       if (!clientId) {
         html += '<p class="text-mafia-cream/40 text-xs mt-2">Сначала введите Client ID.</p>';
       }
@@ -226,22 +245,41 @@
     var html = '';
 
     if (info && info.playlistId) {
-      html += '<div class="flex items-center gap-3 p-2.5 bg-[#1DB954]/10 border border-[#1DB954]/30 rounded">';
+      html +=
+        '<div class="flex items-center gap-3 p-2.5 bg-[#1DB954]/10 border border-[#1DB954]/30 rounded">';
       if (info.playlistImageUrl) {
-        html += '<img src="' + escapeHtml(info.playlistImageUrl) + '" alt="" class="w-10 h-10 rounded flex-shrink-0">';
+        html +=
+          '<img src="' +
+          escapeHtml(info.playlistImageUrl) +
+          '" alt="" class="w-10 h-10 rounded flex-shrink-0">';
       }
       html += '<div class="flex-1 min-w-0">';
-      html += '<p class="text-sm text-[#1DB954] font-medium truncate">' + escapeHtml(info.playlistName || 'Плейлист') + '</p>';
+      html +=
+        '<p class="text-sm text-[#1DB954] font-medium truncate">' +
+        escapeHtml(info.playlistName || 'Плейлист') +
+        '</p>';
       html += '<p class="text-xs text-mafia-cream/50">' + (info.trackCount || 0) + ' треков</p>';
       html += '</div>';
-      html += '<button type="button" data-action="spotify-clear-playlist" data-slot="' + escapeHtml(k) + '" class="text-red-400/80 hover:text-red-300 text-xs uppercase tracking-wider cursor-pointer flex-shrink-0">Убрать</button>';
+      html +=
+        '<button type="button" data-action="spotify-clear-playlist" data-slot="' +
+        escapeHtml(k) +
+        '" class="text-red-400/80 hover:text-red-300 text-xs uppercase tracking-wider cursor-pointer flex-shrink-0">Убрать</button>';
       html += '</div>';
     } else {
       html += '<div class="flex gap-2">';
-      html += '<input type="text" data-spotify-playlist-input data-slot="' + escapeHtml(k) + '" placeholder="https://open.spotify.com/playlist/..." class="flex-1 min-w-0 px-3 py-2 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">';
-      html += '<button type="button" data-action="spotify-paste-playlist" data-slot="' + escapeHtml(k) + '" class="px-3 py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black text-xs font-medium uppercase tracking-wider rounded cursor-pointer flex-shrink-0">Добавить</button>';
+      html +=
+        '<input type="text" data-spotify-playlist-input data-slot="' +
+        escapeHtml(k) +
+        '" placeholder="https://open.spotify.com/playlist/..." class="flex-1 min-w-0 px-3 py-2 bg-mafia-coal border border-mafia-border rounded text-mafia-cream text-sm">';
+      html +=
+        '<button type="button" data-action="spotify-paste-playlist" data-slot="' +
+        escapeHtml(k) +
+        '" class="px-3 py-2 bg-[#1DB954] hover:bg-[#1ed760] text-black text-xs font-medium uppercase tracking-wider rounded cursor-pointer flex-shrink-0">Добавить</button>';
       html += '</div>';
-      html += '<div id="spotify-slot-' + escapeHtml(k) + '-error" class="text-red-400/80 text-xs mt-1 hidden"></div>';
+      html +=
+        '<div id="spotify-slot-' +
+        escapeHtml(k) +
+        '-error" class="text-red-400/80 text-xs mt-1 hidden"></div>';
     }
 
     container.innerHTML = html;

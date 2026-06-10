@@ -88,13 +88,16 @@ window.MafiaApp = window.MafiaApp || {};
       return Promise.resolve(t.access_token);
     }
     if (t.refresh_token) {
-      return app.spotifyRefreshToken().then(function (newToken) {
-        return newToken;
-      }).catch(function () {
-        clearTokens();
-        if (app.showToast) app.showToast('Сессия Spotify истекла, подключитесь заново');
-        return null;
-      });
+      return app
+        .spotifyRefreshToken()
+        .then(function (newToken) {
+          return newToken;
+        })
+        .catch(function () {
+          clearTokens();
+          if (app.showToast) app.showToast('Сессия Spotify истекла, подключитесь заново');
+          return null;
+        });
     }
     clearTokens();
     return Promise.resolve(null);
@@ -106,26 +109,31 @@ window.MafiaApp = window.MafiaApp || {};
     var cid = _clientId || '';
     if (!cid) return Promise.reject(new Error('no client id'));
 
-    var body = 'grant_type=refresh_token'
-      + '&refresh_token=' + encodeURIComponent(t.refresh_token)
-      + '&client_id=' + encodeURIComponent(cid);
+    var body =
+      'grant_type=refresh_token' +
+      '&refresh_token=' +
+      encodeURIComponent(t.refresh_token) +
+      '&client_id=' +
+      encodeURIComponent(cid);
 
     return fetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body,
-    }).then(function (res) {
-      if (!res.ok) throw new Error('refresh failed: ' + res.status);
-      return res.json();
-    }).then(function (data) {
-      var tokens = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token || t.refresh_token,
-        expires_at: Date.now() + (data.expires_in - 60) * 1000,
-      };
-      saveTokens(tokens);
-      return tokens.access_token;
-    });
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('refresh failed: ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var tokens = {
+          access_token: data.access_token,
+          refresh_token: data.refresh_token || t.refresh_token,
+          expires_at: Date.now() + (data.expires_in - 60) * 1000,
+        };
+        saveTokens(tokens);
+        return tokens.access_token;
+      });
   };
 
   app.spotifyStartAuth = function () {
@@ -165,53 +173,76 @@ window.MafiaApp = window.MafiaApp || {};
     var error = params.get('error');
 
     if (error) {
-      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      try {
+        history.replaceState(null, '', location.pathname);
+      } catch (e) {}
       return;
     }
     if (!code) return;
 
     var verifier = '';
-    try { verifier = sessionStorage.getItem(VERIFIER_KEY) || ''; } catch (e) {}
-    try { sessionStorage.removeItem(VERIFIER_KEY); } catch (e) {}
+    try {
+      verifier = sessionStorage.getItem(VERIFIER_KEY) || '';
+    } catch (e) {}
+    try {
+      sessionStorage.removeItem(VERIFIER_KEY);
+    } catch (e) {}
 
     if (!verifier) {
-      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      try {
+        history.replaceState(null, '', location.pathname);
+      } catch (e) {}
       return;
     }
 
     var cid = '';
-    try { cid = localStorage.getItem(CLIENT_ID_KEY) || ''; } catch (e) {}
+    try {
+      cid = localStorage.getItem(CLIENT_ID_KEY) || '';
+    } catch (e) {}
     if (!cid) {
-      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      try {
+        history.replaceState(null, '', location.pathname);
+      } catch (e) {}
       return;
     }
 
     _clientId = cid;
 
-    var body = 'grant_type=authorization_code'
-      + '&code=' + encodeURIComponent(code)
-      + '&redirect_uri=' + encodeURIComponent(getRedirectUri())
-      + '&client_id=' + encodeURIComponent(cid)
-      + '&code_verifier=' + encodeURIComponent(verifier);
+    var body =
+      'grant_type=authorization_code' +
+      '&code=' +
+      encodeURIComponent(code) +
+      '&redirect_uri=' +
+      encodeURIComponent(getRedirectUri()) +
+      '&client_id=' +
+      encodeURIComponent(cid) +
+      '&code_verifier=' +
+      encodeURIComponent(verifier);
 
     fetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body,
-    }).then(function (res) {
-      if (!res.ok) throw new Error('token exchange failed: ' + res.status);
-      return res.json();
-    }).then(function (data) {
-      saveTokens({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_at: Date.now() + (data.expires_in - 60) * 1000,
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('token exchange failed: ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        saveTokens({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_at: Date.now() + (data.expires_in - 60) * 1000,
+        });
+      })
+      .catch(function (err) {
+        console.warn('Spotify token exchange error:', err);
+      })
+      .then(function () {
+        try {
+          history.replaceState(null, '', location.pathname);
+        } catch (e) {}
       });
-    }).catch(function (err) {
-      console.warn('Spotify token exchange error:', err);
-    }).then(function () {
-      try { history.replaceState(null, '', location.pathname); } catch (e) {}
-    });
   };
 
   app.spotifyLogout = function () {

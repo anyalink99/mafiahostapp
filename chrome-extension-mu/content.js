@@ -118,10 +118,12 @@
 
     var details = document.createElement('div');
     details.className = 'mu-mh-banner__details';
-    var warnCount = (result && result.warnings) ? result.warnings.length : 0;
+    var warnCount = result && result.warnings ? result.warnings.length : 0;
     details.textContent =
-      'Игроков: ' + (result.playersFilled || 0) +
-      ', голосований: ' + (result.votingsWritten || 0) +
+      'Игроков: ' +
+      (result.playersFilled || 0) +
+      ', голосований: ' +
+      (result.votingsWritten || 0) +
       (warnCount ? ' (предупреждений: ' + warnCount + ')' : '') +
       '. Проверьте поля и нажмите Сохранить.';
 
@@ -177,7 +179,7 @@
       }, timeoutMs || 5000);
       contentPending[rid] = function (msg) {
         clearTimeout(to);
-        if (msg && msg.ok === false) reject(new Error(msg.error || ('Ошибка ' + type)));
+        if (msg && msg.ok === false) reject(new Error(msg.error || 'Ошибка ' + type));
         else resolve(msg);
       };
       sendToIframe(Object.assign({ type: type, requestId: rid }, payload || {}));
@@ -192,8 +194,11 @@
     requestIframe('mu/get-current-state')
       .then(function (msg) {
         if (msg && msg.data) {
-          try { FormIO.fillForm(msg.data); }
-          catch (e) { console.warn('[MU] state→form fillForm:', e); }
+          try {
+            FormIO.fillForm(msg.data);
+          } catch (e) {
+            console.warn('[MU] state→form fillForm:', e);
+          }
         }
       })
       .catch(function (err) {
@@ -205,8 +210,11 @@
 
   function syncFormToStateThenShow() {
     var formData = null;
-    try { formData = FormIO.readFormToMUJson(); }
-    catch (e) { console.warn('[MU] readForm:', e); }
+    try {
+      formData = FormIO.readFormToMUJson();
+    } catch (e) {
+      console.warn('[MU] readForm:', e);
+    }
     removeBanner();
     if (formData) sendToIframe({ type: 'mu/apply-state', data: formData });
     showOverlay();
@@ -261,8 +269,11 @@
 
     'mu/apply': function (msg) {
       var result;
-      try { result = FormIO.fillForm(msg.data); }
-      catch (e) { result = { ok: false, error: errMsg(e) }; }
+      try {
+        result = FormIO.fillForm(msg.data);
+      } catch (e) {
+        result = { ok: false, error: errMsg(e) };
+      }
       reply(msg.requestId, 'mu/applyResult', result);
       if (result && result.ok) {
         hideOverlay();
@@ -276,14 +287,19 @@
     },
   };
 
-  function errMsg(err) { return String(err && err.message || err); }
+  function errMsg(err) {
+    return String((err && err.message) || err);
+  }
 
   window.addEventListener('message', function (event) {
     if (event.origin !== EXT_ORIGIN) return;
     var msg = event.data;
     if (!msg || typeof msg !== 'object') return;
     var h = handlers[msg.type];
-    if (h) { h(msg); return; }
+    if (h) {
+      h(msg);
+      return;
+    }
     // Ответы iframe на наши content→iframe запросы (по requestId).
     if (msg.requestId && contentPending[msg.requestId]) {
       var cb = contentPending[msg.requestId];
@@ -317,7 +333,9 @@
 
   if (!IS_EDIT_PAGE) return;
 
-  function start() { showOverlay(); }
+  function start() {
+    showOverlay();
+  }
   // На document_idle DOM формы обычно уже есть, но иногда подгружается чуть позже.
   if (document.getElementById('gameForm')) {
     start();

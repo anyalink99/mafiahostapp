@@ -7,8 +7,12 @@
 
   app.uiActionHandlers = app.uiActionHandlers || {};
 
-  app.uiActionHandlers['toggle-timer'] = function () { app.toggleTimer(); };
-  app.uiActionHandlers['toggle-music'] = function () { app.toggleMusicPlayback(); };
+  app.uiActionHandlers['toggle-timer'] = function () {
+    app.toggleTimer();
+  };
+  app.uiActionHandlers['toggle-music'] = function () {
+    app.toggleMusicPlayback();
+  };
 
   app.uiActionHandlers['reset-timer'] = function (el, _event, ui) {
     var sec = ui.getIntAttr(el, 'data-seconds');

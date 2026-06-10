@@ -15,6 +15,10 @@
     if (!isNaN(tid) && app.handleMerlinGuessPick) app.handleMerlinGuessPick(tid);
   };
 
-  app.uiActionHandlers['auto-merlin-guess-finish'] = function () { app.handleMerlinGuessFinish(); };
-  app.uiActionHandlers['auto-merlin-guess-skip'] = function () { app.handleMerlinGuessSkip(); };
+  app.uiActionHandlers['auto-merlin-guess-finish'] = function () {
+    app.handleMerlinGuessFinish();
+  };
+  app.uiActionHandlers['auto-merlin-guess-skip'] = function () {
+    app.handleMerlinGuessSkip();
+  };
 })(window.MafiaApp);

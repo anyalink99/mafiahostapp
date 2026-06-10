@@ -143,7 +143,10 @@
     var keep = [];
     for (var i = 0; i < app.gameLog.length; i++) {
       var ev = app.gameLog[i];
-      if (!ev || !ev.type) { keep.push(ev); continue; }
+      if (!ev || !ev.type) {
+        keep.push(ev);
+        continue;
+      }
       if (ev.type.indexOf('vote_') === 0) continue;
       keep.push(ev);
     }
@@ -160,7 +163,11 @@
     ];
     for (var i = 0; i < fns.length; i++) {
       if (typeof app[fns[i]] === 'function') {
-        try { app[fns[i]](); } catch (e) { console.warn('[MU] rerender ' + fns[i] + ':', e); }
+        try {
+          app[fns[i]]();
+        } catch (e) {
+          console.warn('[MU] rerender ' + fns[i] + ':', e);
+        }
       }
     }
   }
@@ -175,8 +182,10 @@
     }
     applyVotings(data.votings);
     if (app.saveState) {
-      try { app.saveState(); } catch (e) {}
+      try {
+        app.saveState();
+      } catch (e) {}
     }
     rerenderAll();
   };
-})(window.MafiaApp = window.MafiaApp || {});
+})((window.MafiaApp = window.MafiaApp || {}));

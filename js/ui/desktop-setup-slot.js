@@ -23,7 +23,9 @@
     var el = document.querySelector('.screen.active');
     return el ? el.id : null;
   }
-  function getSlot() { return document.getElementById(SLOT_ID); }
+  function getSlot() {
+    return document.getElementById(SLOT_ID);
+  }
   function slotIsOpen() {
     var s = getSlot();
     return !!(s && s.classList.contains('is-open'));
@@ -45,7 +47,9 @@
   function openSetupSlot() {
     var slot = getSlot();
     if (!slot) return;
-    requestAnimationFrame(function () { slot.classList.add('is-open'); });
+    requestAnimationFrame(function () {
+      slot.classList.add('is-open');
+    });
     // Перезапускаем рендер карт (его обычно зовёт screens.js при navigate
     // на setup-screen — но мы туда не переходим, нужно дёрнуть вручную).
     if (app.initCards) app.initCards(app.revealedIndices && app.revealedIndices.length > 0);
@@ -94,4 +98,4 @@
   } else {
     setTimeout(init, 0);
   }
-})(window.MafiaApp = window.MafiaApp || {});
+})((window.MafiaApp = window.MafiaApp || {}));

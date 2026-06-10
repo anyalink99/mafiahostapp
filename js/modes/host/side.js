@@ -21,7 +21,9 @@
   }
 
   function parseBonus(raw) {
-    return typeof app.parseBonusFloat === 'function' ? app.parseBonusFloat(raw) : (parseFloat(raw) || 0);
+    return typeof app.parseBonusFloat === 'function'
+      ? app.parseBonusFloat(raw)
+      : parseFloat(raw) || 0;
   }
 
   app.syncGameSideRolesToggle = function () {
@@ -124,7 +126,8 @@
     var empty = document.getElementById('game-side-history-empty');
     if (!hist || !empty) return;
     hist.innerHTML = '';
-    var rows = typeof app.buildSummaryHistoryRows === 'function' ? app.buildSummaryHistoryRows() : [];
+    var rows =
+      typeof app.buildSummaryHistoryRows === 'function' ? app.buildSummaryHistoryRows() : [];
     if (!rows.length) {
       hist.style.display = 'none';
       empty.style.display = '';
@@ -146,7 +149,8 @@
     var toggle = document.getElementById('game-side-notes-toggle');
     var chev = document.getElementById('game-side-notes-chevron');
     if (ta) {
-      if (document.activeElement !== ta) ta.value = typeof app.gameSideNotes === 'string' ? app.gameSideNotes : '';
+      if (document.activeElement !== ta)
+        ta.value = typeof app.gameSideNotes === 'string' ? app.gameSideNotes : '';
     }
     var collapsed = !!app.gameSideNotesCollapsed;
     // Без анимации (рендер/возврат на экран): сразу финальное состояние.

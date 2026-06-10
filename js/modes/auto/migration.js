@@ -7,7 +7,9 @@
 
   var switchHostStep = 0;
 
-  function el(id) { return document.getElementById(id); }
+  function el(id) {
+    return document.getElementById(id);
+  }
 
   function roleCodeToRussian(code) {
     if (code === 'don') return 'Дон';
@@ -22,7 +24,9 @@
     var primaryEl = el('modal-auto-switch-host-primary');
     if (switchHostStep === 1) {
       if (titleEl) titleEl.textContent = 'Передать обычному ведущему?';
-      if (bodyEl) bodyEl.textContent = 'Прогресс автономной партии перенесётся в обычный режим. Дальше игру будет вести живой ведущий.';
+      if (bodyEl)
+        bodyEl.textContent =
+          'Прогресс автономной партии перенесётся в обычный режим. Дальше игру будет вести живой ведущий.';
       if (primaryEl) primaryEl.textContent = 'Продолжить';
     } else if (switchHostStep === 2) {
       if (titleEl) titleEl.textContent = 'Точно передать?';
@@ -33,7 +37,11 @@
 
   app.showAutoSwitchHostModal = function () {
     var s = app.autoState;
-    var anyOut = s.seats && s.seats.some(function (x) { return !x.alive; });
+    var anyOut =
+      s.seats &&
+      s.seats.some(function (x) {
+        return !x.alive;
+      });
     if (!anyOut) return;
     switchHostStep = 1;
     renderSwitchHostModal();
@@ -75,7 +83,7 @@
           id: seat.id,
           fouls: seat.fouls || 0,
           eliminationReason: seat.eliminationReason || null,
-          nick: seat.nick || ''
+          nick: seat.nick || '',
         });
         hostRoles.push(roleCodeToRussian(seat.role));
       } else {
@@ -87,9 +95,9 @@
     app.players = hostPlayers;
     app.roles = hostRoles;
     app.revealedIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    app.nomineeQueue = (s.day && Array.isArray(s.day.nominees)) ? s.day.nominees.slice() : [];
+    app.nomineeQueue = s.day && Array.isArray(s.day.nominees) ? s.day.nominees.slice() : [];
     app.activeVoteRound = null;
-    app.timeLeft = (s.day && typeof s.day.timeLeft === 'number') ? s.day.timeLeft : 60;
+    app.timeLeft = s.day && typeof s.day.timeLeft === 'number' ? s.day.timeLeft : 60;
     app.playerRoleOverrides = {};
     app.winningTeam = null;
     app.bonusPointsByPlayerId = {};
@@ -103,7 +111,14 @@
     for (var k = 0; k < hostPlayers.length; k++) {
       var p = hostPlayers[k];
       var roleStr = hostRoles[k];
-      var code = roleStr === 'Дон' ? 'don' : roleStr === 'Шериф' ? 'sheriff' : roleStr === 'Мафия' ? 'mafia' : 'peaceful';
+      var code =
+        roleStr === 'Дон'
+          ? 'don'
+          : roleStr === 'Шериф'
+            ? 'sheriff'
+            : roleStr === 'Мафия'
+              ? 'mafia'
+              : 'peaceful';
       app.summaryRoleByPlayerId[String(p.id)] = code;
     }
 
@@ -116,7 +131,7 @@
           type: 'elimination',
           ts: baseTs + m,
           playerId: pp.id,
-          reason: pp.eliminationReason
+          reason: pp.eliminationReason,
         });
       }
     }

@@ -78,7 +78,8 @@
     var sid = el.getAttribute('data-slot');
     var iid = el.getAttribute('data-item-id');
     var tid = el.getAttribute('data-track-id');
-    if (sid && iid && tid && app.toggleMusicPlaylistTrack) app.toggleMusicPlaylistTrack(sid, iid, tid);
+    if (sid && iid && tid && app.toggleMusicPlaylistTrack)
+      app.toggleMusicPlaylistTrack(sid, iid, tid);
   };
 
   app.uiActionHandlers['settings-tab'] = function (el) {
@@ -106,13 +107,15 @@
   app.uiActionHandlers['music-disband-playlist'] = function (el) {
     var slot = el.getAttribute('data-slot');
     var iid = el.getAttribute('data-item-id');
-    if (slot && iid && app.musicDisbandPlaylistWithUndo) app.musicDisbandPlaylistWithUndo(slot, iid);
+    if (slot && iid && app.musicDisbandPlaylistWithUndo)
+      app.musicDisbandPlaylistWithUndo(slot, iid);
   };
 
   app.uiActionHandlers['music-export-playlist'] = function (el) {
     var slot = el.getAttribute('data-slot');
     var iid = el.getAttribute('data-item-id');
-    if (slot && iid && app.musicExportPlaylistWithFeedback) app.musicExportPlaylistWithFeedback(slot, iid);
+    if (slot && iid && app.musicExportPlaylistWithFeedback)
+      app.musicExportPlaylistWithFeedback(slot, iid);
   };
 
   app.uiActionHandlers['music-remove-item'] = function (el) {
@@ -121,7 +124,10 @@
     if (!sid || !iid) return;
 
     if (app.expandedMusicItemIdBySlot) {
-      if (app.expandedMusicItemIdBySlot['1'] === iid || app.expandedMusicItemIdBySlot['2'] === iid) {
+      if (
+        app.expandedMusicItemIdBySlot['1'] === iid ||
+        app.expandedMusicItemIdBySlot['2'] === iid
+      ) {
         app.expandedMusicItemIdBySlot['1'] = '';
         app.expandedMusicItemIdBySlot['2'] = '';
       }
@@ -165,26 +171,29 @@
     el.disabled = true;
     el.textContent = '...';
 
-    app.spotifyFetchPlaylistInfo(playlistId).then(function (info) {
-      app.spotifySetSlotPlaylist(slot, {
-        playlistId: playlistId,
-        playlistName: info.playlistName,
-        playlistImageUrl: info.playlistImageUrl,
-        trackCount: info.trackCount,
+    app
+      .spotifyFetchPlaylistInfo(playlistId)
+      .then(function (info) {
+        app.spotifySetSlotPlaylist(slot, {
+          playlistId: playlistId,
+          playlistName: info.playlistName,
+          playlistImageUrl: info.playlistImageUrl,
+          trackCount: info.trackCount,
+        });
+        if (app.renderSpotifySlotSettings) app.renderSpotifySlotSettings(slot);
+      })
+      .catch(function (err) {
+        var msg = 'Не удалось загрузить плейлист';
+        if (err && err.message === 'playlist not found') msg = 'Плейлист не найден';
+        if (err && err.message === 'not authenticated') msg = 'Сначала подключите Spotify';
+        var errEl = document.getElementById('spotify-slot-' + k + '-error');
+        if (errEl) {
+          errEl.textContent = msg;
+          errEl.classList.remove('hidden');
+        }
+        el.disabled = false;
+        el.textContent = 'Добавить';
       });
-      if (app.renderSpotifySlotSettings) app.renderSpotifySlotSettings(slot);
-    }).catch(function (err) {
-      var msg = 'Не удалось загрузить плейлист';
-      if (err && err.message === 'playlist not found') msg = 'Плейлист не найден';
-      if (err && err.message === 'not authenticated') msg = 'Сначала подключите Spotify';
-      var errEl = document.getElementById('spotify-slot-' + k + '-error');
-      if (errEl) {
-        errEl.textContent = msg;
-        errEl.classList.remove('hidden');
-      }
-      el.disabled = false;
-      el.textContent = 'Добавить';
-    });
   };
 
   app.uiActionHandlers['spotify-clear-playlist'] = function (el) {

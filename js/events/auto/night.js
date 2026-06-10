@@ -7,9 +7,15 @@
 
   app.uiActionHandlers = app.uiActionHandlers || {};
 
-  app.uiActionHandlers['auto-night-turn-start'] = function () { app.startNightTurn(); };
-  app.uiActionHandlers['auto-night-turn-done'] = function () { app.handleNightTurnDone(); };
-  app.uiActionHandlers['auto-night-result-continue'] = function () { app.continueAfterNightResult(); };
+  app.uiActionHandlers['auto-night-turn-start'] = function () {
+    app.startNightTurn();
+  };
+  app.uiActionHandlers['auto-night-turn-done'] = function () {
+    app.handleNightTurnDone();
+  };
+  app.uiActionHandlers['auto-night-result-continue'] = function () {
+    app.continueAfterNightResult();
+  };
 
   app.uiActionHandlers['auto-mafia-pick'] = function (el) {
     var s = app.autoState;

@@ -13,7 +13,9 @@
   function isLg() {
     return window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
   }
-  function slot() { return document.getElementById(SLOT_ID); }
+  function slot() {
+    return document.getElementById(SLOT_ID);
+  }
 
   function animateBodyToContent(s, body) {
     var inner = body.firstElementChild || body;
@@ -39,7 +41,9 @@
       if (el && el.id === MODAL_ID) {
         if (open) {
           if (panel.parentNode !== s) s.appendChild(panel);
-          requestAnimationFrame(function () { s.classList.add('is-open'); });
+          requestAnimationFrame(function () {
+            s.classList.add('is-open');
+          });
           el.setAttribute('data-open', '');
           el.setAttribute('aria-hidden', 'false');
         } else {
@@ -60,4 +64,4 @@
   } else {
     setTimeout(init, 0);
   }
-})(window.MafiaApp = window.MafiaApp || {});
+})((window.MafiaApp = window.MafiaApp || {}));

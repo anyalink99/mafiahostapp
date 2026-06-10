@@ -32,7 +32,9 @@
   // в extension (ACTIVE) опрос идёт через content-script и всегда доступен.
   var MU_LOOKUP_KEY = 'muLookupEnabled';
   app.muLookupEnabled = true;
-  try { app.muLookupEnabled = localStorage.getItem(MU_LOOKUP_KEY) !== '0'; } catch (e) {}
+  try {
+    app.muLookupEnabled = localStorage.getItem(MU_LOOKUP_KEY) !== '0';
+  } catch (e) {}
 
   function workerEnabled() {
     return !!WORKER_SEARCH_URL && app.muLookupEnabled !== false;
@@ -47,7 +49,9 @@
 
   var pending = Object.create(null);
   var nextReqId = 1;
-  function newRequestId() { return 'req-' + nextReqId++; }
+  function newRequestId() {
+    return 'req-' + nextReqId++;
+  }
 
   function postToParent(msg) {
     // targetOrigin '*': мы внутри chrome-extension, парент — content script
@@ -66,7 +70,7 @@
       }, timeoutMs || 10000);
       pending[rid] = function (msg) {
         clearTimeout(to);
-        if (msg && msg.ok === false) reject(new Error(msg.error || ('Ошибка ' + type)));
+        if (msg && msg.ok === false) reject(new Error(msg.error || 'Ошибка ' + type));
         else resolve(msg);
       };
       postToParent(Object.assign({ type: type, requestId: rid }, payload || {}));
@@ -87,18 +91,21 @@
       var cbs = contextCallbacks.slice();
       contextCallbacks.length = 0;
       for (var i = 0; i < cbs.length; i++) {
-        try { cbs[i](context); } catch (e) {}
+        try {
+          cbs[i](context);
+        } catch (e) {}
       }
     },
 
     // Content просит текущее состояние приложения в MU JSON-формате.
     'mu/get-current-state': function (msg) {
-      var data = null, err = null;
+      var data = null,
+        err = null;
       try {
         if (app.buildGameExportMUJson) data = app.buildGameExportMUJson();
         else err = 'buildGameExportMUJson не доступен';
       } catch (e) {
-        err = String(e && e.message || e);
+        err = String((e && e.message) || e);
       }
       postToParent({
         type: 'mu/get-current-state',
@@ -125,7 +132,10 @@
     if (!msg || typeof msg !== 'object') return;
 
     var h = inboundHandlers[msg.type];
-    if (h) { h(msg); return; }
+    if (h) {
+      h(msg);
+      return;
+    }
 
     // Ответы по requestId на наши же исходящие вызовы.
     if (msg.requestId && pending[msg.requestId]) {
@@ -140,17 +150,25 @@
   // ────────────────────────────────────────────────────────────
 
   app.MU = {
-    isActive: function () { return ACTIVE; },
+    isActive: function () {
+      return ACTIVE;
+    },
     // canSearch — true если есть КАКОЙ-НИБУДЬ путь к поиску игроков MU:
     // extension content-script (ACTIVE) или public Cloudflare worker
     // (если юзер не отключил его в настройках через app.muLookupEnabled).
-    canSearch: function () { return ACTIVE || workerEnabled(); },
-    getContext: function () { return context; },
+    canSearch: function () {
+      return ACTIVE || workerEnabled();
+    },
+    getContext: function () {
+      return context;
+    },
 
     onContext: function (cb) {
       if (typeof cb !== 'function') return;
       if (context) {
-        try { cb(context); } catch (e) {}
+        try {
+          cb(context);
+        } catch (e) {}
       } else {
         contextCallbacks.push(cb);
       }
@@ -158,8 +176,11 @@
 
     searchPlayers: function (term, tournteamId) {
       if (ACTIVE) {
-        return call('mu/searchPlayers', { term: term, tournteamId: tournteamId })
-          .then(function (msg) { return msg.items || []; });
+        return call('mu/searchPlayers', { term: term, tournteamId: tournteamId }).then(
+          function (msg) {
+            return msg.items || [];
+          }
+        );
       }
       if (!workerEnabled()) return Promise.resolve([]);
       // Standalone-режим: воркер. Нормализуем к тому же контракту, что и
@@ -185,8 +206,9 @@
         });
     },
     getLastGamePlayers: function () {
-      return call('mu/getLastGamePlayers')
-        .then(function (msg) { return msg.data; });
+      return call('mu/getLastGamePlayers').then(function (msg) {
+        return msg.data;
+      });
     },
     applyToForm: function (json) {
       return call('mu/apply', { data: json }, 30000);
@@ -206,7 +228,9 @@
     // Toggle опроса MU из настроек.
     setLookupEnabled: function (enabled) {
       app.muLookupEnabled = !!enabled;
-      try { localStorage.setItem(MU_LOOKUP_KEY, app.muLookupEnabled ? '1' : '0'); } catch (e) {}
+      try {
+        localStorage.setItem(MU_LOOKUP_KEY, app.muLookupEnabled ? '1' : '0');
+      } catch (e) {}
       if (app.syncMuLookupCheckbox) app.syncMuLookupCheckbox();
     },
   };
@@ -230,7 +254,9 @@
       if (app.prepareConfig.variant !== 'standard') app.prepareConfig.variant = 'standard';
     }
     if (typeof app.renderPrepareModeScreen === 'function') {
-      try { app.renderPrepareModeScreen(); } catch (e) {}
+      try {
+        app.renderPrepareModeScreen();
+      } catch (e) {}
     }
   }
 
@@ -250,4 +276,4 @@
       if (document.body) document.body.classList.add('mu-mode');
     });
   }
-})(window.MafiaApp = window.MafiaApp || {});
+})((window.MafiaApp = window.MafiaApp || {}));

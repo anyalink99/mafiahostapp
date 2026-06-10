@@ -42,16 +42,12 @@
 
   function sendFill(tabId, data) {
     return new Promise(function (resolve, reject) {
-      chrome.tabs.sendMessage(
-        tabId,
-        { type: 'fill-mu-form', data: data },
-        function (response) {
-          if (chrome.runtime.lastError) {
-            return reject(chrome.runtime.lastError);
-          }
-          resolve(response);
+      chrome.tabs.sendMessage(tabId, { type: 'fill-mu-form', data: data }, function (response) {
+        if (chrome.runtime.lastError) {
+          return reject(chrome.runtime.lastError);
         }
-      );
+        resolve(response);
+      });
     });
   }
 

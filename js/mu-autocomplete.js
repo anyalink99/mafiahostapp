@@ -13,14 +13,21 @@
 
   var attached = new WeakSet();
   var MU_ORIGIN = 'https://mafiauniverse.org';
-  var escapeHtml = (app.MuUtils && app.MuUtils.escapeHtml) || function (s) { return String(s == null ? '' : s); };
+  var escapeHtml =
+    (app.MuUtils && app.MuUtils.escapeHtml) ||
+    function (s) {
+      return String(s == null ? '' : s);
+    };
 
   function debounce(fn, ms) {
     var t;
     return function () {
-      var args = arguments, self = this;
+      var args = arguments,
+        self = this;
       clearTimeout(t);
-      t = setTimeout(function () { fn.apply(self, args); }, ms);
+      t = setTimeout(function () {
+        fn.apply(self, args);
+      }, ms);
     };
   }
 
@@ -34,8 +41,8 @@
 
   function positionDropdown(dd, input) {
     var r = input.getBoundingClientRect();
-    dd.style.left = (r.left + window.scrollX) + 'px';
-    dd.style.top = (r.bottom + window.scrollY + 2) + 'px';
+    dd.style.left = r.left + window.scrollX + 'px';
+    dd.style.top = r.bottom + window.scrollY + 2 + 'px';
     dd.style.minWidth = r.width + 'px';
   }
 
@@ -48,11 +55,15 @@
     if (item.avatarUrl) {
       // extension отдаёт относительный путь '/Images/...', worker — абсолютный.
       var raw = item.avatarUrl;
-      var url = /^https?:\/\//i.test(raw) ? raw : (MU_ORIGIN + raw);
+      var url = /^https?:\/\//i.test(raw) ? raw : MU_ORIGIN + raw;
       return '<img class="mu-ac-item__avatar" src="' + escapeHtml(url) + '" alt="" loading="lazy">';
     }
     var initial = (item.label || '?').charAt(0).toUpperCase();
-    return '<div class="mu-ac-item__avatar mu-ac-item__avatar--placeholder">' + escapeHtml(initial) + '</div>';
+    return (
+      '<div class="mu-ac-item__avatar mu-ac-item__avatar--placeholder">' +
+      escapeHtml(initial) +
+      '</div>'
+    );
   }
 
   function renderItems(dd, items) {
@@ -64,10 +75,14 @@
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
       html +=
-        '<div class="mu-ac-item" data-mu-ac-index="' + i + '">' +
+        '<div class="mu-ac-item" data-mu-ac-index="' +
+        i +
+        '">' +
         avatarHtml(it) +
         '<div class="mu-ac-item__text">' +
-        '<div class="mu-ac-item__nick">' + escapeHtml(it.label) + '</div>' +
+        '<div class="mu-ac-item__nick">' +
+        escapeHtml(it.label) +
+        '</div>' +
         (it.note ? '<div class="mu-ac-item__note">' + escapeHtml(it.note) + '</div>' : '') +
         '</div>' +
         '</div>';
@@ -122,11 +137,16 @@
         return;
       }
       if (meta.logoId) {
-        var url = MU_ORIGIN + '/Images/GetImage?imageId=' + encodeURIComponent(meta.logoId) + '&resizeWith=60';
+        var url =
+          MU_ORIGIN +
+          '/Images/GetImage?imageId=' +
+          encodeURIComponent(meta.logoId) +
+          '&resizeWith=60';
         b.innerHTML = '<img src="' + escapeHtml(url) + '" alt="">';
       } else {
         var initial = (nick.charAt(0) || '?').toUpperCase();
-        b.innerHTML = '<span class="mu-ac-input-badge__placeholder">' + escapeHtml(initial) + '</span>';
+        b.innerHTML =
+          '<span class="mu-ac-input-badge__placeholder">' + escapeHtml(initial) + '</span>';
       }
       b.title = meta.note ? nick + ' (' + meta.note + ')' : nick;
       b.style.display = '';
@@ -151,7 +171,9 @@
       if (origDesc && origDesc.set && origDesc.get) {
         Object.defineProperty(input, 'value', {
           configurable: true,
-          get: function () { return origDesc.get.call(this); },
+          get: function () {
+            return origDesc.get.call(this);
+          },
           set: function (v) {
             origDesc.set.call(this, v);
             // refreshBoundClass может вызваться при первоначальной настройке —
@@ -201,7 +223,10 @@
         })
         .catch(function (err) {
           if (mySeq !== requestSeq) return;
-          renderState(dd, '<div class="mu-ac-error">' + escapeHtml(err && err.message || err) + '</div>');
+          renderState(
+            dd,
+            '<div class="mu-ac-error">' + escapeHtml((err && err.message) || err) + '</div>'
+          );
         });
     }, 200);
 
@@ -227,7 +252,9 @@
       refreshBoundClass();
       close();
       if (onSelect) {
-        try { onSelect(it); } catch (e) {}
+        try {
+          onSelect(it);
+        } catch (e) {}
       }
     }
 
@@ -241,7 +268,9 @@
     input.addEventListener('input', function () {
       refreshBoundClass();
       if (onClear) {
-        try { onClear(); } catch (e) {}
+        try {
+          onClear();
+        } catch (e) {}
       }
       if (isBound()) {
         close();
@@ -339,4 +368,4 @@
   } else {
     attachToCommonInputs();
   }
-})(window.MafiaApp = window.MafiaApp || {});
+})((window.MafiaApp = window.MafiaApp || {}));

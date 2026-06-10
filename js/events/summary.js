@@ -22,7 +22,8 @@
   app.uiActionHandlers['export-apply-mu'] = function (_el, _event, ui) {
     if (!ui.isScreenActive('summary-screen')) return;
     if (!app.MU || !app.MU.isActive()) {
-      if (app.showToast) app.showToast('MU-режим не активен — откройте /Games/Edit через расширение');
+      if (app.showToast)
+        app.showToast('MU-режим не активен — откройте /Games/Edit через расширение');
       return;
     }
     if (!app.buildGameExportMUJson) return;
@@ -30,13 +31,19 @@
     app.MU.applyToForm(json)
       .then(function (res) {
         if (app.showToast) {
-          var msg = 'Применено: игроков ' + (res.playersFilled || 0) + ', голосований ' + (res.votingsWritten || 0);
-          if (res.warnings && res.warnings.length) msg += ' (предупр.: ' + res.warnings.length + ')';
+          var msg =
+            'Применено: игроков ' +
+            (res.playersFilled || 0) +
+            ', голосований ' +
+            (res.votingsWritten || 0);
+          if (res.warnings && res.warnings.length)
+            msg += ' (предупр.: ' + res.warnings.length + ')';
           app.showToast(msg);
         }
       })
       .catch(function (err) {
-        if (app.showToast) app.showToast('Не удалось применить: ' + (err && err.message ? err.message : err));
+        if (app.showToast)
+          app.showToast('Не удалось применить: ' + (err && err.message ? err.message : err));
       });
   };
 

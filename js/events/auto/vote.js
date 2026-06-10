@@ -22,7 +22,9 @@
     if (!isNaN(idx)) app.showAutoVoteCountModal(idx);
   };
 
-  app.uiActionHandlers['auto-vote-count-cancel'] = function () { app.hideAutoVoteCountModal(); };
+  app.uiActionHandlers['auto-vote-count-cancel'] = function () {
+    app.hideAutoVoteCountModal();
+  };
 
   app.uiActionHandlers['auto-vote-pick-count'] = function (el) {
     var c = parseInt(el.getAttribute('data-vote-count'), 10);
@@ -34,8 +36,12 @@
     if (!isNaN(v)) app.applyAutoRaisePick(v);
   };
 
-  app.uiActionHandlers['auto-last-words-finish'] = function () { app.handleLastWordsFinish(); };
-  app.uiActionHandlers['auto-last-words-toggle-timer'] = function () { app.toggleAutoLastWordsTimer(); };
+  app.uiActionHandlers['auto-last-words-finish'] = function () {
+    app.handleLastWordsFinish();
+  };
+  app.uiActionHandlers['auto-last-words-toggle-timer'] = function () {
+    app.toggleAutoLastWordsTimer();
+  };
 
   app.uiActionHandlers['auto-last-words-reset-timer'] = function (el) {
     var sec = parseInt(el.getAttribute('data-seconds'), 10);

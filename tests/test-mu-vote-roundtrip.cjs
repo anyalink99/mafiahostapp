@@ -41,9 +41,10 @@ test('пустой массив → нет событий', function () {
 });
 
 test('одиночное казнение → один vote_hang', function () {
-  var events = VR.buildVoteEvents([
-    { candidates: [{ playerNumber: 3, votesCount: 5 }], playersGone: [3] },
-  ], 1000);
+  var events = VR.buildVoteEvents(
+    [{ candidates: [{ playerNumber: 3, votesCount: 5 }], playersGone: [3] }],
+    1000
+  );
   assert.strictEqual(events.length, 1);
   assert.strictEqual(events[0].type, 'vote_hang');
   assert.deepStrictEqual(events[0].eliminatedIds, [3]);
@@ -52,11 +53,30 @@ test('одиночное казнение → один vote_hang', function () {
 });
 
 test('ничья + revote + единичная казнь → 2× vote_tie + vote_hang', function () {
-  var events = VR.buildVoteEvents([
-    { candidates: [{ playerNumber: 1, votesCount: 5 }, { playerNumber: 2, votesCount: 5 }] },
-    { candidates: [{ playerNumber: 1, votesCount: 5 }, { playerNumber: 2, votesCount: 5 }] },
-    { candidates: [{ playerNumber: 1, votesCount: 8 }, { playerNumber: 2, votesCount: 2 }], playersGone: [1] },
-  ], 1000);
+  var events = VR.buildVoteEvents(
+    [
+      {
+        candidates: [
+          { playerNumber: 1, votesCount: 5 },
+          { playerNumber: 2, votesCount: 5 },
+        ],
+      },
+      {
+        candidates: [
+          { playerNumber: 1, votesCount: 5 },
+          { playerNumber: 2, votesCount: 5 },
+        ],
+      },
+      {
+        candidates: [
+          { playerNumber: 1, votesCount: 8 },
+          { playerNumber: 2, votesCount: 2 },
+        ],
+        playersGone: [1],
+      },
+    ],
+    1000
+  );
   // Раунд один: 2 ничьи + казнь. Эмиттер ставит ничьи + последний hang.
   // Логика: третий entry с PlayersGone:[1] — single, его cands [1,2] — subset
   // [1,2], значит он остаётся в текущем раунде. Получается 3 entries в раунде:

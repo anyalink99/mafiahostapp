@@ -26,7 +26,8 @@
   // Выход: { cands: [n], votes: [n], pg: [n] }
   function normalizeEntry(v) {
     var cs = (v && v.candidates) || [];
-    var cands = [], votes = [];
+    var cands = [],
+      votes = [];
     for (var j = 0; j < cs.length; j++) {
       var pn = Number(cs[j].playerNumber);
       if (!isFinite(pn)) continue;
@@ -35,7 +36,9 @@
       votes.push(isFinite(vc) ? vc : 0);
     }
     var pg = Array.isArray(v && v.playersGone)
-      ? v.playersGone.map(Number).filter(function (n) { return isFinite(n); })
+      ? v.playersGone.map(Number).filter(function (n) {
+          return isFinite(n);
+        })
       : [];
     return { cands: cands, votes: votes, pg: pg };
   }
@@ -199,7 +202,9 @@
       var cs = (v.candidates || []).map(function (c) {
         return Number(c.playerNumber) + ':' + (Number(c.votesCount) || 0);
       });
-      var pg = (v.playersGone || []).map(Number).filter(function (n) { return isFinite(n); });
+      var pg = (v.playersGone || []).map(Number).filter(function (n) {
+        return isFinite(n);
+      });
       parts.push(cs.join(',') + '|' + pg.join(','));
     }
     return parts.join(';');

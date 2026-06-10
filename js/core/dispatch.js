@@ -42,7 +42,7 @@
         var modal = document.getElementById('modal-player-actions');
         var pid = modal && modal.dataset.playerId ? parseInt(modal.dataset.playerId, 10) : NaN;
         if (!isNaN(pid)) cb(pid);
-      }
+      },
     };
 
     function isInsideRoleCloseSafeArea(x, y) {
@@ -147,8 +147,14 @@
             return;
           }
           cur = {
-            kind: 'player', id: e.pointerId, pid: pid,
-            x0: e.clientX, y0: e.clientY, fired: false, moved: false, lpTimer: null,
+            kind: 'player',
+            id: e.pointerId,
+            pid: pid,
+            x0: e.clientX,
+            y0: e.clientY,
+            fired: false,
+            moved: false,
+            lpTimer: null,
           };
           cur.lpTimer = setTimeout(function () {
             if (!cur || cur.kind !== 'player' || cur.fired || cur.moved) return;
@@ -157,7 +163,11 @@
             if (!changed) return;
             cur.fired = true;
             if (app.patchPlayerSlotVoteIndicator) app.patchPlayerSlotVoteIndicator(cur.pid);
-            if (navigator.vibrate) { try { navigator.vibrate(40); } catch (_e) {} }
+            if (navigator.vibrate) {
+              try {
+                navigator.vibrate(40);
+              } catch (_e) {}
+            }
           }, LONG_PRESS_MS);
         },
         { passive: true }
@@ -168,12 +178,15 @@
         function (e) {
           if (!cur || e.pointerId !== cur.id) return;
           if (cur.kind === 'timer') {
-            if (app.setTimer) app.setTimer(cur.base + Math.round((cur.y0 - e.clientY) / TIMER_DRAG_PX));
+            if (app.setTimer)
+              app.setTimer(cur.base + Math.round((cur.y0 - e.clientY) / TIMER_DRAG_PX));
             return;
           }
           if (
-            cur.kind === 'player' && !cur.moved &&
-            (Math.abs(e.clientX - cur.x0) > MOVE_CANCEL_PX || Math.abs(e.clientY - cur.y0) > MOVE_CANCEL_PX)
+            cur.kind === 'player' &&
+            !cur.moved &&
+            (Math.abs(e.clientX - cur.x0) > MOVE_CANCEL_PX ||
+              Math.abs(e.clientY - cur.y0) > MOVE_CANCEL_PX)
           ) {
             cur.moved = true;
             clearLp();
@@ -188,7 +201,10 @@
           clearPressed();
           if (!cur || e.pointerId !== cur.id) return;
           var g = cur;
-          if (g.kind === 'timer') { cur = null; return; }
+          if (g.kind === 'timer') {
+            cur = null;
+            return;
+          }
           clearLp();
           cur = null;
           if (g.fired) {
@@ -204,7 +220,11 @@
             app._lastGestureTs = Date.now();
             if (dy < 0) app.addFoul(g.pid);
             else app.removeFoul(g.pid);
-            if (navigator.vibrate) { try { navigator.vibrate(25); } catch (_e) {} }
+            if (navigator.vibrate) {
+              try {
+                navigator.vibrate(25);
+              } catch (_e) {}
+            }
           }
           // чистый тап — модалку откроет click-обработчик (player-slot-open)
         },
@@ -231,7 +251,8 @@
         const initKind = t.getAttribute('data-init');
         if (initKind === 'game') app.initGameFromMenu();
         else if (initKind === 'auto' && app.initAutoFromMenu) app.initAutoFromMenu();
-        else if (initKind === 'prepare-mode' && app.initPrepareModeFromMenu) app.initPrepareModeFromMenu();
+        else if (initKind === 'prepare-mode' && app.initPrepareModeFromMenu)
+          app.initPrepareModeFromMenu();
         app.navigateToScreen(id);
         return;
       }
@@ -311,32 +332,36 @@
           return;
         }
         if (app.showToast) app.showToast('Распаковка ZIP…');
-        app.musicAddZipToSlot(slot, file).then(function (playlist) {
-          var key = String(slot) === '2' ? '2' : '1';
-          var other = key === '2' ? '1' : '2';
-          if (playlist && app.expandedMusicItemIdBySlot) {
-            var hadOpen = app.expandedMusicItemIdBySlot['1'] || app.expandedMusicItemIdBySlot['2'];
-            app.expandedMusicItemIdBySlot[other] = '';
-            app.expandedMusicItemIdBySlot[key] = playlist.id;
-            if (hadOpen && app.collapseOpenMusicPanelThen) {
-              app.collapseOpenMusicPanelThen(function () {
-                if (app.renderMusicSettings) app.renderMusicSettings();
-              });
+        app
+          .musicAddZipToSlot(slot, file)
+          .then(function (playlist) {
+            var key = String(slot) === '2' ? '2' : '1';
+            var other = key === '2' ? '1' : '2';
+            if (playlist && app.expandedMusicItemIdBySlot) {
+              var hadOpen =
+                app.expandedMusicItemIdBySlot['1'] || app.expandedMusicItemIdBySlot['2'];
+              app.expandedMusicItemIdBySlot[other] = '';
+              app.expandedMusicItemIdBySlot[key] = playlist.id;
+              if (hadOpen && app.collapseOpenMusicPanelThen) {
+                app.collapseOpenMusicPanelThen(function () {
+                  if (app.renderMusicSettings) app.renderMusicSettings();
+                });
+              } else if (app.renderMusicSettings) {
+                app.renderMusicSettings();
+              }
             } else if (app.renderMusicSettings) {
               app.renderMusicSettings();
             }
-          } else if (app.renderMusicSettings) {
-            app.renderMusicSettings();
-          }
-          if (app.showToast) {
-            var n = playlist && playlist.tracks ? playlist.tracks.length : 0;
-            app.showToast('Плейлист добавлен (' + n + ' треков)');
-          }
-        }).catch(function (err) {
-          var msg = 'Не удалось обработать ZIP';
-          if (err && err.code === 'no_audio') msg = 'В архиве нет аудио-файлов';
-          if (app.showToast) app.showToast(msg);
-        });
+            if (app.showToast) {
+              var n = playlist && playlist.tracks ? playlist.tracks.length : 0;
+              app.showToast('Плейлист добавлен (' + n + ' треков)');
+            }
+          })
+          .catch(function (err) {
+            var msg = 'Не удалось обработать ZIP';
+            if (err && err.code === 'no_audio') msg = 'В архиве нет аудио-файлов';
+            if (app.showToast) app.showToast(msg);
+          });
       }
       var f1 = document.getElementById('music-files-slot-1');
       var f2 = document.getElementById('music-files-slot-2');
@@ -537,7 +562,10 @@
         if (e.target.closest('#timer-pill')) {
           if (!app.adjustTimer) return;
           var nowT = Date.now();
-          if (nowT - lastTimerWheelTs < 45) { e.preventDefault(); return; }
+          if (nowT - lastTimerWheelTs < 45) {
+            e.preventDefault();
+            return;
+          }
           lastTimerWheelTs = nowT;
           e.preventDefault();
           app.adjustTimer(e.deltaY < 0 ? TIMER_WHEEL_STEP : -TIMER_WHEEL_STEP);

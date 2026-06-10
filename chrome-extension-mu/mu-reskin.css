@@ -17,8 +17,8 @@
  */
 
 /* ───────────────────── Bootstrap CSS variables ───────────────────── */
-html[data-bs-theme="dark"],
-html[data-bs-theme="dark"] body {
+html[data-bs-theme='dark'],
+html[data-bs-theme='dark'] body {
   --bs-body-bg: #0c0a09;
   --bs-body-bg-rgb: 12, 10, 9;
   --bs-body-color: #faf8f5;
@@ -76,7 +76,8 @@ html[data-bs-theme="dark"] body {
   --bs-nav-link-hover-color: #d4af37;
   --bs-nav-tabs-link-active-color: #d4af37;
   --bs-nav-tabs-link-active-bg: #1c1917;
-  --bs-nav-tabs-link-active-border-color: rgba(212, 175, 55, 0.4) rgba(212, 175, 55, 0.4) transparent;
+  --bs-nav-tabs-link-active-border-color: rgba(212, 175, 55, 0.4) rgba(212, 175, 55, 0.4)
+    transparent;
   --bs-nav-pills-link-active-color: #d4af37;
   --bs-nav-pills-link-active-bg: rgba(127, 29, 29, 0.45);
 
@@ -97,12 +98,28 @@ html[data-bs-theme="dark"] body {
 body {
   background: linear-gradient(to bottom, rgba(127, 29, 29, 0.18), #0c0a09 320px, #0c0a09) #0c0a09 !important;
   color: #faf8f5 !important;
-  font-family: 'Manrope', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif !important;
+  font-family:
+    'Manrope',
+    'Segoe UI',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Roboto',
+    sans-serif !important;
 }
 
 /* ───────────────────── Заголовки — display serif + золото ───────────────────── */
-h1, h2, h3, h4, h5, h6,
-.h1, .h2, .h3, .h4, .h5, .h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
 .navbar-brand-text,
 .modal-title {
   font-family: 'Cormorant Garamond', 'Cormorant', 'Georgia', serif !important;
@@ -313,10 +330,18 @@ a.navbar-brand:focus .navbar-brand-text {
 }
 
 /* ───────────────────── Прелоадер (3 кружка) — золото ───────────────────── */
-.loaderbody { background-color: #0c0a09 !important; }
-.loader .inner.one { border-top-color: #d4af37 !important; }
-.loader .inner.two { border-right-color: #f0d875 !important; }
-.loader .inner.three { border-left-color: #991b1b !important; }
+.loaderbody {
+  background-color: #0c0a09 !important;
+}
+.loader .inner.one {
+  border-top-color: #d4af37 !important;
+}
+.loader .inner.two {
+  border-right-color: #f0d875 !important;
+}
+.loader .inner.three {
+  border-left-color: #991b1b !important;
+}
 
 /* ───────────────────── Карточки / модалки ───────────────────── */
 .card,
@@ -368,9 +393,15 @@ a.navbar-brand:focus .navbar-brand-text {
 .btn {
   border-radius: 0.25rem !important;
   letter-spacing: 0.04em;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.1s ease !important;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.1s ease !important;
 }
-.btn:active { transform: scale(0.98); }
+.btn:active {
+  transform: scale(0.98);
+}
 
 /* Главные действия — кроваво-золотые */
 .btn-primary,
@@ -452,7 +483,9 @@ textarea.form-control {
   color: #faf8f5 !important;
   border-radius: 0.25rem;
 }
-.form-control::placeholder { color: rgba(250, 248, 245, 0.32) !important; }
+.form-control::placeholder {
+  color: rgba(250, 248, 245, 0.32) !important;
+}
 .form-control:focus,
 .form-select:focus,
 textarea.form-control:focus {
@@ -508,46 +541,114 @@ textarea.form-control:focus {
   letter-spacing: 0.04em;
   font-weight: 500;
 }
-.bg-primary, .text-bg-primary { background-color: #7f1d1d !important; color: #d4af37 !important; }
-.bg-warning, .text-bg-warning { background-color: #d4af37 !important; color: #1c1917 !important; }
-.bg-danger,  .text-bg-danger  { background-color: #7f1d1d !important; color: #faf8f5 !important; }
-.bg-success, .text-bg-success { background-color: #166534 !important; color: #faf8f5 !important; }
-.bg-secondary, .text-bg-secondary { background-color: #292524 !important; color: #faf8f5 !important; }
-.bg-info,    .text-bg-info    { background-color: rgba(212, 175, 55, 0.15) !important; color: #d4af37 !important; }
-.bg-light,   .text-bg-light   { background-color: #292524 !important; color: #faf8f5 !important; }
-.bg-dark,    .text-bg-dark    { background-color: #0c0a09 !important; color: #faf8f5 !important; }
+.bg-primary,
+.text-bg-primary {
+  background-color: #7f1d1d !important;
+  color: #d4af37 !important;
+}
+.bg-warning,
+.text-bg-warning {
+  background-color: #d4af37 !important;
+  color: #1c1917 !important;
+}
+.bg-danger,
+.text-bg-danger {
+  background-color: #7f1d1d !important;
+  color: #faf8f5 !important;
+}
+.bg-success,
+.text-bg-success {
+  background-color: #166534 !important;
+  color: #faf8f5 !important;
+}
+.bg-secondary,
+.text-bg-secondary {
+  background-color: #292524 !important;
+  color: #faf8f5 !important;
+}
+.bg-info,
+.text-bg-info {
+  background-color: rgba(212, 175, 55, 0.15) !important;
+  color: #d4af37 !important;
+}
+.bg-light,
+.text-bg-light {
+  background-color: #292524 !important;
+  color: #faf8f5 !important;
+}
+.bg-dark,
+.text-bg-dark {
+  background-color: #0c0a09 !important;
+  color: #faf8f5 !important;
+}
 .bg-body-tertiary,
-.bg-body-secondary { background-color: #1c1917 !important; }
+.bg-body-secondary {
+  background-color: #1c1917 !important;
+}
 
 /* ───────────────────── Текстовые утилиты ───────────────────── */
-.text-warning   { color: #d4af37 !important; }
-.text-primary   { color: #d4af37 !important; }
-.text-info      { color: #d4af37 !important; }
-.text-danger    { color: #ef4444 !important; }
-.text-success   { color: #65a30d !important; }
-.text-muted     { color: rgba(250, 248, 245, 0.5) !important; }
-.text-secondary { color: rgba(250, 248, 245, 0.65) !important; }
+.text-warning {
+  color: #d4af37 !important;
+}
+.text-primary {
+  color: #d4af37 !important;
+}
+.text-info {
+  color: #d4af37 !important;
+}
+.text-danger {
+  color: #ef4444 !important;
+}
+.text-success {
+  color: #65a30d !important;
+}
+.text-muted {
+  color: rgba(250, 248, 245, 0.5) !important;
+}
+.text-secondary {
+  color: rgba(250, 248, 245, 0.65) !important;
+}
 
-.border-warning { border-color: #d4af37 !important; }
-.border-primary { border-color: #d4af37 !important; }
-.border-danger  { border-color: #991b1b !important; }
-.border-info    { border-color: rgba(212, 175, 55, 0.4) !important; }
-.border-success { border-color: #65a30d !important; }
-.border-dark    { border-color: #0c0a09 !important; }
+.border-warning {
+  border-color: #d4af37 !important;
+}
+.border-primary {
+  border-color: #d4af37 !important;
+}
+.border-danger {
+  border-color: #991b1b !important;
+}
+.border-info {
+  border-color: rgba(212, 175, 55, 0.4) !important;
+}
+.border-success {
+  border-color: #65a30d !important;
+}
+.border-dark {
+  border-color: #0c0a09 !important;
+}
 
 /* ───────────────────── Ссылки ───────────────────── */
-a, a.text-info, a.text-primary, a.text-warning {
+a,
+a.text-info,
+a.text-primary,
+a.text-warning {
   color: #d4af37 !important;
   text-decoration: none !important;
   transition: color 0.15s ease;
 }
-a:hover, a.text-info:hover, a.text-primary:hover, a.text-warning:hover {
+a:hover,
+a.text-info:hover,
+a.text-primary:hover,
+a.text-warning:hover {
   color: #f0d875 !important;
   text-decoration: underline !important;
   text-decoration-color: rgba(212, 175, 55, 0.5) !important;
   text-underline-offset: 2px;
 }
-a.btn { text-decoration: none !important; }
+a.btn {
+  text-decoration: none !important;
+}
 
 /* ───────────────────── Footer ───────────────────── */
 .mu-ui-footer,
@@ -582,7 +683,10 @@ a.btn { text-decoration: none !important; }
   border: 1px solid #44403c !important;
   -webkit-text-fill-color: #faf8f5 !important;
   background-image: none !important;
-  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
 }
 .page-link:hover {
   background-color: rgba(212, 175, 55, 0.15) !important;
@@ -612,9 +716,9 @@ a.btn { text-decoration: none !important; }
 }
 
 /* ───────────────────── Прятки: реклама / куки ───────────────────── */
-[id^="yandex_rtb_"],
+[id^='yandex_rtb_'],
 .yandex-rtb-block,
-script[src*="yandex"],
+script[src*='yandex'],
 #cookies_notice {
   display: none !important;
 }
@@ -673,11 +777,16 @@ body::-webkit-scrollbar-corner,
   color: #faf8f5 !important;
   border-radius: 0.25rem !important;
 }
-.notyf__toast--success { border-color: #65a30d !important; }
-.notyf__toast--error   { border-color: #991b1b !important; }
+.notyf__toast--success {
+  border-color: #65a30d !important;
+}
+.notyf__toast--error {
+  border-color: #991b1b !important;
+}
 
 /* ───────────────────── Аватарки / изображения ───────────────────── */
-img.rounded, img.rounded-4 {
+img.rounded,
+img.rounded-4 {
   border: 1px solid rgba(212, 175, 55, 0.3);
 }
 
@@ -707,10 +816,18 @@ hr {
   color: #faf8f5 !important;
   border-color: rgba(212, 175, 55, 0.25) !important;
 }
-.box_game_res .win_  { background-color: #292524 !important; } /* нейтральный/незаверш. */
-.box_game_res .win_1 { background-color: #7f1d1d !important; } /* красная команда — было #f33 */
-.box_game_res .win_2 { background-color: #0c0a09 !important; } /* чёрная команда — было #000 */
-.box_game_res .win_3 { background-color: #44403c !important; } /* ничья — было #565656 */
+.box_game_res .win_ {
+  background-color: #292524 !important;
+} /* нейтральный/незаверш. */
+.box_game_res .win_1 {
+  background-color: #7f1d1d !important;
+} /* красная команда — было #f33 */
+.box_game_res .win_2 {
+  background-color: #0c0a09 !important;
+} /* чёрная команда — было #000 */
+.box_game_res .win_3 {
+  background-color: #44403c !important;
+} /* ничья — было #565656 */
 
 /* Роли игроков (role_2/3/4 — колонки ролей в таблицах игр), голосование
  * (#TableOfCurrentVoting), первый убитый и пр. — НЕ трогаем, это не часть
@@ -722,7 +839,7 @@ hr {
  * clubNavigation, tournamentNavigation) в начало .mu-ui-content, чтобы он шёл
  * сразу под главным fixed-navbar'ом. Здесь — лёгкая косметика sub-nav, чтобы
  * он визуально смыкался с верхней шапкой. */
-.mu-ui-content > nav[id$="Navigation"] {
+.mu-ui-content > nav[id$='Navigation'] {
   margin-top: 0 !important;
   margin-bottom: 1rem;
   border-bottom: 1px solid rgba(212, 175, 55, 0.15);
@@ -813,7 +930,7 @@ hr {
   background-color: #7f1d1d !important;
   border-color: #d4af37 !important;
 }
-.form-check-input[type="checkbox"]:indeterminate {
+.form-check-input[type='checkbox']:indeterminate {
   background-color: #7f1d1d !important;
   border-color: #d4af37 !important;
 }
@@ -830,14 +947,38 @@ a:focus-visible,
 }
 
 /* ───────────────────── Bootstrap link helper'ы ───────────────────── */
-.link-primary, a.link-primary { color: #d4af37 !important; }
-.link-secondary, a.link-secondary { color: rgba(250, 248, 245, 0.65) !important; }
-.link-success, a.link-success { color: #65a30d !important; }
-.link-danger, a.link-danger { color: #ef4444 !important; }
-.link-warning, a.link-warning { color: #d4af37 !important; }
-.link-info, a.link-info { color: #d4af37 !important; }
-.link-light, a.link-light { color: #faf8f5 !important; }
-.link-dark, a.link-dark { color: rgba(250, 248, 245, 0.85) !important; }
+.link-primary,
+a.link-primary {
+  color: #d4af37 !important;
+}
+.link-secondary,
+a.link-secondary {
+  color: rgba(250, 248, 245, 0.65) !important;
+}
+.link-success,
+a.link-success {
+  color: #65a30d !important;
+}
+.link-danger,
+a.link-danger {
+  color: #ef4444 !important;
+}
+.link-warning,
+a.link-warning {
+  color: #d4af37 !important;
+}
+.link-info,
+a.link-info {
+  color: #d4af37 !important;
+}
+.link-light,
+a.link-light {
+  color: #faf8f5 !important;
+}
+.link-dark,
+a.link-dark {
+  color: rgba(250, 248, 245, 0.85) !important;
+}
 
 /* ───────────────────── Active row / accordion ─────────────────────
  * MU использует .table-active для выделения строк, accordion — для свёртки. */

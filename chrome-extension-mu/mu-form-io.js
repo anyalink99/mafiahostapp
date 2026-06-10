@@ -15,7 +15,7 @@
   // peaceful|mafia|draw → значение GameWinnerId
   var WINNER_TO_ID = { peaceful: '1', mafia: '2', draw: '3' };
   // значение GameWinnerId → ключ winner
-  var ID_TO_WINNER = { '1': 'peaceful', '2': 'mafia', '3': 'draw' };
+  var ID_TO_WINNER = { 1: 'peaceful', 2: 'mafia', 3: 'draw' };
   // значение GameRoleId → внутренний код роли (для справки; в этом файле не используется)
   // var ROLE_ID_TO_CODE = { '1': 'peaceful', '2': 'sheriff', '3': 'mafia', '4': 'don' };
 
@@ -86,10 +86,14 @@
     var hex = [];
     for (var i = 0; i < bytes.length; i++) hex.push((bytes[i] + 0x100).toString(16).slice(1));
     return (
-      hex.slice(0, 4).join('') + '-' +
-      hex.slice(4, 6).join('') + '-' +
-      hex.slice(6, 8).join('') + '-' +
-      hex.slice(8, 10).join('') + '-' +
+      hex.slice(0, 4).join('') +
+      '-' +
+      hex.slice(4, 6).join('') +
+      '-' +
+      hex.slice(6, 8).join('') +
+      '-' +
+      hex.slice(8, 10).join('') +
+      '-' +
       hex.slice(10, 16).join('')
     );
   }
@@ -283,7 +287,9 @@
         strings.push({ PlayerNumber: pn, VotesCount: votes });
       }
       var pg = Array.isArray(v.playersGone)
-        ? v.playersGone.map(Number).filter(function (n) { return isFinite(n); })
+        ? v.playersGone.map(Number).filter(function (n) {
+            return isFinite(n);
+          })
         : [];
       // "Подняли"     = empty VotingStrings + PlayersGone
       // казнение      = VotingStrings + PlayersGone:[id]
@@ -358,7 +364,9 @@
       if (!Array.isArray(arr)) return [];
       return arr.map(function (entry) {
         var strings = Array.isArray(entry.VotingStrings) ? entry.VotingStrings : [];
-        var pg = Array.isArray(entry.PlayersGone) ? entry.PlayersGone.map(Number).filter(isFinite) : [];
+        var pg = Array.isArray(entry.PlayersGone)
+          ? entry.PlayersGone.map(Number).filter(isFinite)
+          : [];
         var obj = {
           candidates: strings.map(function (s) {
             return { playerNumber: Number(s.PlayerNumber), votesCount: Number(s.VotesCount) };
@@ -377,14 +385,15 @@
     var players = [];
     for (var i = 0; i < 10; i++) players.push(readPlayerRow(i));
     var hostIdStr = getValueById('LeadingId');
-    var hostId = hostIdStr && /^\d+$/.test(String(hostIdStr).trim()) ? parseInt(hostIdStr, 10) : null;
+    var hostId =
+      hostIdStr && /^\d+$/.test(String(hostIdStr).trim()) ? parseInt(hostIdStr, 10) : null;
     return {
       version: 1,
       source: 'mu-form',
       dateOfGame: getValueById('DateOfGame') || '',
       host: getValueById('Leading_Name') || '',
       hostId: hostId,
-      winner: winnerVal ? (ID_TO_WINNER[String(winnerVal)] || null) : null,
+      winner: winnerVal ? ID_TO_WINNER[String(winnerVal)] || null : null,
       scoreCoefficient: getValueById('ScoreCoefficient') || '1.0',
       players: players,
       votings: readVotings(),

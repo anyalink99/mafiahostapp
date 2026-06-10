@@ -13,7 +13,9 @@
     if (!isNaN(pid)) app.showAutoPlayerActionsModal(pid);
   };
 
-  app.uiActionHandlers['auto-player-modal-save'] = function () { app.hideAutoPlayerActionsModal(); };
+  app.uiActionHandlers['auto-player-modal-save'] = function () {
+    app.hideAutoPlayerActionsModal();
+  };
 
   app.uiActionHandlers['auto-player-modal-foul'] = function () {
     var I = app._autoInternals;

@@ -8,14 +8,27 @@
 (function (app) {
   'use strict';
 
-  var POOL = ['peaceful', 'peaceful', 'peaceful', 'peaceful', 'peaceful', 'peaceful', 'sheriff', 'mafia', 'mafia', 'don'];
+  var POOL = [
+    'peaceful',
+    'peaceful',
+    'peaceful',
+    'peaceful',
+    'peaceful',
+    'peaceful',
+    'sheriff',
+    'mafia',
+    'mafia',
+    'don',
+  ];
   var BLANK_ROLE = 'Без роли';
 
   app.registerVariant({
     key: 'donskaya',
     label: 'Донская',
     rolePool: POOL,
-    dealRoles: function () { return app.shuffleVariantPool(POOL); },
+    dealRoles: function () {
+      return app.shuffleVariantPool(POOL);
+    },
     firstNightKillsKasper: false,
     firstNightSheriffRandom: false,
     introWakesMerlin: false,
@@ -23,7 +36,18 @@
     postGameMerlinGuess: false,
     manualRoles: ['peaceful', 'mafia', 'don', 'sheriff'],
     hostOnly: true,
-    hostDeck: ['Дон', BLANK_ROLE, BLANK_ROLE, BLANK_ROLE, BLANK_ROLE, BLANK_ROLE, BLANK_ROLE, BLANK_ROLE, BLANK_ROLE, BLANK_ROLE],
+    hostDeck: [
+      'Дон',
+      BLANK_ROLE,
+      BLANK_ROLE,
+      BLANK_ROLE,
+      BLANK_ROLE,
+      BLANK_ROLE,
+      BLANK_ROLE,
+      BLANK_ROLE,
+      BLANK_ROLE,
+      BLANK_ROLE,
+    ],
   });
 
   app.DONSKAYA_BLANK_ROLE = BLANK_ROLE;
@@ -51,7 +75,9 @@
       if (seatToDeckIdx[mafiaSeatIds[k]] == null) return null;
     }
 
-    mafiaSeatIds.forEach(function (sid) { app.roles[seatToDeckIdx[sid]] = 'Мафия'; });
+    mafiaSeatIds.forEach(function (sid) {
+      app.roles[seatToDeckIdx[sid]] = 'Мафия';
+    });
 
     var remainingSeats = [];
     Object.keys(seatToDeckIdx).forEach(function (sid) {
@@ -74,9 +100,13 @@
 
     return {
       donSeat: donSeat,
-      mafiaSeats: mafiaSeatIds.slice().sort(function (a, b) { return a - b; }),
+      mafiaSeats: mafiaSeatIds.slice().sort(function (a, b) {
+        return a - b;
+      }),
       sheriffSeat: sheriffSeat,
-      peacefulSeats: peacefulSeats.sort(function (a, b) { return a - b; }),
+      peacefulSeats: peacefulSeats.sort(function (a, b) {
+        return a - b;
+      }),
     };
   };
 
@@ -111,13 +141,17 @@
   app.donskayaReconcile = function () {
     if (!app.prepareConfig || app.prepareConfig.variant !== 'donskaya') return;
     if (!app.donskayaIsAwaitingAssignment()) return;
-    if (!Array.isArray(app.revealedIndices) || app.revealedIndices.length !== app.roles.length) return;
+    if (!Array.isArray(app.revealedIndices) || app.revealedIndices.length !== app.roles.length)
+      return;
 
     var donSeat = null;
     for (var j = 0; j < app.revealedIndices.length; j++) {
       var di = app.revealedIndices[j];
       if (di == null) continue;
-      if (app.roles[di] === 'Дон') { donSeat = j + 1; break; }
+      if (app.roles[di] === 'Дон') {
+        donSeat = j + 1;
+        break;
+      }
     }
     if (donSeat === null) return;
 
@@ -136,7 +170,9 @@
 
     // Колода теперь содержит реальные роли — все временные оверрайды снимаем,
     // включая «peaceful» от снятых пометок (иначе бы перебили рандомный шериф).
-    Object.keys(overrides).forEach(function (pid) { delete overrides[pid]; });
+    Object.keys(overrides).forEach(function (pid) {
+      delete overrides[pid];
+    });
     if (app.saveState) app.saveState();
   };
 })(window.MafiaApp);

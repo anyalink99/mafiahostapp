@@ -30,7 +30,7 @@
   app.spotifySetSlotPlaylist = function (slot, info) {
     var meta = app.loadMusicMeta();
     var key = String(slot) === '2' ? '2' : '1';
-    if (!meta.spotify || typeof meta.spotify !== 'object') meta.spotify = { '1': null, '2': null };
+    if (!meta.spotify || typeof meta.spotify !== 'object') meta.spotify = { 1: null, 2: null };
     meta.spotify[key] = {
       playlistId: info.playlistId,
       playlistName: info.playlistName || '',
@@ -49,25 +49,35 @@
   };
 
   app.spotifyFetchPlaylistInfo = function (playlistId) {
-    return app.spotifyGetAccessToken().then(function (token) {
-      if (!token) throw new Error('not authenticated');
-      return fetch(API_BASE + '/playlists/' + encodeURIComponent(playlistId) + '?fields=name,images,tracks.total', {
-        headers: { Authorization: 'Bearer ' + token },
+    return app
+      .spotifyGetAccessToken()
+      .then(function (token) {
+        if (!token) throw new Error('not authenticated');
+        return fetch(
+          API_BASE +
+            '/playlists/' +
+            encodeURIComponent(playlistId) +
+            '?fields=name,images,tracks.total',
+          {
+            headers: { Authorization: 'Bearer ' + token },
+          }
+        );
+      })
+      .then(function (res) {
+        if (res.status === 404) throw new Error('playlist not found');
+        if (!res.ok) throw new Error('fetch failed: ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var imageUrl = '';
+        if (data.images && data.images.length) {
+          imageUrl = data.images[data.images.length - 1].url || data.images[0].url;
+        }
+        return {
+          playlistName: data.name || '',
+          playlistImageUrl: imageUrl,
+          trackCount: data.tracks && data.tracks.total ? data.tracks.total : 0,
+        };
       });
-    }).then(function (res) {
-      if (res.status === 404) throw new Error('playlist not found');
-      if (!res.ok) throw new Error('fetch failed: ' + res.status);
-      return res.json();
-    }).then(function (data) {
-      var imageUrl = '';
-      if (data.images && data.images.length) {
-        imageUrl = data.images[data.images.length - 1].url || data.images[0].url;
-      }
-      return {
-        playlistName: data.name || '',
-        playlistImageUrl: imageUrl,
-        trackCount: data.tracks && data.tracks.total ? data.tracks.total : 0,
-      };
-    });
   };
 })(window.MafiaApp);

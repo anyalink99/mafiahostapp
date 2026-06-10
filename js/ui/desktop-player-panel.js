@@ -35,7 +35,7 @@
   // Секции в порядке отображения. Соответствуют контекстам редактирования игрока.
   var SECTIONS = [
     { key: 'prepare', label: 'Подготовка' },
-    { key: 'game',    label: 'Игра' },
+    { key: 'game', label: 'Игра' },
     { key: 'summary', label: 'Итоги' },
   ];
 
@@ -50,8 +50,13 @@
   function isLg() {
     return window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
   }
-  function activeScreen() { return document.querySelector('.screen.active'); }
-  function activeScreenId() { var s = activeScreen(); return s ? s.id : null; }
+  function activeScreen() {
+    return document.querySelector('.screen.active');
+  }
+  function activeScreenId() {
+    var s = activeScreen();
+    return s ? s.id : null;
+  }
 
   function findSlot() {
     var s = activeScreen();
@@ -94,9 +99,9 @@
   // Локальное состояние модуля
   // ────────────────────────────────────────────────────────────
 
-  var unified = null;                    // корневой DOM-элемент панели
-  var sectionByKey = Object.create(null);// key → <section>
-  var titleEl = null;                    // <span> с номером игрока в шапке
+  var unified = null; // корневой DOM-элемент панели
+  var sectionByKey = Object.create(null); // key → <section>
+  var titleEl = null; // <span> с номером игрока в шапке
 
   // Гард для рекурсии: cross-populate вызывает чужие show* функции, которые
   // вызывают modalSetOpen → попадают в наш хук. Этот флаг отсекает их.
@@ -113,14 +118,15 @@
   function buildUnified() {
     unified = document.createElement('div');
     unified.id = 'unified-player-panel';
-    unified.className = 'unified-player-panel bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg shadow-xl';
+    unified.className =
+      'unified-player-panel bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg shadow-xl';
 
     var header = document.createElement('div');
     header.className = 'unified-player-panel__header';
     header.innerHTML =
       '<div class="unified-player-panel__title-row">' +
-        '<h2 class="font-display text-mafia-gold text-xl font-bold tracking-wide leading-tight">Игрок №<span id="unified-player-num">—</span></h2>' +
-        '<button type="button" class="modal-panel__close-x" data-action="unified-player-close" aria-label="Закрыть">×</button>' +
+      '<h2 class="font-display text-mafia-gold text-xl font-bold tracking-wide leading-tight">Игрок №<span id="unified-player-num">—</span></h2>' +
+      '<button type="button" class="modal-panel__close-x" data-action="unified-player-close" aria-label="Закрыть">×</button>' +
       '</div>' +
       '<div id="unified-nick-host"></div>';
     unified.appendChild(header);
@@ -250,7 +256,9 @@
   // под sectionByKey.
   // ────────────────────────────────────────────────────────────
 
-  function kitAcc() { return (window.Kit && window.Kit.accordion) || null; }
+  function kitAcc() {
+    return (window.Kit && window.Kit.accordion) || null;
+  }
 
   function setSectionExpanded(section, expanded) {
     var A = kitAcc();
@@ -342,7 +350,11 @@
     var prepRole = document.getElementById('modal-player-prepare-role-section');
     if (prepRole) prepRole.classList.remove('hidden');
 
-    var p = app.players && app.players.find(function (x) { return x.id === playerId; });
+    var p =
+      app.players &&
+      app.players.find(function (x) {
+        return x.id === playerId;
+      });
     if (!p) return;
     var whenActive = document.getElementById('modal-player-actions-when-active');
     var whenOut = document.getElementById('modal-player-actions-when-out');
@@ -362,11 +374,21 @@
     if (typeof playerId !== 'number' || isNaN(playerId)) return;
     inCrossPopulateCall = true;
     try {
-      if (sourceModalId !== 'modal-player-actions' && typeof app.showPlayerActionsModal === 'function') {
-        try { app.showPlayerActionsModal(playerId); } catch (e) {}
+      if (
+        sourceModalId !== 'modal-player-actions' &&
+        typeof app.showPlayerActionsModal === 'function'
+      ) {
+        try {
+          app.showPlayerActionsModal(playerId);
+        } catch (e) {}
       }
-      if (sourceModalId !== 'modal-summary-player' && typeof app.showSummaryPlayerModal === 'function') {
-        try { app.showSummaryPlayerModal(playerId); } catch (e) {}
+      if (
+        sourceModalId !== 'modal-summary-player' &&
+        typeof app.showSummaryPlayerModal === 'function'
+      ) {
+        try {
+          app.showSummaryPlayerModal(playerId);
+        } catch (e) {}
       }
     } finally {
       inCrossPopulateCall = false;
@@ -412,7 +434,9 @@
     updateSectionVisibility();
     expandOnly(firstVisibleSectionKey(sourceSectionKeyForOpen(sourceModalId)));
 
-    requestAnimationFrame(function () { target.classList.add('is-open'); });
+    requestAnimationFrame(function () {
+      target.classList.add('is-open');
+    });
     return true;
   }
 
@@ -457,18 +481,26 @@
       }
     }
     try {
-      if (isModalMarkedOpen('modal-player-actions') &&
-          typeof app.hidePlayerActionsModal === 'function') {
-        try { app.hidePlayerActionsModal(); } catch (e) {}
+      if (
+        isModalMarkedOpen('modal-player-actions') &&
+        typeof app.hidePlayerActionsModal === 'function'
+      ) {
+        try {
+          app.hidePlayerActionsModal();
+        } catch (e) {}
       }
       // ВАЖНО: applySummaryPlayerModal читает #modal-summary-nick и пишет
       // в pl.nick. Если bindNickMirror не успел сработать (paste, programmatic
       // .value=, autocomplete pick) — summary nick может содержать старое
       // значение и перезатрёт свежий nick из header. Синкаем явно.
       forceMirrorNickFromHeader();
-      if (isModalMarkedOpen('modal-summary-player') &&
-          typeof app.applySummaryPlayerModal === 'function') {
-        try { app.applySummaryPlayerModal(); } catch (e) {}
+      if (
+        isModalMarkedOpen('modal-summary-player') &&
+        typeof app.applySummaryPlayerModal === 'function'
+      ) {
+        try {
+          app.applySummaryPlayerModal();
+        } catch (e) {}
       }
     } finally {
       if (snapshot) {
@@ -519,7 +551,9 @@
 
     // Пересинк обеих radio-групп: они должны показывать одно и то же.
     if (app.getEffectiveSummaryRoleCode) {
-      var p = app.players.find(function (x) { return x.id === pid; });
+      var p = app.players.find(function (x) {
+        return x.id === pid;
+      });
       var seatIndex = p ? app.players.indexOf(p) : -1;
       var current = app.getEffectiveSummaryRoleCode(pid, seatIndex);
       if (app.renderPrepareModalRoleRadios) app.renderPrepareModalRoleRadios(current);
@@ -530,9 +564,11 @@
     }
 
     // Re-render потребителей роли (гармошки, итоги).
-    ['renderPlayers', 'renderPreparePlayers', 'renderSummary', 'renderGameSidePanels'].forEach(function (fn) {
-      if (typeof app[fn] === 'function') app[fn]();
-    });
+    ['renderPlayers', 'renderPreparePlayers', 'renderSummary', 'renderGameSidePanels'].forEach(
+      function (fn) {
+        if (typeof app[fn] === 'function') app[fn]();
+      }
+    );
   }
 
   // ────────────────────────────────────────────────────────────
@@ -590,29 +626,41 @@
   // оригинала (b.onclick → renderSummary) перерисует #summary-winning-team-icons
   // и отвяжет target от DOM — иначе .closest() вернёт null и trigger не сработает.
   function bindVisibilityTriggers() {
-    document.addEventListener('click', function (e) {
-      if (!e.target || !e.target.closest) return;
-      if (
-        e.target.closest('[data-action="game-side-toggle-roles"]') ||
-        e.target.closest('#summary-winning-team-icons')
-      ) {
-        // setTimeout 0 — даём оригинальному хендлеру сначала обновить флаг state.
-        setTimeout(updateSectionVisibility, 0);
-      }
-    }, true);
+    document.addEventListener(
+      'click',
+      function (e) {
+        if (!e.target || !e.target.closest) return;
+        if (
+          e.target.closest('[data-action="game-side-toggle-roles"]') ||
+          e.target.closest('#summary-winning-team-icons')
+        ) {
+          // setTimeout 0 — даём оригинальному хендлеру сначала обновить флаг state.
+          setTimeout(updateSectionVisibility, 0);
+        }
+      },
+      true
+    );
   }
 
   // Автосейв роли при клике по любой радио-кнопке (Подготовка/Итоги).
   // Capture-фаза по той же причине: оригинальный handler пересоздаёт radio-row.
   function bindRolePickerAutosave() {
-    document.addEventListener('click', function (e) {
-      if (!e.target || !e.target.closest) return;
-      if (e.target.closest('[data-action="player-prepare-role-pick"]')) {
-        setTimeout(function () { savePlayerRoleAndSync(ROLE_ROW_PREPARE); }, 0);
-      } else if (e.target.closest('#' + ROLE_ROW_SUMMARY + ' [role="radio"]')) {
-        setTimeout(function () { savePlayerRoleAndSync(ROLE_ROW_SUMMARY); }, 0);
-      }
-    }, true);
+    document.addEventListener(
+      'click',
+      function (e) {
+        if (!e.target || !e.target.closest) return;
+        if (e.target.closest('[data-action="player-prepare-role-pick"]')) {
+          setTimeout(function () {
+            savePlayerRoleAndSync(ROLE_ROW_PREPARE);
+          }, 0);
+        } else if (e.target.closest('#' + ROLE_ROW_SUMMARY + ' [role="radio"]')) {
+          setTimeout(function () {
+            savePlayerRoleAndSync(ROLE_ROW_SUMMARY);
+          }, 0);
+        }
+      },
+      true
+    );
   }
 
   // Шорткаты 1..9, 0 → открыть/закрыть панель игрока соответствующего номера.
@@ -623,7 +671,12 @@
       if (!isLg()) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       var t = e.target;
-      if (t && t.matches && t.matches('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return;
+      if (
+        t &&
+        t.matches &&
+        t.matches('input, textarea, select, [contenteditable=""], [contenteditable="true"]')
+      )
+        return;
 
       var pid = numberKeyToPlayerId(e.key);
       if (pid == null) return;
@@ -687,4 +740,4 @@
   } else {
     setTimeout(init, 0);
   }
-})(window.MafiaApp = window.MafiaApp || {});
+})((window.MafiaApp = window.MafiaApp || {}));

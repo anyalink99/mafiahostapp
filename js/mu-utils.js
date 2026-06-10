@@ -28,11 +28,13 @@
   }
 
   // Сокращение для document.getElementById — частая операция в наших MU-модулях.
-  function byId(id) { return document.getElementById(id); }
+  function byId(id) {
+    return document.getElementById(id);
+  }
 
   app.MuUtils = {
     escapeHtml: escapeHtml,
     parseIntOr: parseIntOr,
     byId: byId,
   };
-})(window.MafiaApp = window.MafiaApp || {});
+})((window.MafiaApp = window.MafiaApp || {}));

@@ -204,7 +204,11 @@
     if (typeof app.timerMainSec !== 'number' || isNaN(app.timerMainSec) || app.timerMainSec <= 0) {
       app.timerMainSec = 60;
     }
-    if (typeof app.timerShortSec !== 'number' || isNaN(app.timerShortSec) || app.timerShortSec <= 0) {
+    if (
+      typeof app.timerShortSec !== 'number' ||
+      isNaN(app.timerShortSec) ||
+      app.timerShortSec <= 0
+    ) {
       app.timerShortSec = 30;
     }
   };
