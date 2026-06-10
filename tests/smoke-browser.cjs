@@ -207,6 +207,30 @@ function findChrome() {
     errors.push('голосование: ожидалось «' + voteFlowExpected + '», получено «' + voteFlow + '»');
   }
 
+  // Настройки музыки: список (DOM-билдер), режим выбора, раскрытие панели.
+  var musicChecks = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var out = [];
+    app.navigateToScreen('settings-screen');
+    var c1 = document.getElementById('music-list-slot-1');
+    out.push('items:' + (c1 ? c1.querySelectorAll('li[data-music-item-id]').length : -1));
+    app.musicEnterSelectMode('1');
+    out.push('selbar:' + (c1.querySelector('[data-music-select-count]') ? 1 : 0));
+    app.musicExitSelectMode('1');
+    var li = c1.querySelector('li[data-music-item-id]');
+    var id = li ? li.getAttribute('data-music-item-id') : null;
+    if (id) app.toggleMusicItemExpanded('1', id);
+    out.push(
+      'expand:' + (c1.querySelector('li.music-item-pending-expand, li.music-item-expanded') ? 1 : 0)
+    );
+    return out.join(' ');
+  });
+  if (musicChecks !== 'items:1 selbar:1 expand:1') {
+    errors.push(
+      'настройки музыки: ожидалось «items:1 selbar:1 expand:1», получено «' + musicChecks + '»'
+    );
+  }
+
   // Запуск автономной игры (полный путь setup → reveal).
   var autoPhase = await page.evaluate(function () {
     window.MafiaApp.startFreshAutoGame();

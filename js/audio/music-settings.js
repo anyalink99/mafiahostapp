@@ -2,7 +2,7 @@
  * Музыка — интеракции экрана настроек: раскрытие панелей (с анимацией
  * max-height), режим выбора треков для объединения в плейлист, потрековое
  * редактирование плейлиста, применение изменений полей и intro-настройки.
- * HTML списков строит music-settings-html.js.
+ * Список строит music-settings-list.js (DOM-билдер app.h).
  */
 (function (app) {
   'use strict';
@@ -198,8 +198,14 @@
     if (app.stopMusicPreview) app.stopMusicPreview();
     var c1 = document.getElementById('music-list-slot-1');
     var c2 = document.getElementById('music-list-slot-2');
-    if (c1) c1.innerHTML = app.buildMusicSlotListHtml('1');
-    if (c2) c2.innerHTML = app.buildMusicSlotListHtml('2');
+    if (c1) {
+      c1.innerHTML = '';
+      c1.appendChild(app.buildMusicSlotList('1'));
+    }
+    if (c2) {
+      c2.innerHTML = '';
+      c2.appendChild(app.buildMusicSlotList('2'));
+    }
     app.finishMusicSettingsExpandAnimations();
     if (app.syncMusicSlotControls) app.syncMusicSlotControls();
     if (app.renderSpotifySlotSettings) {
@@ -380,10 +386,9 @@
     }
     var oldH = inner ? inner.scrollHeight : 0;
     container.style.opacity = '0';
-    container.innerHTML = app.buildMusicPlaylistTracksHtml(
-      slot,
-      it,
-      app.musicPlaylistEditId === itemId
+    container.innerHTML = '';
+    container.appendChild(
+      app.buildMusicPlaylistTracks(slot, it, app.musicPlaylistEditId === itemId)
     );
     if (mutateBtn) mutateBtn(li);
     requestAnimationFrame(function () {

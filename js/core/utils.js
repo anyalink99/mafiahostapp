@@ -25,6 +25,47 @@
       .replace(/"/g, '&quot;');
   };
 
+  function appendHChildren(el, child) {
+    if (child === null || child === undefined || child === false) return;
+    if (Array.isArray(child)) {
+      for (var i = 0; i < child.length; i++) appendHChildren(el, child[i]);
+      return;
+    }
+    if (typeof child === 'string' || typeof child === 'number') {
+      // Текст — только как текстовый узел: экранирование по построению,
+      // в отличие от innerHTML-конкатенации его невозможно забыть.
+      el.appendChild(document.createTextNode(String(child)));
+      return;
+    }
+    el.appendChild(child);
+  }
+
+  /**
+   * Маленький DOM-билдер для рендереров — замена innerHTML-конкатенации.
+   *   app.h('button', { className: '…', 'data-action': 'x', disabled: true }, [
+   *     app.h('span', null, 'текст'), '…'
+   *   ])
+   * attrs: className — свойство; disabled/checked/value — свойства;
+   * true → булев атрибут; null/undefined/false — пропуск; остальное — атрибут.
+   * children: строка/число (текстовый узел), Node, массив (включая вложенные).
+   */
+  app.h = function (tag, attrs, children) {
+    var el = document.createElement(tag);
+    if (attrs) {
+      for (var k in attrs) {
+        if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
+        var v = attrs[k];
+        if (v === null || v === undefined || v === false) continue;
+        if (k === 'className') el.className = v;
+        else if (k === 'disabled' || k === 'checked' || k === 'value') el[k] = v;
+        else if (v === true) el.setAttribute(k, '');
+        else el.setAttribute(k, String(v));
+      }
+    }
+    appendHChildren(el, children);
+    return el;
+  };
+
   app.parseBonusFloat = function (raw) {
     if (raw === undefined || raw === null || raw === '') return 0;
     var parsed = parseFloat(String(raw).replace(',', '.'));
