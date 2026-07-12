@@ -5,6 +5,9 @@
     mafia: 'icon-mafia',
     peaceful: 'icon-like',
     merlin: 'icon-merlin',
+    maniac: 'icon-maniac',
+    doctor: 'icon-doctor',
+    beauty: 'icon-beauty',
   };
 
   function roleIconId(code) {
@@ -13,6 +16,9 @@
 
   function roleIconWrapClass(code) {
     var isMafiaSide = code === 'mafia' || code === 'don';
+    if (code === 'maniac') {
+      return 'role-badge--maniac flex h-12 w-12 shrink-0 items-center justify-center rounded border';
+    }
     if (isMafiaSide) {
       return 'flex h-12 w-12 shrink-0 items-center justify-center rounded border border-mafia-border bg-mafia-black text-mafia-gold';
     }

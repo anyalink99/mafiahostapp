@@ -128,6 +128,89 @@ function findChrome() {
   });
   if (slots !== 10) errors.push('game-screen: ожидалось 10 слотов игроков, получено ' + slots);
 
+  // «Городская»: динамический состав на верхней границе (16 игроков).
+  var urbanChecks = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.experimentalModesEnabled = true;
+    app.prepareConfig.mode = 'host';
+    app.prepareConfig.variant = 'urban';
+    app.prepareConfig.playerCount = 16;
+    app.prepareConfig.roleCounts = app.urbanSuggestedCounts(16);
+    var anchor12 = app.urbanSuggestedCounts(12);
+    app.applyHostVariantDeck();
+    app.navigateToScreen('prepare-screen');
+    var list = document.getElementById('prepare-players-list');
+    var roleSvg = list ? list.querySelector('.player-slot--compact svg') : null;
+    var svgBorder = roleSvg ? window.getComputedStyle(roleSvg).borderTopWidth : '';
+    app.navigateToScreen('setup-screen');
+    var cards = document.getElementById('card-container');
+    var maniacCard = cards ? cards.querySelector('.card-front.bg-urban-maniac') : null;
+    var maniacBg = maniacCard ? window.getComputedStyle(maniacCard).backgroundColor : '';
+    app.revealedIndices = app.roles.map(function (_, i) {
+      return i;
+    });
+    app.showHostToolsModal();
+    var nightSection = document.getElementById('host-tools-urban-night-section');
+    app.toolsRevealRoles();
+    var namedRoles = document.getElementById('host-tools-roles-result').textContent;
+    app.hideHostToolsModal();
+    app.goToUrbanNightActions();
+    var nightScreen = document.getElementById('urban-night-screen');
+    var nightActions = document.querySelectorAll('#urban-night-actions .urban-night-role-tile');
+    app.showUrbanNightTargetModal('mafiaShot');
+    var nightTargetModal = document.getElementById('modal-urban-night-target');
+    var nightTargetCount = document.querySelectorAll(
+      '#modal-urban-night-target-grid .urban-night-target'
+    ).length;
+    var result = [
+      'players:' + app.players.length,
+      'roles:' + app.roles.length,
+      'mafia:' +
+        app.roles.filter(function (x) {
+          return x === 'Мафия';
+        }).length,
+      'peaceful:' +
+        app.roles.filter(function (x) {
+          return x === 'Мирный';
+        }).length,
+      'rows:' + (list ? list.style.gridTemplateRows : ''),
+      'svg-border:' + svgBorder,
+      'cards:' + (cards ? cards.children.length : 0),
+      'card-grid:' +
+        (cards
+          ? cards.style.getPropertyValue('--card-cols') +
+            'x' +
+            cards.style.getPropertyValue('--card-rows')
+          : ''),
+      'maniac:' + maniacBg,
+      'night-button:' + (nightSection && !nightSection.classList.contains('hidden') ? 1 : 0),
+      'named-urban:' +
+        (namedRoles.indexOf('Маньяк') !== -1 &&
+        namedRoles.indexOf('Доктор') !== -1 &&
+        namedRoles.indexOf('Красотка') !== -1
+          ? 1
+          : 0),
+      'night-screen:' + (nightScreen && nightScreen.classList.contains('active') ? 1 : 0),
+      'night-actions:' + nightActions.length,
+      'night-modal:' + (nightTargetModal && nightTargetModal.hasAttribute('data-open') ? 1 : 0),
+      'night-targets:' + nightTargetCount,
+      'anchor12:' + anchor12.mafia + '/' + anchor12.peaceful,
+    ].join(' ');
+    // Остальные проверки ниже ожидают классический стол.
+    app.hideUrbanNightTargetModal();
+    app.urbanNightDraft = null;
+    app.revealedIndices = [];
+    app.prepareConfig.variant = 'standard';
+    app.applyHostVariantDeck();
+    return result;
+  });
+  if (
+    urbanChecks !==
+    'players:16 roles:16 mafia:3 peaceful:8 rows:repeat(8, minmax(0px, 1fr)) svg-border:0px cards:16 card-grid:4x4 maniac:rgb(20, 83, 45) night-button:1 named-urban:1 night-screen:1 night-actions:6 night-modal:1 night-targets:16 anchor12:2/5'
+  ) {
+    errors.push('режим «Городская»: неверная конфигурация — ' + urbanChecks);
+  }
+
   // Автономный режим: рендереры зарегистрированы?
   var autoOk = await page.evaluate(function () {
     var need = [
@@ -279,6 +362,70 @@ function findChrome() {
     return !!document.querySelector('.unified-player-slot.is-open');
   });
   if (slotStillOpen) errors.push('unified-панель не закрылась при переходе экрана');
+
+  // Городская ночь на ПК раскрывается встроенным слотом и возвращает body обратно при закрытии.
+  await dpage.evaluate(function () {
+    var app = window.MafiaApp;
+    app.experimentalModesEnabled = true;
+    app.prepareConfig.mode = 'host';
+    app.prepareConfig.variant = 'urban';
+    app.prepareConfig.playerCount = 12;
+    app.prepareConfig.roleCounts = app.urbanSuggestedCounts(12);
+    app.gameLog = [];
+    app.revealedIndices = [];
+    app.roles = app.variantConfig('urban').getHostDeck();
+    app.resizeHostPlayers(app.roles.length);
+    app.revealedIndices = app.roles.map(function (_, i) {
+      return i;
+    });
+    app.navigateToScreen('game-screen');
+    app.goToUrbanNightActions();
+  });
+  await dpage.waitForSelector('#game-screen.game-night-actions #game-night-slot.night-slot-open', {
+    timeout: 3000,
+  });
+  await dpage.evaluate(function () {
+    window.MafiaApp.showUrbanNightTargetModal('mafiaShot');
+  });
+  await dpage.waitForSelector('#night-target-slot.is-open', { timeout: 3000 });
+  var desktopNight = await dpage.evaluate(function () {
+    var body = document.getElementById('urban-night-body');
+    var slot = document.getElementById('game-night-slot');
+    var targetPanel = document.getElementById('night-target-slot');
+    var targets = document.querySelectorAll(
+      '#modal-urban-night-target-grid .urban-night-target'
+    ).length;
+    return (
+      (body && body.parentNode === slot ? 'inline' : 'detached') +
+      ':' +
+      (targetPanel.classList.contains('is-open') ? 'target-inline' : 'target-closed') +
+      ':' +
+      targets
+    );
+  });
+  if (desktopNight !== 'inline:target-inline:12') {
+    errors.push(
+      'городская ночь на ПК: ожидалось inline:target-inline:12, получено ' + desktopNight
+    );
+  }
+  await dpage.evaluate(function () {
+    window.MafiaApp.pickUrbanNightTarget(1);
+  });
+  var desktopNightAssigned = await dpage.evaluate(function () {
+    return !!document.querySelector(
+      '#urban-night-actions [data-night-action="mafiaShot"].is-complete'
+    );
+  });
+  if (!desktopNightAssigned) errors.push('городская ночь: выбранная цель не записалась в плитку');
+  await dpage.evaluate(function () {
+    window.MafiaApp.closeUrbanNightActions();
+  });
+  var desktopNightClosed = await dpage.evaluate(function () {
+    var body = document.getElementById('urban-night-body');
+    var screen = document.getElementById('urban-night-screen');
+    return body && body.parentNode === screen;
+  });
+  if (!desktopNightClosed) errors.push('городская ночь: body не вернулся на экран после закрытия');
 
   await browser.close();
   server.close();

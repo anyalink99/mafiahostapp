@@ -2,8 +2,9 @@
  * Host-mode tools modal (game-screen → гаечный ключ).
  *
  * Contents depend on prepareConfig.variant:
- *   • standard / kasper / merlin / donskaya — кнопка «Назвать роли» (раскладка ролей по местам).
+ *   • все варианты                          — кнопка «Назвать роли» (раскладка ролей по местам).
  *   • kasper                                — добавляется «Рандомная проверка шерифа» (1–9, кроме шерифа).
+ *   • urban                                 — добавляются «Ночные действия».
  *
  * Назначение мафии в донской живёт не здесь, а на prepare-screen: ведущий открывает
  * слот игрока, выбирает «Мафия» в модалке player-actions; после второй пометки
@@ -28,13 +29,21 @@
   function getDealtRoles() {
     var out = [];
     if (!app.revealedIndices) return out;
+    var fullDeal = app.revealedIndices.length === app.players.length;
     for (var j = 0; j < app.revealedIndices.length; j++) {
       var ri = app.revealedIndices[j];
       if (ri == null || !app.roles || !app.roles[ri]) continue;
-      out.push({ seatId: j + 1, role: app.roles[ri] });
+      var role = app.roles[ri];
+      var code = app.mapDealRoleToCode ? app.mapDealRoleToCode(role) : null;
+      if (fullDeal && app.getEffectiveSummaryRoleCode) {
+        code = app.getEffectiveSummaryRoleCode(j + 1, j);
+        role = app.roleLabelRu ? app.roleLabelRu(code) : role;
+      }
+      out.push({ seatId: j + 1, role: role, code: code });
     }
     return out;
   }
+  app.getHostDealtRoles = getDealtRoles;
 
   function isMafiaRole(r) {
     return r === 'Мафия' || r === 'Дон';
@@ -47,6 +56,10 @@
     var sheriffSection = el('host-tools-sheriff-section');
     if (sheriffSection) {
       sheriffSection.classList.toggle('hidden', variant !== 'kasper');
+    }
+    var urbanNightSection = el('host-tools-urban-night-section');
+    if (urbanNightSection) {
+      urbanNightSection.classList.toggle('hidden', variant !== 'urban');
     }
     var rolesResult = el('host-tools-roles-result');
     if (rolesResult) {
@@ -77,21 +90,39 @@
       return;
     }
     var BLANK = app.DONSKAYA_BLANK_ROLE || 'Без роли';
-    var groups = { Дон: [], Мафия: [], Шериф: [], Мерлин: [], Мирный: [] };
-    groups[BLANK] = [];
+    var groups = {};
     dealt.forEach(function (d) {
-      if (groups[d.role]) groups[d.role].push(d.seatId);
+      if (!groups[d.role]) groups[d.role] = [];
+      groups[d.role].push(d.seatId);
     });
-    var order = ['Дон', 'Мафия', 'Шериф', 'Мерлин', 'Мирный', BLANK];
+    var order = [
+      'Дон',
+      'Мафия',
+      'Шериф',
+      'Маньяк',
+      'Доктор',
+      'Красотка',
+      'Мерлин',
+      'Мирный',
+      BLANK,
+    ];
+    Object.keys(groups).forEach(function (name) {
+      if (order.indexOf(name) === -1) order.push(name);
+    });
     var html = '';
     for (var i = 0; i < order.length; i++) {
       var name = order[i];
-      var ids = groups[name];
+      var ids = groups[name] || [];
       if (!ids.length) continue;
       ids.sort(function (a, b) {
         return a - b;
       });
-      var color = name === 'Мафия' || name === 'Дон' ? 'text-mafia-blood' : 'text-mafia-gold';
+      var color =
+        name === 'Мафия' || name === 'Дон'
+          ? 'text-mafia-blood'
+          : name === 'Маньяк'
+            ? 'text-green-500'
+            : 'text-mafia-gold';
       var label = '<span class="font-display font-bold ' + color + '">' + name + ':</span>';
       var nums = ids
         .map(function (id) {

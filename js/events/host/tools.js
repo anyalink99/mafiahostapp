@@ -19,4 +19,8 @@
   app.uiActionHandlers['host-tools-sheriff-random'] = function () {
     app.toolsKasperSheriffRandom();
   };
+  app.uiActionHandlers['host-tools-night-actions'] = function () {
+    if (app.hideHostToolsModal) app.hideHostToolsModal();
+    if (app.goToUrbanNightActions) app.goToUrbanNightActions();
+  };
 })(window.MafiaApp);

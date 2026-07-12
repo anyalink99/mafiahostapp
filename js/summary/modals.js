@@ -16,6 +16,9 @@
 
   S.roleIconWrapClass = function (code) {
     var isMafiaSide = code === 'mafia' || code === 'don';
+    if (code === 'maniac') {
+      return 'role-badge--maniac flex h-9 w-9 shrink-0 items-center justify-center rounded border sm:h-10 sm:w-10';
+    }
     if (isMafiaSide) {
       return 'flex h-9 w-9 shrink-0 items-center justify-center rounded border border-mafia-border bg-mafia-black text-mafia-gold sm:h-10 sm:w-10';
     }
@@ -24,6 +27,9 @@
 
   S.roleGridIconWrapClass = function (code) {
     var isMafiaSide = code === 'mafia' || code === 'don';
+    if (code === 'maniac') {
+      return 'role-badge--maniac flex h-8 w-8 shrink-0 items-center justify-center rounded border sm:h-9 sm:w-9';
+    }
     if (isMafiaSide) {
       return 'flex h-8 w-8 shrink-0 items-center justify-center rounded border border-mafia-border bg-mafia-black text-mafia-gold sm:h-9 sm:w-9';
     }

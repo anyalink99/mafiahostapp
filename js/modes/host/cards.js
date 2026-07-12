@@ -2,6 +2,7 @@
   // Цвет лица карты. «Без роли» (донская до назначения мафии) — нейтральный серый.
   function cardFrontBgClass(role) {
     if (role === 'Мафия' || role === 'Дон') return 'bg-mafia-black';
+    if (role === 'Маньяк') return 'bg-urban-maniac';
     if (role === (app.DONSKAYA_BLANK_ROLE || 'Без роли')) return 'bg-mafia-border';
     return 'bg-mafia-blood';
   }
@@ -12,6 +13,9 @@
     if (role === 'Дон') return 'icon-don';
     if (role === 'Шериф') return 'icon-sheriff';
     if (role === 'Мерлин') return 'icon-merlin';
+    if (role === 'Маньяк') return 'icon-maniac';
+    if (role === 'Доктор') return 'icon-doctor';
+    if (role === 'Красотка') return 'icon-beauty';
     return null;
   };
 
@@ -25,6 +29,11 @@
     const container = document.getElementById('card-container');
     if (!container) return;
     container.innerHTML = '';
+    var cardCount = app.roles.length;
+    var cardColumns = cardCount > 10 ? 4 : 3;
+    var cardRows = Math.ceil(cardCount / cardColumns);
+    container.style.setProperty('--card-cols', String(cardColumns));
+    container.style.setProperty('--card-rows', String(cardRows));
     if (!noShuffle) {
       app.roles = [...app.roles].sort(() => Math.random() - 0.5);
       app.revealedIndices = [];
@@ -68,6 +77,12 @@
       wrap.appendChild(inner);
       container.appendChild(wrap);
       if (app.revealedIndices.indexOf(i) !== -1) card.classList.add('revealed');
+    }
+    var remainder = cardCount % cardColumns;
+    if (remainder === 1 && container.lastElementChild) {
+      container.lastElementChild.style.gridColumn = cardColumns === 3 ? '2' : '2';
+    } else if (remainder === 2 && cardColumns === 4 && container.children.length >= 2) {
+      container.children[container.children.length - 2].style.gridColumn = '2';
     }
     if (app.revealedIndices.length > 0) app.sortCardsByRevealOrder();
     app.updateCardNumbers();

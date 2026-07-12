@@ -64,17 +64,47 @@
     var v = el.getAttribute('data-variant');
     if (app.SUPPORTED_VARIANTS.indexOf(v) === -1) return;
     app.prepareConfig.variant = v;
+    if (v === 'urban' && app.ensureUrbanPrepareConfig) app.ensureUrbanPrepareConfig();
     app._autoInternals.savePrepareConfig();
     app.renderPrepareModeScreen();
   };
 
   app.uiActionHandlers['prepare-continue'] = function () {
     if (app.prepareConfig.mode === 'host') {
+      if (
+        app.prepareConfig.variant === 'urban' &&
+        app.urbanConfigIsValid &&
+        !app.urbanConfigIsValid()
+      ) {
+        if (app.showToast) app.showToast('Количество ролей должно совпадать с числом игроков');
+        return;
+      }
       app.applyHostVariantDeck();
       app.navigateToScreen('prepare-screen');
     } else {
       app.navigateToScreen('auto-setup-screen');
     }
+  };
+
+  app.uiActionHandlers['urban-player-count-step'] = function (el) {
+    if (!app.ensureUrbanPrepareConfig) return;
+    var cfg = app.ensureUrbanPrepareConfig();
+    var delta = parseInt(el.getAttribute('data-delta'), 10) || 0;
+    cfg.playerCount = Math.max(7, Math.min(16, cfg.playerCount + delta));
+    cfg.roleCounts = app.urbanSuggestedCounts(cfg.playerCount);
+    app._autoInternals.savePrepareConfig();
+    app.renderPrepareModeScreen();
+  };
+
+  app.uiActionHandlers['urban-role-count-step'] = function (el) {
+    if (!app.ensureUrbanPrepareConfig) return;
+    var cfg = app.ensureUrbanPrepareConfig();
+    var role = el.getAttribute('data-role');
+    if ((app.URBAN_ROLE_ORDER || []).indexOf(role) === -1) return;
+    var delta = parseInt(el.getAttribute('data-delta'), 10) || 0;
+    cfg.roleCounts[role] = Math.max(0, Math.min(cfg.playerCount, cfg.roleCounts[role] + delta));
+    app._autoInternals.savePrepareConfig();
+    app.renderPrepareModeScreen();
   };
 
   app.uiActionHandlers['shuffle-seating'] = function () {

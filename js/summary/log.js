@@ -101,6 +101,45 @@
       }
       return pfx + 'большинство не набрано, выбывания нет.';
     }
+    if (e.type === 'urban_night') {
+      var a = e.actions || {};
+      var res = e.result || {};
+      function target(id) {
+        return typeof id === 'number' ? '№' + id : 'пропуск';
+      }
+      var donResult =
+        typeof a.donCheck === 'number' ? (res.donFoundSheriff ? ' — шериф' : ' — не шериф') : '';
+      var sheriffResult =
+        typeof a.sheriffCheck === 'number'
+          ? res.sheriffFoundMafia
+            ? ' — мафия'
+            : ' — не мафия'
+          : '';
+      var nightResult =
+        res.deaths && res.deaths.length
+          ? 'Погибли: ' + formatSeatNums(res.deaths) + '.'
+          : 'Никто не погиб.';
+      return (
+        'Ночь ' +
+        (e.nightNumber || '—') +
+        ' — мафия: ' +
+        target(a.mafiaShot) +
+        '; дон: ' +
+        target(a.donCheck) +
+        donResult +
+        '; шериф: ' +
+        target(a.sheriffCheck) +
+        sheriffResult +
+        '; маньяк: ' +
+        target(a.maniacShot) +
+        '; красотка: ' +
+        target(a.beautyVisit) +
+        '; врач: ' +
+        target(a.doctorHeal) +
+        '. ' +
+        nightResult
+      );
+    }
     if (e.type === 'elimination') {
       if (e.reason === 'hang' && e.outsideVoteSingleNominee) {
         if (typeof roundNum === 'number' && roundNum > 0) {
@@ -239,6 +278,17 @@
     return e && e.type === 'elimination' && (e.reason === 'shot' || e.reason === 'disqual');
   }
 
+  function isSameUrbanNightKillPair(a, b) {
+    return !!(
+      a &&
+      b &&
+      a.source === 'urban_night' &&
+      b.source === 'urban_night' &&
+      typeof a.nightNumber === 'number' &&
+      a.nightNumber === b.nightNumber
+    );
+  }
+
   function exportRoundSortKey(round, indexed) {
     var min = Infinity;
     for (var i = 0; i < indexed.length; i++) {
@@ -294,7 +344,7 @@
     for (var j = 1; j < indexed.length; j++) {
       var prev = indexed[j - 1].e;
       var curr = indexed[j].e;
-      if (isNightKill(prev) && isNightKill(curr)) {
+      if (isNightKill(prev) && isNightKill(curr) && !isSameUrbanNightKillPair(prev, curr)) {
         pieces.push({
           kind: 'skip',
           synthetic: true,
@@ -380,7 +430,12 @@
     }
     for (var lix = 0; lix < log.length; lix++) {
       var entry = log[lix];
-      if (lix > 0 && isNightKill(log[lix - 1]) && isNightKill(entry)) {
+      if (
+        lix > 0 &&
+        isNightKill(log[lix - 1]) &&
+        isNightKill(entry) &&
+        !isSameUrbanNightKillPair(log[lix - 1], entry)
+      ) {
         var pk = 'pair-' + lix;
         rows.push({
           text: buildSyntheticSkipRowText(pk, skipKeyToRn[pk]),

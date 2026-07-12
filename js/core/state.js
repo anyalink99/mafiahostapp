@@ -52,6 +52,7 @@ window.MafiaApp = window.MafiaApp || {};
   );
   app.nomineeQueue = [];
   app.activeVoteRound = null;
+  app.urbanNightDraft = null;
   app.revealedIndices = [];
   app.timerInterval = null;
   app.timeLeft = 60;
@@ -110,6 +111,7 @@ window.MafiaApp = window.MafiaApp || {};
         players: app.players,
         nomineeQueue: app.nomineeQueue,
         activeVoteRound: app.activeVoteRound,
+        urbanNightDraft: app.urbanNightDraft,
         revealedIndices: app.revealedIndices,
         timeLeft: app.timeLeft,
         timerRunning: app.timerRunning,
@@ -165,6 +167,10 @@ window.MafiaApp = window.MafiaApp || {};
           app.nomineeQueue = vs.candidateIds.slice();
         }
       }
+      app.urbanNightDraft =
+        data.urbanNightDraft && typeof data.urbanNightDraft === 'object'
+          ? data.urbanNightDraft
+          : null;
       if (data.revealedIndices && Array.isArray(data.revealedIndices))
         app.revealedIndices = data.revealedIndices;
       if (typeof data.timeLeft === 'number') app.timeLeft = data.timeLeft;
@@ -309,6 +315,7 @@ window.MafiaApp = window.MafiaApp || {};
     );
     app.nomineeQueue = [];
     app.activeVoteRound = null;
+    app.urbanNightDraft = null;
     app.revealedIndices = [];
     app.timeLeft =
       typeof app.timerMainSec === 'number' && app.timerMainSec > 0 ? app.timerMainSec : 60;
@@ -359,6 +366,7 @@ window.MafiaApp = window.MafiaApp || {};
     if (app.revealedIndices && app.revealedIndices.length > 0) return true;
     if (app.nomineeQueue && app.nomineeQueue.length > 0) return true;
     if (app.activeVoteRound) return true;
+    if (app.urbanNightDraft) return true;
     if (app.gameLog && app.gameLog.length > 0) return true;
     if (app.playerRoleOverrides && Object.keys(app.playerRoleOverrides).length > 0) return true;
     if (app.winningTeam) return true;

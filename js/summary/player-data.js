@@ -58,6 +58,9 @@
     if (r === 'Дон') return 'don';
     if (r === 'Мафия') return 'mafia';
     if (r === 'Мерлин') return 'merlin';
+    if (r === 'Маньяк') return 'maniac';
+    if (r === 'Доктор') return 'doctor';
+    if (r === 'Красотка') return 'beauty';
     return 'peaceful';
   };
 
@@ -126,7 +129,7 @@
     var p = app.parseBestMoveTriple(stored);
     for (var i = 0; i < 3; i++) {
       var n = parseInt(String(p[i]).trim(), 10);
-      if (isNaN(n) || n < 1 || n > 10) return false;
+      if (isNaN(n) || n < 1 || n > app.players.length) return false;
     }
     return true;
   };

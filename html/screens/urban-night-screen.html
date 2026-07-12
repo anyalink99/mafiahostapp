@@ -1,0 +1,12 @@
+<div id="urban-night-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6">
+    <div class="flex items-center justify-between flex-shrink-0 py-2">
+        <button type="button" data-action="urban-night-close" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Игровой стол</button>
+        <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Ночные действия</span>
+    </div>
+    <!-- На ПК body переезжает в #game-night-slot, как vote-body у голосования. -->
+    <div id="urban-night-body" class="flex-1 min-h-0 flex flex-col gap-3">
+        <div id="urban-night-number" class="flex-shrink-0 text-center font-display text-mafia-gold/80 text-sm tracking-widest"></div>
+        <div id="urban-night-actions" class="urban-night-role-grid flex-1 min-h-0 overflow-auto" aria-label="Действия ролей"></div>
+        <button type="button" data-action="urban-night-finish" class="w-full flex-shrink-0 py-2.5 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold rounded text-xs uppercase tracking-wider cursor-pointer transition-colors">Завершить ночь</button>
+    </div>
+</div>

@@ -130,6 +130,9 @@
     if (roleCode === 'sheriff') return 'Шериф';
     if (roleCode === 'mafia') return 'Мафия';
     if (roleCode === 'merlin') return 'Мерлин';
+    if (roleCode === 'maniac') return 'Маньяк';
+    if (roleCode === 'doctor') return 'Доктор';
+    if (roleCode === 'beauty') return 'Красотка';
     return 'Мирный';
   };
 
@@ -140,6 +143,9 @@
     don: 'Дон',
     sheriff: 'Шериф',
     merlin: 'Мерлин',
+    maniac: 'Маньяк',
+    doctor: 'Доктор',
+    beauty: 'Красотка',
   };
 
   /** Иконки ролей в UI подготовки/итогов (мирный — «лайк», не «голубь»). */
@@ -149,6 +155,50 @@
     mafia: 'icon-mafia',
     peaceful: 'icon-like',
     merlin: 'icon-merlin',
+    maniac: 'icon-maniac',
+    doctor: 'icon-doctor',
+    beauty: 'icon-beauty',
+  };
+
+  /** Меняет размер host-стола, сохраняя данные существующих мест. */
+  app.resizeHostPlayers = function (playerCount) {
+    var n = Math.max(7, Math.min(16, parseInt(playerCount, 10) || 10));
+    var old = Array.isArray(app.players) ? app.players : [];
+    var next = [];
+    for (var i = 0; i < n; i++) {
+      next.push(old[i] || { id: i + 1, fouls: 0, eliminationReason: null, nick: '' });
+      next[i].id = i + 1;
+    }
+    app.players = next;
+    app.nomineeQueue = (app.nomineeQueue || []).filter(function (id) {
+      return id <= n;
+    });
+    var stores = [
+      'playerRoleOverrides',
+      'bonusPointsByPlayerId',
+      'summaryRoleByPlayerId',
+      'bonusNoteByPlayerId',
+      'bestMoveByPlayerId',
+      'protocolByPlayerId',
+      'opinionByPlayerId',
+    ];
+    for (var si = 0; si < stores.length; si++) {
+      var store = app[stores[si]];
+      if (!store || typeof store !== 'object') continue;
+      Object.keys(store).forEach(function (key) {
+        var id = parseInt(key, 10);
+        if (!isNaN(id) && id > n) delete store[key];
+      });
+    }
+  };
+
+  /** Динамическая двухколоночная раскладка: до 8 строк для 16 игроков. */
+  app.applyPlayerGridLayout = function (list, playerCount) {
+    if (!list) return;
+    var rows = Math.ceil(Math.max(1, playerCount) / 2);
+    list.className =
+      'player-grid grid grid-flow-col grid-cols-2 gap-1.5 sm:gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
+    list.style.gridTemplateRows = 'repeat(' + rows + ', minmax(0, 1fr))';
   };
 
   /** Подписи причин выбытия — общие для хост- и авторежима. */

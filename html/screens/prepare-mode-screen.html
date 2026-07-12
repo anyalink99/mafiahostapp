@@ -13,6 +13,18 @@
             <div id="prepare-variant-options" class="grid grid-cols-2 gap-2"></div>
             <p id="prepare-variant-hint" class="text-mafia-cream/65 text-xs mt-3"></p>
         </section>
+        <section id="prepare-urban-section" class="urban-config bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 hidden" aria-labelledby="prepare-urban-title">
+            <div class="mb-4">
+                <div>
+                    <h2 id="prepare-urban-title" class="font-display text-mafia-gold text-lg tracking-widest">Состав города</h2>
+                    <p class="text-mafia-cream/55 text-xs mt-1">Сумма ролей должна совпадать с числом игроков.</p>
+                </div>
+            </div>
+            <div id="prepare-urban-player-count"></div>
+            <div class="urban-config__divider" aria-hidden="true"></div>
+            <div id="prepare-urban-role-counts" class="urban-config__roles"></div>
+            <div id="prepare-urban-total" class="urban-config__total" role="status" aria-live="polite"></div>
+        </section>
         <button type="button" data-action="prepare-continue" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold text-base uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">Продолжить</button>
     </div>
 </div>

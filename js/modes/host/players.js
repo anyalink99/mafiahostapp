@@ -1,5 +1,5 @@
 /**
- * Хост-режим — игровой стол: сетка игроков №1–№10 (статус/фолы/псевдоним),
+ * Хост-режим — игровой стол: сетка игроков (статус/фолы/псевдоним),
  * фолы с дисквалификацией, очередь на голосование, статусы выбытия
  * и точечные патчи слотов без полного перерендера.
  *
@@ -139,9 +139,9 @@
   app.renderPlayersTo = function (targetId) {
     var list = document.getElementById(targetId || 'players-list');
     if (!list) return false;
-    list.className =
-      'grid grid-flow-col grid-cols-2 grid-rows-5 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
+    app.applyPlayerGridLayout(list, app.players.length);
     list.innerHTML = '';
+    var compact = app.players.length > 10;
     var playOrder = app.playerSeatIndicesForTwoColumnDisplay(app.players.length);
     for (var qi = 0; qi < playOrder.length; qi++) {
       var p = app.players[playOrder[qi]];
@@ -154,7 +154,8 @@
           {
             type: 'button',
             className:
-              'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
+              'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-1.5 py-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2 ' +
+              (compact ? 'player-slot--compact' : '') +
               (out ? ' opacity-[0.55]' : ''),
             'data-action': 'player-slot-open',
             'data-player-id': String(p.id),
@@ -175,7 +176,8 @@
                   'span',
                   {
                     className:
-                      'font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl',
+                      'font-display font-bold leading-none tracking-wide text-mafia-gold tabular-nums ' +
+                      (compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl'),
                   },
                   '№' + p.id
                 ),
@@ -195,7 +197,8 @@
                       'span',
                       {
                         className:
-                          'font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95',
+                          'font-sans font-semibold leading-none tabular-nums text-mafia-cream/95 ' +
+                          (compact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'),
                       },
                       'ф: ' + p.fouls
                     )
@@ -207,7 +210,10 @@
               'div',
               {
                 className:
-                  'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
+                  'player-slot-nick mt-1 w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 text-center font-sans leading-snug ' +
+                  (compact
+                    ? 'min-h-[1.25rem] py-0.5 text-xs '
+                    : 'mb-2 min-h-[1.75rem] py-1 text-sm ') +
                   (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30'),
                 role: 'presentation',
               },

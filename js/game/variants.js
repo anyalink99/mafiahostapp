@@ -56,9 +56,13 @@
     if (!app.experimentalModesEnabled) return;
     if (app.hasResettableState && app.hasResettableState()) return;
     var cfg = app.variantConfig(app.prepareConfig && app.prepareConfig.variant);
-    if (!cfg || !cfg.hostDeck) return;
-    app.roles = cfg.hostDeck.slice();
+    if (!cfg || (!cfg.hostDeck && !cfg.getHostDeck)) return;
+    var deck = cfg.getHostDeck ? cfg.getHostDeck(app.prepareConfig) : cfg.hostDeck.slice();
+    if (!Array.isArray(deck) || !deck.length) return;
+    app.roles = deck.slice();
+    if (app.resizeHostPlayers) app.resizeHostPlayers(app.roles.length);
     app.revealedIndices = [];
+    app.summaryRoleByPlayerId = {};
     if (app.saveState) app.saveState();
   };
 })(window.MafiaApp);
