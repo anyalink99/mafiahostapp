@@ -60,6 +60,11 @@ equal(saved.savedByBeauty, 8, 'защита красотки записана');
 equal(saved.healed, 9, 'лечение врача записано');
 equal(saved.donFoundSheriff, true, 'дон находит шерифа');
 equal(saved.sheriffFoundMafia, true, 'шериф находит мафию');
+equal(saved.sheriffFoundManiac, false, 'мафия не определяется как маньяк');
+
+var maniacCheck = app.resolveUrbanNightActions({ sheriffCheck: 5 });
+equal(maniacCheck.sheriffFoundMafia, false, 'маньяк не определяется как мафия');
+equal(maniacCheck.sheriffFoundManiac, true, 'шериф узнаёт маньяка');
 
 var beautyShot = app.resolveUrbanNightActions({
   mafiaShot: 7,
@@ -73,5 +78,6 @@ equal(beautyShot.deaths, [8, 9], 'врач спасает красотку, но
 var negativeChecks = app.resolveUrbanNightActions({ donCheck: 2, sheriffCheck: 4 });
 equal(negativeChecks.donFoundSheriff, false, 'дон получает отрицательную проверку');
 equal(negativeChecks.sheriffFoundMafia, false, 'шериф получает отрицательную проверку');
+equal(negativeChecks.sheriffFoundManiac, false, 'мирный не определяется как маньяк');
 
 console.log('Все тесты городской ночи прошли');

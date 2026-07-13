@@ -111,7 +111,9 @@
         typeof a.donCheck === 'number' ? (res.donFoundSheriff ? ' — шериф' : ' — не шериф') : '';
       var sheriffResult =
         typeof a.sheriffCheck === 'number'
-          ? res.sheriffFoundMafia
+          ? res.sheriffFoundManiac
+            ? ' — маньяк'
+            : res.sheriffFoundMafia
             ? ' — мафия'
             : ' — не мафия'
           : '';

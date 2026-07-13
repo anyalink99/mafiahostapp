@@ -417,6 +417,19 @@ function findChrome() {
     );
   });
   if (!desktopNightAssigned) errors.push('городская ночь: выбранная цель не записалась в плитку');
+  var sheriffManiacResult = await dpage.evaluate(function () {
+    var app = window.MafiaApp;
+    var maniacIndex = app.roles.indexOf('Маньяк');
+    app.showUrbanNightTargetModal('sheriffCheck');
+    app.pickUrbanNightTarget(maniacIndex + 1);
+    var tile = document.querySelector(
+      '#urban-night-actions [data-night-action="sheriffCheck"]'
+    );
+    return tile ? tile.textContent.toLowerCase() : '';
+  });
+  if (sheriffManiacResult.indexOf('маньяк') === -1) {
+    errors.push('городская ночь: проверка шерифа не показала маньяка ведущему');
+  }
   await dpage.evaluate(function () {
     window.MafiaApp.closeUrbanNightActions();
   });

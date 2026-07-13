@@ -184,6 +184,9 @@
       sheriffFoundMafia:
         typeof actions.sheriffCheck === 'number' &&
         ['mafia', 'don'].indexOf(roleCodeAtSeat(actions.sheriffCheck)) !== -1,
+      sheriffFoundManiac:
+        typeof actions.sheriffCheck === 'number' &&
+        roleCodeAtSeat(actions.sheriffCheck) === 'maniac',
     };
   };
 
@@ -251,7 +254,9 @@
       return code === 'sheriff' ? 'Шериф' : 'Не шериф';
     }
     if (action.check === 'mafia') {
-      return code === 'mafia' || code === 'don' ? 'Мафия' : 'Не мафия';
+      if (code === 'mafia' || code === 'don') return 'Мафия';
+      if (code === 'maniac') return 'Маньяк';
+      return 'Не мафия';
     }
     return '';
   }

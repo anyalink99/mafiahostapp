@@ -21,15 +21,19 @@
 
   app.urbanSuggestedCounts = function (playerCount) {
     var n = Math.max(7, Math.min(16, parseInt(playerCount, 10) || 12));
-    var mafia = n >= 15 ? 3 : n >= 12 ? 2 : 1;
-    var fixed = mafia + 5; // дон, шериф, маньяк, доктор, красотка
+    var mafia = n >= 15 ? 3 : n >= 8 ? 2 : 1;
+    var don = n >= 11 ? 1 : 0;
+    var beauty = n >= 10 ? 1 : 0;
+    // Шериф, маньяк и доктор участвуют при любом размере стола.
+    // Красотка добавляется на 10, дон — на 11, третья мафия — на 15 игроков.
+    var fixed = mafia + don + beauty + 3;
     return {
       mafia: mafia,
-      don: 1,
+      don: don,
       sheriff: 1,
       maniac: 1,
       doctor: 1,
-      beauty: 1,
+      beauty: beauty,
       peaceful: Math.max(0, n - fixed),
     };
   };
