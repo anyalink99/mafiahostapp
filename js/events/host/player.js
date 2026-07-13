@@ -20,14 +20,29 @@
     app.emit('player-role-picked', 'modal-player-prepare-role-icons');
   };
 
-  app.uiActionHandlers['player-modal-foul'] = function (_el, _event, ui) {
+  app.uiActionHandlers['player-modal-foul-plus'] = function (_el, _event, ui) {
     ui.withModalPlayerId(function (pid) {
       var player = app.players.find(function (x) {
         return x.id === pid;
       });
       if (!player || player.eliminationReason) return;
-      if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
       app.addFoul(pid);
+      if (player.eliminationReason) {
+        if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
+      } else if (app.syncPlayerModalFoulControl) {
+        app.syncPlayerModalFoulControl(pid);
+      }
+    });
+  };
+
+  app.uiActionHandlers['player-modal-foul-minus'] = function (_el, _event, ui) {
+    ui.withModalPlayerId(function (pid) {
+      var player = app.players.find(function (x) {
+        return x.id === pid;
+      });
+      if (!player || player.eliminationReason || player.fouls <= 0) return;
+      app.removeFoul(pid);
+      if (app.syncPlayerModalFoulControl) app.syncPlayerModalFoulControl(pid);
     });
   };
 

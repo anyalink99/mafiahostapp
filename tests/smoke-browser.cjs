@@ -105,6 +105,65 @@ function findChrome() {
     process.exit(1);
   }
 
+  // Deep-link любого экспериментального варианта включает эксперименты,
+  // выбирает host-вариант и сразу открывает экран подготовки.
+  var linkPage = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: 'block',
+  });
+  linkPage.on('console', function (msg) {
+    if (msg.type() === 'error') errors.push('gameType console.error: ' + msg.text());
+  });
+  linkPage.on('pageerror', function (err) {
+    errors.push('gameType pageerror: ' + err.message);
+  });
+  await linkPage.addInitScript(function () {
+    localStorage.setItem('mafia_experimental_modes', '0');
+    localStorage.setItem(
+      'mafia_prepare_config',
+      JSON.stringify({ mode: 'auto', variant: 'standard' })
+    );
+  });
+  var gameTypes = ['kasper', 'merlin', 'donskaya', 'urban'];
+  for (var gti = 0; gti < gameTypes.length; gti++) {
+    var gameType = gameTypes[gti];
+    await linkPage.goto('http://127.0.0.1:' + port + '/?gameType=' + gameType, {
+      waitUntil: 'networkidle',
+    });
+    await linkPage.waitForSelector('#prepare-mode-screen.active', { timeout: 3000 });
+    var gameTypeState = await linkPage.evaluate(function () {
+      var app = window.MafiaApp;
+      var selected = document.querySelector(
+        '#prepare-variant-options [data-variant].prepare-toggle-active'
+      );
+      return {
+        enabled: app.experimentalModesEnabled,
+        mode: app.prepareConfig.mode,
+        variant: app.prepareConfig.variant,
+        selected: selected ? selected.getAttribute('data-variant') : '',
+        persisted: localStorage.getItem('mafia_experimental_modes'),
+      };
+    });
+    if (
+      !gameTypeState.enabled ||
+      gameTypeState.mode !== 'host' ||
+      gameTypeState.variant !== gameType ||
+      gameTypeState.selected !== gameType ||
+      gameTypeState.persisted !== '1'
+    ) {
+      errors.push('gameType=' + gameType + ': неверное состояние ' + JSON.stringify(gameTypeState));
+    }
+  }
+  await linkPage.setViewportSize({ width: 1366, height: 900 });
+  await linkPage.goto('http://127.0.0.1:' + port + '/?gameType=URBAN', {
+    waitUntil: 'networkidle',
+  });
+  await linkPage.waitForSelector(
+    '#prepare-mode-screen.active [data-variant="urban"].prepare-toggle-active',
+    { timeout: 3000 }
+  );
+  await linkPage.close();
+
   // Пройтись по основным экранам через реестр рендереров.
   var screens = [
     'prepare-mode-screen',
@@ -127,6 +186,56 @@ function findChrome() {
     return document.querySelectorAll('#players-list [data-player-id]').length;
   });
   if (slots !== 10) errors.push('game-screen: ожидалось 10 слотов игроков, получено ' + slots);
+
+  // В модалке игрока фол меняется отдельными кнопками −/+, без закрытия модалки.
+  var foulInitial = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.players[0].fouls = 0;
+    app.showPlayerActionsModal(1);
+    var minus = document.querySelector('[data-action="player-modal-foul-minus"]');
+    var count = document.getElementById('modal-player-foul-count');
+    return (minus && minus.disabled ? 'disabled' : 'enabled') + ':' + count.textContent;
+  });
+  if (foulInitial !== 'disabled:0 / 4') {
+    errors.push('контрол фолов: неверное начальное состояние ' + foulInitial);
+  }
+  await page.click('[data-action="player-modal-foul-plus"]');
+  var foulAdded = await page.evaluate(function () {
+    var modal = document.getElementById('modal-player-actions');
+    var count = document.getElementById('modal-player-foul-count');
+    return (
+      window.MafiaApp.players[0].fouls +
+      ':' +
+      count.textContent +
+      ':' +
+      modal.hasAttribute('data-open')
+    );
+  });
+  if (foulAdded !== '1:1 / 4:true') {
+    errors.push('контрол фолов: плюс не обновил счётчик ' + foulAdded);
+  }
+  await page.click('[data-action="player-modal-foul-minus"]');
+  var foulRemoved = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var minus = document.querySelector('[data-action="player-modal-foul-minus"]');
+    var count = document.getElementById('modal-player-foul-count');
+    var result =
+      app.players[0].fouls +
+      ':' +
+      count.textContent +
+      ':' +
+      (minus.disabled ? 'disabled' : 'enabled');
+    app.hidePlayerActionsModal();
+    app.bestMoveByPlayerId = {};
+    app.protocolByPlayerId = {};
+    app.opinionByPlayerId = {};
+    app.bonusNoteByPlayerId = {};
+    app.saveState();
+    return result;
+  });
+  if (foulRemoved !== '0:0 / 4:disabled') {
+    errors.push('контрол фолов: минус не обновил счётчик ' + foulRemoved);
+  }
 
   // «Городская»: динамический состав на верхней границе (16 игроков).
   var urbanChecks = await page.evaluate(function () {
@@ -247,6 +356,7 @@ function findChrome() {
       'seatById',
       'withAutoModalSeatId',
       'addAutoFoul',
+      'removeAutoFoul',
       'toggleAutoNominee',
       'setAutoElim',
       'bindRevealHoldGestures',
@@ -322,6 +432,22 @@ function findChrome() {
   if (autoPhase !== 'reveal:10')
     errors.push('startFreshAutoGame: ожидалось reveal:10, получено ' + autoPhase);
   await page.waitForSelector('#auto-reveal-screen.active', { timeout: 3000 });
+
+  await page.evaluate(function () {
+    window.MafiaApp.showAutoPlayerActionsModal(1);
+  });
+  await page.click('[data-action="auto-player-modal-foul-plus"]');
+  await page.click('[data-action="auto-player-modal-foul-minus"]');
+  var autoFoulControl = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var count = document.getElementById('modal-auto-player-foul-count');
+    var minus = document.querySelector('[data-action="auto-player-modal-foul-minus"]');
+    app.hideAutoPlayerActionsModal();
+    return app.autoState.seats[0].fouls + ':' + count.textContent + ':' + minus.disabled;
+  });
+  if (autoFoulControl !== '0:0 / 4:true') {
+    errors.push('автономный контрол фолов: неверное состояние ' + autoFoulControl);
+  }
 
   // ── Десктоп-контекст (lg+): desktop-shell/player-panel/setup-slot работают
   // через официальные API ядра (перехватчики модалок, nav-гварды, события). ──
@@ -422,9 +548,7 @@ function findChrome() {
     var maniacIndex = app.roles.indexOf('Маньяк');
     app.showUrbanNightTargetModal('sheriffCheck');
     app.pickUrbanNightTarget(maniacIndex + 1);
-    var tile = document.querySelector(
-      '#urban-night-actions [data-night-action="sheriffCheck"]'
-    );
+    var tile = document.querySelector('#urban-night-actions [data-night-action="sheriffCheck"]');
     return tile ? tile.textContent.toLowerCase() : '';
   });
   if (sheriffManiacResult.indexOf('маньяк') === -1) {

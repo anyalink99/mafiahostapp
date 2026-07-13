@@ -13,7 +13,14 @@
         </div>
         <div id="modal-player-actions-when-active">
             <div class="flex flex-col gap-2">
-                <button type="button" data-action="player-modal-foul" class="w-full py-3 rounded border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Фол (+1)</button>
+                <div class="grid grid-cols-[1fr_auto_auto] gap-2" aria-label="Фолы игрока">
+                    <div class="flex items-center justify-between rounded border border-mafia-border bg-mafia-card px-3 text-mafia-cream">
+                        <span class="font-semibold text-sm uppercase tracking-wider">Фол</span>
+                        <output id="modal-player-foul-count" class="font-display text-lg tabular-nums text-mafia-gold" aria-live="polite">0 / 4</output>
+                    </div>
+                    <button type="button" data-action="player-modal-foul-minus" class="flex h-12 w-12 items-center justify-center rounded border border-mafia-border bg-mafia-card text-2xl leading-none text-mafia-cream transition-colors hover:border-mafia-gold/45 hover:text-mafia-gold disabled:cursor-not-allowed disabled:opacity-40" aria-label="Убрать фол">−</button>
+                    <button type="button" data-action="player-modal-foul-plus" class="flex h-12 w-12 items-center justify-center rounded border border-mafia-border bg-mafia-card text-2xl leading-none text-mafia-cream transition-colors hover:border-mafia-gold/45 hover:text-mafia-gold disabled:cursor-not-allowed disabled:opacity-40" aria-label="Добавить фол">+</button>
+                </div>
                 <button type="button" data-action="player-modal-vote" class="w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors">Выставить</button>
             </div>
             <div class="mt-5 flex flex-wrap justify-center gap-3">

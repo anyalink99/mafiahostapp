@@ -419,6 +419,19 @@
 
   // ============ Auto player modal ============
 
+  app.syncAutoPlayerModalFoulControl = function (seatId) {
+    var seat = A.seatById(seatId);
+    if (!seat) return;
+    var modal = el('modal-auto-player-actions');
+    if (!modal) return;
+    var count = el('modal-auto-player-foul-count');
+    var minus = modal.querySelector('[data-action="auto-player-modal-foul-minus"]');
+    var plus = modal.querySelector('[data-action="auto-player-modal-foul-plus"]');
+    if (count) count.textContent = (seat.fouls || 0) + ' / 4';
+    if (minus) minus.disabled = !!seat.eliminationReason || !seat.fouls;
+    if (plus) plus.disabled = !!seat.eliminationReason || seat.fouls >= 4;
+  };
+
   app.showAutoPlayerActionsModal = function (seatId) {
     var seat = A.seatById(seatId);
     if (!seat) return;
@@ -436,12 +449,7 @@
     if (whenOut) whenOut.classList.toggle('hidden', !out);
 
     var inQueue = app.autoState.day && app.autoState.day.nominees.indexOf(seatId) !== -1;
-    var foulBtn = modal.querySelector('[data-action="auto-player-modal-foul"]');
-    if (foulBtn) {
-      foulBtn.disabled = seat.fouls >= 4;
-      foulBtn.classList.toggle('opacity-55', foulBtn.disabled);
-      foulBtn.classList.toggle('cursor-not-allowed', foulBtn.disabled);
-    }
+    app.syncAutoPlayerModalFoulControl(seatId);
     var voteBtn = modal.querySelector('[data-action="auto-player-modal-vote"]');
     if (voteBtn) {
       voteBtn.classList.toggle('hidden', out);

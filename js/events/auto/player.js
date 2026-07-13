@@ -17,13 +17,24 @@
     app.hideAutoPlayerActionsModal();
   };
 
-  app.uiActionHandlers['auto-player-modal-foul'] = function () {
+  app.uiActionHandlers['auto-player-modal-foul-plus'] = function () {
     var I = app._autoInternals;
     I.withAutoModalSeatId(function (pid) {
       var seat = I.seatById(pid);
-      if (!seat) return;
-      app.hideAutoPlayerActionsModal();
+      if (!seat || seat.eliminationReason) return;
       I.addAutoFoul(pid);
+      if (seat.eliminationReason) app.hideAutoPlayerActionsModal();
+      else if (app.syncAutoPlayerModalFoulControl) app.syncAutoPlayerModalFoulControl(pid);
+    });
+  };
+
+  app.uiActionHandlers['auto-player-modal-foul-minus'] = function () {
+    var I = app._autoInternals;
+    I.withAutoModalSeatId(function (pid) {
+      var seat = I.seatById(pid);
+      if (!seat || seat.eliminationReason || seat.fouls <= 0) return;
+      I.removeAutoFoul(pid);
+      if (app.syncAutoPlayerModalFoulControl) app.syncAutoPlayerModalFoulControl(pid);
     });
   };
 

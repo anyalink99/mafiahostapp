@@ -114,8 +114,8 @@
           ? res.sheriffFoundManiac
             ? ' — маньяк'
             : res.sheriffFoundMafia
-            ? ' — мафия'
-            : ' — не мафия'
+              ? ' — мафия'
+              : ' — не мафия'
           : '';
       var nightResult =
         res.deaths && res.deaths.length

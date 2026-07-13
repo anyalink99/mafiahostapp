@@ -9,6 +9,21 @@
   var H = (app._host = app._host || {});
   var ELIM_REASON_TITLES = app.ELIM_REASON_TITLES;
 
+  app.syncPlayerModalFoulControl = function (id) {
+    var p = app.players.find(function (x) {
+      return x.id === id;
+    });
+    if (!p) return;
+    var modal = document.getElementById('modal-player-actions');
+    if (!modal) return;
+    var count = document.getElementById('modal-player-foul-count');
+    var minus = modal.querySelector('[data-action="player-modal-foul-minus"]');
+    var plus = modal.querySelector('[data-action="player-modal-foul-plus"]');
+    if (count) count.textContent = (p.fouls || 0) + ' / 4';
+    if (minus) minus.disabled = !!p.eliminationReason || !p.fouls;
+    if (plus) plus.disabled = !!p.eliminationReason || p.fouls >= 4;
+  };
+
   app.syncPlayerNickFromModal = function () {
     var m = document.getElementById('modal-player-actions');
     var inp = document.getElementById('modal-player-nick');
@@ -108,13 +123,8 @@
       }
     }
     if (!out && !nickOnlyMode) {
-      var foulBtn = m.querySelector('[data-action="player-modal-foul"]');
       var voteBtn = m.querySelector('[data-action="player-modal-vote"]');
-      if (foulBtn) {
-        foulBtn.disabled = false;
-        foulBtn.className =
-          'w-full py-3 rounded border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors';
-      }
+      app.syncPlayerModalFoulControl(id);
       var voteGold =
         'w-full py-3 rounded border-2 border-mafia-gold/60 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold text-sm uppercase tracking-wider cursor-pointer transition-colors';
       if (voteBtn) {

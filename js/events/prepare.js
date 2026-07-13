@@ -8,6 +8,38 @@
 
   app.uiActionHandlers = app.uiActionHandlers || {};
 
+  /**
+   * Deep-link экспериментального варианта: ?gameType=kasper|merlin|donskaya|urban.
+   * Параметр имеет приоритет над сохранёнными настройками, но не применяется
+   * внутри MU-iframe, где экспериментальные режимы намеренно отключены.
+   */
+  app.applyGameTypeFromQuery = function () {
+    if (app.MU && app.MU.isActive && app.MU.isActive()) return false;
+
+    var raw;
+    try {
+      raw = new URLSearchParams(window.location.search).get('gameType') || '';
+    } catch (e) {
+      return false;
+    }
+    var gameType = raw.trim().toLowerCase();
+    if (!gameType || gameType === 'standard') return false;
+
+    var cfg = app.gameVariants && app.gameVariants[gameType];
+    if (!cfg) return false;
+
+    if (app.setExperimentalModes) app.setExperimentalModes(true);
+    else app.experimentalModesEnabled = true;
+    app.prepareConfig.mode = 'host';
+    app.prepareConfig.variant = gameType;
+    if (gameType === 'urban' && app.ensureUrbanPrepareConfig) app.ensureUrbanPrepareConfig();
+    if (app._autoInternals && app._autoInternals.savePrepareConfig) {
+      app._autoInternals.savePrepareConfig();
+    }
+    app.navigateToScreen('prepare-mode-screen');
+    return true;
+  };
+
   app.uiActionHandlers['prepare-enter'] = function () {
     var I = app._autoInternals;
     I.loadAuto();

@@ -47,6 +47,7 @@
     seatById: A.seatById,
     withAutoModalSeatId: A.withAutoModalSeatId,
     addAutoFoul: A.addAutoFoul,
+    removeAutoFoul: A.removeAutoFoul,
     toggleAutoNominee: A.toggleAutoNominee,
     setAutoElim: A.setAutoElim,
     bindRevealHoldGestures: A.bindRevealHoldGestures,
