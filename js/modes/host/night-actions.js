@@ -169,6 +169,13 @@
     if (typeof actions.doctorHeal === 'number' && deaths.indexOf(actions.doctorHeal) !== -1) {
       removeId(deaths, actions.doctorHeal);
       healed = actions.doctorHeal;
+      // Лечение подстреленной красотки спасает и её пациента.
+      if (
+        beautySeatsShot.indexOf(actions.doctorHeal) !== -1 &&
+        typeof actions.beautyVisit === 'number'
+      ) {
+        removeId(deaths, actions.beautyVisit);
+      }
     }
     deaths.sort(function (a, b) {
       return a - b;

@@ -73,7 +73,27 @@ var beautyShot = app.resolveUrbanNightActions({
   doctorHeal: 7,
 });
 equal(beautyShot.beautySeatsShot, [7], 'выстрел в красотку распознан');
-equal(beautyShot.deaths, [8, 9], 'врач спасает красотку, но её гость и вторая цель погибают');
+equal(beautyShot.deaths, [9], 'лечение красотки спасает её и пациента');
+
+var beautyPatientHealed = app.resolveUrbanNightActions({
+  mafiaShot: 7,
+  maniacShot: 9,
+  beautyVisit: 8,
+  doctorHeal: 8,
+});
+equal(beautyPatientHealed.deaths, [7, 9], 'лечение пациента не спасает красотку');
+
+var beautyAndPatientShot = app.resolveUrbanNightActions({
+  mafiaShot: 7,
+  maniacShot: 8,
+  beautyVisit: 8,
+  doctorHeal: 7,
+});
+equal(
+  beautyAndPatientShot.deaths,
+  [],
+  'лечение красотки спасает пациента даже при отдельном выстреле в него'
+);
 
 var negativeChecks = app.resolveUrbanNightActions({ donCheck: 2, sheriffCheck: 4 });
 equal(negativeChecks.donFoundSheriff, false, 'дон получает отрицательную проверку');
