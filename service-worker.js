@@ -1,5 +1,5 @@
 // BUILD:PRECACHE-BEGIN (автогенерация scripts/build-sw.cjs — не редактировать руками)
-var CACHE_NAME = 'mafia-host-static-77e3983206f7';
+var CACHE_NAME = 'mafia-host-static-57c6dca82c9d';
 var ASSETS = [
   './',
   './audio/1.mp3',
@@ -62,6 +62,7 @@ var ASSETS = [
   './js/events/auto/night.js',
   './js/events/auto/player.js',
   './js/events/auto/vote.js',
+  './js/events/host/night-actions.js',
   './js/events/host/player.js',
   './js/events/host/side.js',
   './js/events/host/timer.js',
@@ -76,6 +77,7 @@ var ASSETS = [
   './js/game/kasper.js',
   './js/game/merlin.js',
   './js/game/standard.js',
+  './js/game/urban.js',
   './js/game/variants.js',
   './js/game/vote-rules.js',
   './js/main.js',
@@ -92,6 +94,7 @@ var ASSETS = [
   './js/modes/auto/setup.js',
   './js/modes/auto/vote.js',
   './js/modes/host/cards.js',
+  './js/modes/host/night-actions.js',
   './js/modes/host/player-modal.js',
   './js/modes/host/players.js',
   './js/modes/host/prepare-players.js',
@@ -110,6 +113,7 @@ var ASSETS = [
   './js/summary/mu-export.js',
   './js/summary/player-data.js',
   './js/summary/summary.js',
+  './js/ui/desktop-night-target.js',
   './js/ui/desktop-player-panel.js',
   './js/ui/desktop-setup-slot.js',
   './js/ui/desktop-shell.js',

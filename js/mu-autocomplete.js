@@ -13,6 +13,7 @@
 
   var attached = new WeakSet();
   var MU_ORIGIN = 'https://mafiauniverse.org';
+  var dropdownSequence = 0;
 
   function debounce(fn, ms) {
     var t;
@@ -29,16 +30,55 @@
   function buildDropdown() {
     var dd = document.createElement('div');
     dd.className = 'mu-ac-dropdown';
+    dd.id = 'mu-ac-listbox-' + ++dropdownSequence;
+    dd.setAttribute('role', 'listbox');
+    dd.setAttribute('aria-label', 'Игроки MafiaUniverse');
     dd.style.display = 'none';
     document.body.appendChild(dd);
     return dd;
   }
 
   function positionDropdown(dd, input) {
+    if (!dd || !input || dd.style.display === 'none') return;
     var r = input.getBoundingClientRect();
-    dd.style.left = r.left + window.scrollX + 'px';
-    dd.style.top = r.bottom + window.scrollY + 2 + 'px';
-    dd.style.minWidth = r.width + 'px';
+    if (!r.width || !r.height || !input.getClientRects().length) return;
+
+    // visualViewport учитывает экранную клавиатуру на телефоне. Координаты
+    // getBoundingClientRect и position:fixed находятся в одной системе; offset
+    // нужен при сдвиге visual viewport (клавиатура, масштабирование страницы).
+    var viewport = window.visualViewport;
+    var viewportLeft = viewport ? viewport.offsetLeft : 0;
+    var viewportTop = viewport ? viewport.offsetTop : 0;
+    var viewportWidth = viewport ? viewport.width : document.documentElement.clientWidth;
+    var viewportHeight = viewport ? viewport.height : document.documentElement.clientHeight;
+    var viewportRight = viewportLeft + viewportWidth;
+    var viewportBottom = viewportTop + viewportHeight;
+    var edge = 8;
+    var gap = 5;
+
+    // Ширина всегда совпадает с полем и никогда не вылезает за края экрана.
+    var width = Math.min(r.width, Math.max(0, viewportWidth - edge * 2));
+    var left = Math.max(viewportLeft + edge, Math.min(r.left, viewportRight - edge - width));
+    dd.style.width = Math.max(0, Math.floor(width)) + 'px';
+    dd.style.minWidth = '0';
+    dd.style.maxWidth = Math.max(0, Math.floor(viewportWidth - edge * 2)) + 'px';
+    dd.style.left = Math.round(left) + 'px';
+
+    var roomBelow = Math.max(0, viewportBottom - edge - r.bottom - gap);
+    var roomAbove = Math.max(0, r.top - viewportTop - edge - gap);
+    var preferredHeight = Math.min(dd.scrollHeight || 320, 320);
+    var placeBelow = roomBelow >= Math.min(preferredHeight, 180) || roomBelow >= roomAbove;
+    var available = placeBelow ? roomBelow : roomAbove;
+    var maxHeight = Math.max(72, Math.min(320, available));
+    dd.style.maxHeight = Math.floor(maxHeight) + 'px';
+
+    // После max-height можно точно узнать фактическую высоту и аккуратно
+    // поставить список над полем, если под ним не осталось места.
+    var dropdownHeight = Math.min(dd.scrollHeight, maxHeight);
+    var top = placeBelow ? r.bottom + gap : r.top - gap - dropdownHeight;
+    top = Math.max(viewportTop + edge, Math.min(top, viewportBottom - edge - dropdownHeight));
+    dd.style.top = Math.round(top) + 'px';
+    dd.setAttribute('data-placement', placeBelow ? 'bottom' : 'top');
   }
 
   // Данные приходят с MafiaUniverse (ники, заметки, URL аватарок) — рендерим
@@ -50,7 +90,18 @@
   }
 
   function stateMessage(className, text) {
-    return app.h('div', { className: className }, text);
+    return app.h('div', { className: className, role: 'status' }, text);
+  }
+
+  function resultsHeader(count) {
+    var ending = count === 1 ? 'результат' : count > 1 && count < 5 ? 'результата' : 'результатов';
+    return app.h('div', { className: 'mu-ac-header', 'aria-hidden': 'true' }, [
+      app.h('span', { className: 'mu-ac-header__source' }, [
+        app.h('span', { className: 'mu-ac-header__mark' }),
+        'MafiaUniverse',
+      ]),
+      app.h('span', { className: 'mu-ac-header__count' }, count + ' ' + ending),
+    ]);
   }
 
   function avatarEl(item) {
@@ -74,16 +125,27 @@
       return;
     }
     var frag = document.createDocumentFragment();
+    frag.appendChild(resultsHeader(items.length));
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
       frag.appendChild(
-        app.h('div', { className: 'mu-ac-item', 'data-mu-ac-index': String(i) }, [
-          avatarEl(it),
-          app.h('div', { className: 'mu-ac-item__text' }, [
-            app.h('div', { className: 'mu-ac-item__nick' }, it.label),
-            it.note ? app.h('div', { className: 'mu-ac-item__note' }, it.note) : null,
-          ]),
-        ])
+        app.h(
+          'div',
+          {
+            id: dd.id + '-option-' + i,
+            className: 'mu-ac-item',
+            'data-mu-ac-index': String(i),
+            role: 'option',
+            'aria-selected': 'false',
+          },
+          [
+            avatarEl(it),
+            app.h('div', { className: 'mu-ac-item__text' }, [
+              app.h('div', { className: 'mu-ac-item__nick' }, it.label),
+              it.note ? app.h('div', { className: 'mu-ac-item__note' }, it.note) : null,
+            ]),
+          ]
+        )
       );
     }
     renderState(dd, frag);
@@ -98,6 +160,11 @@
     options = options || {};
     var onSelect = typeof options.onSelect === 'function' ? options.onSelect : null;
     var onClear = typeof options.onClear === 'function' ? options.onClear : null;
+
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-haspopup', 'listbox');
+    input.setAttribute('aria-expanded', 'false');
 
     // Оборачиваем input в <span class="mu-input-wrap"> и кладём туда badge.
     // Так badge позиционируется относительно прямоугольника input-а, а не
@@ -190,9 +257,59 @@
     var activeIndex = -1;
     var lastTerm = '';
     var requestSeq = 0;
+    var positionFrame = 0;
+
+    function ensureDropdown() {
+      if (dd) return dd;
+      dd = buildDropdown();
+      input.setAttribute('aria-controls', dd.id);
+
+      // На мыши сохраняем фокус в input, на таче не блокируем pan-y: так
+      // пользователь может начать прокрутку прямо с любой строки результата.
+      dd.addEventListener('mousedown', function (e) {
+        if (e.button === 0 && e.target.closest && e.target.closest('.mu-ac-item')) {
+          e.preventDefault();
+        }
+      });
+      dd.addEventListener('click', function (e) {
+        var item = e.target.closest && e.target.closest('.mu-ac-item');
+        if (!item || !dd.contains(item)) return;
+        var idx = parseInt(item.getAttribute('data-mu-ac-index'), 10);
+        if (!isNaN(idx)) selectByIndex(idx);
+      });
+      return dd;
+    }
+
+    function schedulePosition() {
+      if (!dd || dd.style.display === 'none') return;
+      if (positionFrame) cancelAnimationFrame(positionFrame);
+      positionFrame = requestAnimationFrame(function () {
+        positionFrame = 0;
+        positionDropdown(dd, input);
+      });
+    }
+
+    function showNode(node, busy) {
+      var dropdown = ensureDropdown();
+      dropdown.removeAttribute('title');
+      dropdown.setAttribute('aria-busy', busy ? 'true' : 'false');
+      renderState(dropdown, node);
+      input.setAttribute('aria-expanded', 'true');
+      positionDropdown(dropdown, input);
+    }
 
     function close() {
-      if (dd) dd.style.display = 'none';
+      requestSeq++;
+      if (positionFrame) {
+        cancelAnimationFrame(positionFrame);
+        positionFrame = 0;
+      }
+      if (dd) {
+        dd.style.display = 'none';
+        dd.setAttribute('aria-busy', 'false');
+      }
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
       activeIndex = -1;
     }
 
@@ -201,9 +318,7 @@
       if (term === lastTerm && dd && dd.style.display !== 'none') return;
       lastTerm = term;
 
-      if (!dd) dd = buildDropdown();
-      positionDropdown(dd, input);
-      renderState(dd, stateMessage('mu-ac-loading', 'Ищу…'));
+      showNode(stateMessage('mu-ac-loading', 'Ищу игроков…'), true);
 
       var mySeq = ++requestSeq;
       app.MU.searchPlayers(term)
@@ -212,10 +327,22 @@
           currentItems = items;
           activeIndex = -1;
           renderItems(dd, items);
+          dd.setAttribute('aria-busy', 'false');
+          positionDropdown(dd, input);
         })
         .catch(function (err) {
           if (mySeq !== requestSeq) return;
-          renderState(dd, stateMessage('mu-ac-error', String((err && err.message) || err)));
+          currentItems = [];
+          dd.setAttribute('aria-busy', 'false');
+          renderState(
+            dd,
+            stateMessage(
+              'mu-ac-error',
+              'Не удалось загрузить игроков. Проверь соединение и попробуй ещё раз.'
+            )
+          );
+          dd.title = String((err && err.message) || err || 'Ошибка поиска');
+          positionDropdown(dd, input);
         });
     }, 200);
 
@@ -293,6 +420,9 @@
           selectByIndex(activeIndex);
         }
       } else if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      } else if (e.key === 'Tab') {
         close();
       }
     });
@@ -302,31 +432,55 @@
       var nodes = dd.querySelectorAll('.mu-ac-item');
       for (var i = 0; i < nodes.length; i++) {
         nodes[i].classList.toggle('is-active', i === activeIndex);
+        nodes[i].setAttribute('aria-selected', i === activeIndex ? 'true' : 'false');
       }
       var active = nodes[activeIndex];
-      if (active && active.scrollIntoView) {
-        active.scrollIntoView({ block: 'nearest' });
+      if (active) {
+        input.setAttribute('aria-activedescendant', active.id);
+        var header = dd.querySelector('.mu-ac-header');
+        var stickyOffset = header ? header.offsetHeight : 0;
+        var itemTop = active.offsetTop;
+        var itemBottom = itemTop + active.offsetHeight;
+        var visibleTop = dd.scrollTop + stickyOffset;
+        var visibleBottom = dd.scrollTop + dd.clientHeight;
+        if (itemTop < visibleTop) dd.scrollTop = Math.max(0, itemTop - stickyOffset);
+        else if (itemBottom > visibleBottom) dd.scrollTop = itemBottom - dd.clientHeight;
+      } else {
+        input.removeAttribute('aria-activedescendant');
       }
     }
 
-    // клик по элементу выпадайки
-    document.addEventListener('mousedown', function (e) {
+    // Закрываем только при нажатии снаружи. Касание и scroll внутри dropdown
+    // принадлежат самому списку и не должны его схлопывать.
+    document.addEventListener('pointerdown', function (e) {
       if (!dd || dd.style.display === 'none') return;
       var target = e.target;
-      if (input.contains(target)) return;
-      var item = target.closest && target.closest('.mu-ac-item');
-      if (item && dd.contains(item)) {
-        e.preventDefault();
-        var idx = parseInt(item.getAttribute('data-mu-ac-index'), 10);
-        if (!isNaN(idx)) selectByIndex(idx);
-        return;
-      }
+      if (target === input || (wrap && wrap.contains(target)) || dd.contains(target)) return;
       close();
     });
 
-    // закрыть при смене размера окна / скролле
-    window.addEventListener('scroll', close, true);
-    window.addEventListener('resize', close);
+    document.addEventListener('focusin', function (e) {
+      if (!dd || dd.style.display === 'none') return;
+      if (e.target === input || dd.contains(e.target)) return;
+      close();
+    });
+
+    // При прокрутке контейнера или появлении экранной клавиатуры не закрываем
+    // подсказки, а привязываем их к новому положению поля.
+    window.addEventListener(
+      'scroll',
+      function (e) {
+        if (!dd || dd.style.display === 'none') return;
+        if (e.target === dd || (e.target && dd.contains(e.target))) return;
+        schedulePosition();
+      },
+      true
+    );
+    window.addEventListener('resize', schedulePosition);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', schedulePosition);
+      window.visualViewport.addEventListener('scroll', schedulePosition);
+    }
   };
 
   // =====================================================================

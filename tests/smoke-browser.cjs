@@ -180,6 +180,95 @@ function findChrome() {
     await page.waitForSelector('#' + screens[i] + '.active', { timeout: 3000 });
   }
 
+  // MU autocomplete: список совпадает с шириной поля, остаётся внутри viewport,
+  // прокручивается сам и поддерживает клавиатурный выбор.
+  await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.MU.searchPlayers = function () {
+      return Promise.resolve(
+        Array.from({ length: 18 }, function (_, i) {
+          return {
+            label: 'Игрок ' + (i + 1),
+            id: 1000 + i,
+            logoId: null,
+            note: 'Клуб с длинным названием · Москва',
+            avatarUrl: null,
+          };
+        })
+      );
+    };
+    app.navigateToScreen('summary-screen');
+    var input = document.getElementById('summary-host-name');
+    input.value = 'иг';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+  });
+  await page.waitForFunction(function () {
+    return document.querySelectorAll('.mu-ac-dropdown .mu-ac-item').length === 18;
+  });
+  var autocompleteLayout = await page.evaluate(function () {
+    var input = document.getElementById('summary-host-name');
+    var dd = document.querySelector('.mu-ac-dropdown');
+    var ir = input.getBoundingClientRect();
+    var dr = dd.getBoundingClientRect();
+    return {
+      widthDelta: Math.abs(ir.width - dr.width),
+      left: dr.left,
+      right: dr.right,
+      maxHeight: parseFloat(getComputedStyle(dd).maxHeight),
+      expanded: input.getAttribute('aria-expanded'),
+      controls: input.getAttribute('aria-controls') === dd.id,
+      inputFontSize: parseFloat(getComputedStyle(input).fontSize),
+      scrollRange: dd.scrollHeight - dd.clientHeight,
+    };
+  });
+  if (
+    autocompleteLayout.widthDelta > 1.5 ||
+    autocompleteLayout.left < 7 ||
+    autocompleteLayout.right > 383 ||
+    autocompleteLayout.maxHeight > 321 ||
+    autocompleteLayout.expanded !== 'true' ||
+    !autocompleteLayout.controls ||
+    autocompleteLayout.inputFontSize < 16 ||
+    autocompleteLayout.scrollRange < 100
+  ) {
+    errors.push('MU autocomplete: неверная геометрия ' + JSON.stringify(autocompleteLayout));
+  }
+  await page.evaluate(function () {
+    var dd = document.querySelector('.mu-ac-dropdown');
+    dd.scrollTop = 180;
+    dd.dispatchEvent(new Event('scroll'));
+  });
+  await page.waitForTimeout(50);
+  var autocompleteScroll = await page.evaluate(function () {
+    var dd = document.querySelector('.mu-ac-dropdown');
+    return {
+      visible: getComputedStyle(dd).display !== 'none',
+      scrollTop: dd.scrollTop,
+    };
+  });
+  if (!autocompleteScroll.visible || autocompleteScroll.scrollTop < 100) {
+    errors.push(
+      'MU autocomplete: список закрылся при прокрутке ' + JSON.stringify(autocompleteScroll)
+    );
+  }
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  var autocompletePick = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var input = document.getElementById('summary-host-name');
+    var result = input.value + ':' + input.getAttribute('aria-expanded');
+    // Не оставляем тестовое имя ведущего: hasResettableState справедливо
+    // считает его пользовательскими данными и блокирует смену варианта ниже.
+    app.summaryHostName = '';
+    input.value = '';
+    app.saveState();
+    return result;
+  });
+  if (autocompletePick !== 'Игрок 1:false') {
+    errors.push('MU autocomplete: клавиатурный выбор не сработал — ' + autocompletePick);
+  }
+
   // Игровой стол отрисовал 10 слотов игроков?
   var slots = await page.evaluate(function () {
     window.MafiaApp.navigateToScreen('game-screen');
@@ -200,18 +289,29 @@ function findChrome() {
     errors.push('контрол фолов: неверное начальное состояние ' + foulInitial);
   }
   await page.click('[data-action="player-modal-foul-plus"]');
+  await page.waitForTimeout(150);
   var foulAdded = await page.evaluate(function () {
     var modal = document.getElementById('modal-player-actions');
+    var panel = modal.querySelector('.modal-panel');
+    var panelRect = panel.getBoundingClientRect();
     var count = document.getElementById('modal-player-foul-count');
+    var close = panel.querySelector('.modal-panel__close-x');
+    var nick = document.getElementById('modal-player-nick');
     return (
       window.MafiaApp.players[0].fouls +
       ':' +
       count.textContent +
       ':' +
-      modal.hasAttribute('data-open')
+      modal.hasAttribute('data-open') +
+      ':' +
+      Math.round(window.innerHeight - panelRect.bottom) +
+      ':' +
+      getComputedStyle(close).display +
+      ':' +
+      parseFloat(getComputedStyle(nick).fontSize)
     );
   });
-  if (foulAdded !== '1:1 / 4:true') {
+  if (foulAdded !== '1:1 / 4:true:8:flex:16') {
     errors.push('контрол фолов: плюс не обновил счётчик ' + foulAdded);
   }
   await page.click('[data-action="player-modal-foul-minus"]');
