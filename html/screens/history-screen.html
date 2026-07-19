@@ -1,0 +1,29 @@
+<div id="history-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6 overflow-hidden">
+    <div class="flex items-center justify-between flex-shrink-0 py-2 lg:hidden">
+        <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
+        <span class="screen-title-label font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">История игр</span>
+    </div>
+    <main class="history-shell mh-content-cap flex-1 min-h-0 w-full max-w-6xl mx-auto">
+        <section class="history-archive-head" aria-labelledby="history-title">
+            <div class="min-w-0">
+                <p class="history-archive-head__eyebrow">Локальный архив ведущего</p>
+                <div class="flex min-w-0 items-baseline gap-3">
+                    <h1 id="history-title" class="history-archive-head__title">История игр</h1>
+                    <output id="history-count" class="history-archive-head__count" aria-live="polite">0</output>
+                </div>
+                <p class="history-archive-head__hint">Игры хранятся только на этом устройстве.</p>
+            </div>
+            <button type="button" id="history-save-current" data-action="history-save-current" class="history-save-current hidden">
+                <span class="history-save-current__mark" aria-hidden="true">+</span>
+                <span id="history-save-current-label">Сохранить текущую</span>
+            </button>
+        </section>
+        <div id="history-list" class="history-list" aria-live="polite"></div>
+        <section id="history-empty" class="history-empty hidden">
+            <div class="history-empty__seal" aria-hidden="true">∅</div>
+            <h2 class="history-empty__title">Архив пока пуст</h2>
+            <p class="history-empty__text">Сохрани текущую партию здесь или заверши игру — финальный результат попадёт в историю автоматически.</p>
+            <button type="button" data-action="prepare-enter" class="history-empty__action">Начать игру</button>
+        </section>
+    </main>
+</div>

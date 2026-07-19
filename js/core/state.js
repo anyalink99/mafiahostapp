@@ -133,6 +133,7 @@ window.MafiaApp = window.MafiaApp || {};
         gameSideNotesCollapsed: app.gameSideNotesCollapsed,
       };
       localStorage.setItem(app.STORAGE_KEY, JSON.stringify(payload));
+      if (app.scheduleCurrentGameHistorySync) app.scheduleCurrentGameHistorySync();
     } catch (e) {}
   };
 
@@ -292,6 +293,12 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.resetGameState = function (opts) {
     opts = opts || {};
+    // Сброс — граница между партиями. Текущую игру сначала архивируем,
+    // затем отвязываем новую пустую партию от сохранённой записи.
+    if (app.hasResettableState && app.hasResettableState() && app.saveCurrentGameToHistory) {
+      app.saveCurrentGameToHistory({ silent: true });
+    }
+    if (app.clearCurrentHistoryLink) app.clearCurrentHistoryLink();
     var keepNicks = !opts.resetNicknames;
     var prevNicks = app.players.map(function (p) {
       return p && p.nick != null ? String(p.nick).slice(0, 32) : '';

@@ -204,7 +204,7 @@
                 {
                   className:
                     'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
-                    (seat.fouls > 2
+                    (seat.fouls >= Math.max(1, (app.getFoulLimit ? app.getFoulLimit() : 4) - 1)
                       ? 'border-mafia-blood/55 bg-mafia-blood'
                       : 'border-mafia-border/35 bg-black/25'),
                 },
@@ -348,11 +348,12 @@
     var seat = A.seatById(seatId);
     if (!seat) return;
     if (A.isPhantomSeat(seat)) return;
-    if (seat.fouls >= 4) return;
+    var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
+    if (seat.fouls >= foulLimit) return;
     A.mutate(function (st) {
       seat.fouls++;
-      if (seat.fouls >= 4 && !seat.eliminationReason) {
-        seat.fouls = 4;
+      if (seat.fouls >= foulLimit && !seat.eliminationReason) {
+        seat.fouls = foulLimit;
         seat.eliminationReason = 'disqual';
         seat.alive = false;
         if (st.day) {
@@ -427,9 +428,10 @@
     var count = el('modal-auto-player-foul-count');
     var minus = modal.querySelector('[data-action="auto-player-modal-foul-minus"]');
     var plus = modal.querySelector('[data-action="auto-player-modal-foul-plus"]');
-    if (count) count.textContent = (seat.fouls || 0) + ' / 4';
+    var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
+    if (count) count.textContent = (seat.fouls || 0) + ' / ' + foulLimit;
     if (minus) minus.disabled = !!seat.eliminationReason || !seat.fouls;
-    if (plus) plus.disabled = !!seat.eliminationReason || seat.fouls >= 4;
+    if (plus) plus.disabled = !!seat.eliminationReason || seat.fouls >= foulLimit;
   };
 
   app.showAutoPlayerActionsModal = function (seatId) {

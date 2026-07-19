@@ -1,497 +1,295 @@
+/**
+ * Рендереры обычных экспортов: читаемый текст и табличный CSV.
+ * MU-экспорт живёт отдельно в mu-export.js и здесь не меняется.
+ */
 (function (app) {
-  var parseBonusFloat = app.parseBonusFloat;
-  var roleLabelRu = app.roleLabelRu;
+  'use strict';
+
   var DASH = '—';
 
-  /** «Протокол — шериф: 5; мафия: 3, 8; мирный: 1, 2, 4» (только непустые части). */
-  function formatNumGroupLine(label, group) {
-    var inner = numGroupInner(group, 'шериф', 'мафия', 'мирный');
-    return inner ? '  ' + label + ' — ' + inner : '';
+  function display(value) {
+    return value === null || value === undefined || value === '' ? DASH : String(value);
   }
 
-  /** «Ш: 5; М: 3, 8; Г: 1, 2, 4» для ячейки CSV (только непустые части). */
-  function numGroupCsvCell(group) {
-    return numGroupInner(group, 'Ш', 'М', 'Г');
+  function formatPoints(value) {
+    if (app.formatBonusForDisplay) return app.formatBonusForDisplay(value);
+    return String(value).replace('.', ',');
   }
 
-  function numGroupInner(group, sLabel, mLabel, gLabel) {
+  function signedPoints(value) {
+    if (!value) return '0';
+    return value > 0 ? '+' + formatPoints(value) : formatPoints(value);
+  }
+
+  function formatNumGroup(group) {
     if (!group) return '';
-    var segs = [];
-    if (group.sheriff) segs.push(sLabel + ': ' + group.sheriff);
-    if (group.mafia) segs.push(mLabel + ': ' + group.mafia);
-    if (group.peaceful) segs.push(gLabel + ': ' + group.peaceful);
-    return segs.join('; ');
-  }
-
-  function formatCompactVotes(candidateIds, votes) {
-    if (!candidateIds || !candidateIds.length) return '';
     var parts = [];
-    for (var i = 0; i < candidateIds.length; i++) {
-      parts.push('№' + candidateIds[i] + '-' + (votes && votes[i] != null ? votes[i] : '—'));
-    }
-    return parts.join(', ');
+    if (group.sheriff) parts.push('шериф: ' + group.sheriff);
+    if (group.mafia) parts.push('мафия: ' + group.mafia);
+    if (group.peaceful) parts.push('мирный: ' + group.peaceful);
+    return parts.join('; ');
   }
 
-  function voteClusterSegments(cluster) {
-    var segs = [];
-    for (var i = 0; i < cluster.length; i++) {
-      var ev = cluster[i];
-      if (ev.type === 'vote_tie') {
-        var st = formatCompactVotes(ev.candidateIds, ev.votes);
-        if (st) segs.push(st);
-        continue;
+  function buildPlayerText(player) {
+    var lines = [];
+    var heading = '№' + player.id + ' ' + (player.nick || 'без ника') + ' — ' + player.role;
+    lines.push(heading);
+
+    var facts = ['статус: ' + player.status, 'фолы: ' + player.fouls];
+    if (player.won !== null) facts.push(player.won ? 'победа' : 'поражение');
+    if (player.basePoints !== null) {
+      if (player.bonus) {
+        facts.push(
+          'очки: ' +
+            formatPoints(player.basePoints) +
+            ' ' +
+            signedPoints(player.bonus) +
+            ' = ' +
+            formatPoints(player.totalPoints)
+        );
+      } else {
+        facts.push('очки: ' + formatPoints(player.basePoints));
       }
-      if (ev.type === 'vote_hang' && !ev.viaRaiseAll) {
-        var sh = formatCompactVotes(ev.candidateIds, ev.votes);
-        if (sh) segs.push(sh);
-      }
+    } else if (player.bonus) {
+      facts.push('бонус: ' + signedPoints(player.bonus));
     }
-    return segs;
+    lines.push('  ' + facts.join('; '));
+
+    if (player.bestMove) lines.push('  Лучший ход: ' + player.bestMove);
+    var protocol = formatNumGroup(player.protocol);
+    if (protocol) lines.push('  Протокол: ' + protocol);
+    var opinion = formatNumGroup(player.opinion);
+    if (opinion) lines.push('  Мнение: ' + opinion);
+    if (player.note) lines.push('  Заметка: ' + player.note.replace(/\r?\n/g, '\n  '));
+    return lines;
   }
 
-  function voteClusterOutcome(cluster) {
-    var last = cluster[cluster.length - 1];
-    if (!last) return 'оставили';
-    if (last.type === 'vote_no_elimination') return 'оставили';
-    if (last.type === 'vote_hang') {
-      var ids = last.eliminatedIds || [];
-      if (ids.length === 1) return 'казнен №' + ids[0];
-      if (ids.length > 1)
-        return (
-          'казнены ' +
-          ids
+  function buildRoleCompositionText(model) {
+    var lines = [];
+    Object.keys(model.composition).forEach(function (code) {
+      var group = model.composition[code];
+      lines.push(
+        group.role +
+          ': ' +
+          group.playerIds
             .map(function (id) {
               return '№' + id;
             })
             .join(', ')
-        );
-    }
-    return 'оставили';
-  }
-
-  function buildVoteBlockLine(round, roundNum) {
-    if (round.kind === 'skip') {
-      if (round.skipKey === 'lead' && app.getSummarySyntheticFirstDayDisplayText) {
-        return app.getSummarySyntheticFirstDayDisplayText();
-      }
-      if (round.skipKey && round.skipKey !== 'lead' && app.summarySkipLineOverrides) {
-        var ovr = app.summarySkipLineOverrides[round.skipKey];
-        if (ovr != null && String(ovr).trim() !== '') return String(ovr);
-      }
-      if (roundNum === 1) {
-        return '#1 - никто не был выставлен или был выставлен один игрок, голосование пропущено';
-      }
-      return '#' + roundNum + ': никто не был выставлен, голосование пропущено';
-    }
-    if (round.kind === 'single') {
-      var ev = round.events[0];
-      var pid = ev.playerId;
-      var pool = typeof ev.votePoolTotal === 'number' ? ev.votePoolTotal : '';
-      return '#' + roundNum + ': №' + pid + '-' + pool + '; казнен №' + pid;
-    }
-    var cluster = round.events;
-    var segs = voteClusterSegments(cluster);
-    var out = voteClusterOutcome(cluster);
-    var body = segs.length ? segs.join('; ') + '; ' + out : out;
-    return '#' + roundNum + ': ' + body;
-  }
-
-  function didPlayerWin(playerId, seatIndex) {
-    var wt = app.winningTeam;
-    if (wt !== 'mafia' && wt !== 'peaceful') return false;
-    var code = app.getEffectiveSummaryRoleCode(playerId, seatIndex);
-    if (wt === 'mafia') return code === 'mafia' || code === 'don';
-    return code === 'peaceful' || code === 'sheriff';
-  }
-
-  function formatBonusSigned(raw) {
-    var v = parseBonusFloat(raw);
-    if (v === 0) return '';
-    var s = app.formatBonusForDisplay ? app.formatBonusForDisplay(raw) : String(v);
-    if (v > 0) return '+' + s;
-    return s;
-  }
-
-  function buildHeaderText() {
-    var lines = [];
-    var host = app.summaryHostName != null ? String(app.summaryHostName).trim() : '';
-    lines.push('Ведущий: ' + (host || DASH));
-
-    var n = app.players.length;
-    for (var p = 0; p < n; p++) {
-      var pl = app.players[p];
-      var sid = pl.id;
-      var nick = pl.nick != null ? String(pl.nick).trim() : '';
-      var parts = [];
-      if (nick) parts.push(nick);
-      var bk = String(sid);
-      var bm = app.bestMoveByPlayerId && app.bestMoveByPlayerId[bk];
-      var puLine = app.formatBestMoveForExport ? app.formatBestMoveForExport(bm) : '';
-      if (puLine) parts.push('ПУ: ' + puLine);
-      var bonusRaw = app.bonusPointsByPlayerId && app.bonusPointsByPlayerId[bk];
-      var bnum = parseBonusFloat(bonusRaw);
-      if (bnum !== 0) {
-        parts.push(formatBonusSigned(bonusRaw));
-      }
-      var note = app.bonusNoteByPlayerId && app.bonusNoteByPlayerId[bk];
-      if (note != null && String(note).trim()) {
-        parts.push(String(note).trim());
-      }
-      var rest = parts.length ? parts.join(', ') : DASH;
-      lines.push('Игрок ' + sid + ': ' + rest);
-      var protoLine = formatNumGroupLine(
-        'Протокол',
-        app.getPlayerNumGroup(app.protocolByPlayerId, sid)
       );
-      if (protoLine) lines.push(protoLine);
-      var opinLine = formatNumGroupLine(
-        'Мнение',
-        app.getPlayerNumGroup(app.opinionByPlayerId, sid)
-      );
-      if (opinLine) lines.push(opinLine);
+    });
+    return lines;
+  }
+
+  function renderText(model) {
+    var lines = [
+      'МАФИЯ — ПРОТОКОЛ ИГРЫ',
+      'Вариант: ' + display(model.variant.label),
+      'Ведущий: ' + display(model.host),
+      'Победа: ' + display(model.winnerLabel),
+      'Игроков: ' + model.playerCount,
+    ];
+    if (model.notes) lines.push('Общие заметки: ' + model.notes.replace(/\r?\n/g, '\n  '));
+
+    lines.push('', 'РОЛИ');
+    var roleLines = buildRoleCompositionText(model);
+    Array.prototype.push.apply(lines, roleLines.length ? roleLines : [DASH]);
+
+    lines.push('', 'СОСТАВ');
+    model.players.forEach(function (player) {
+      Array.prototype.push.apply(lines, buildPlayerText(player));
+    });
+
+    lines.push('', 'ХОД ИГРЫ');
+    if (!model.events.length) {
+      lines.push('Событий пока нет.');
+    } else {
+      model.events.forEach(function (event) {
+        lines.push(event.number + '. ' + event.description);
+      });
     }
-
-    var mafiaNums = [];
-    var donNum = '';
-    var sheriffNum = '';
-    for (var q = 0; q < n; q++) {
-      var pid = app.players[q].id;
-      var code = app.getEffectiveSummaryRoleCode(pid, q);
-      if (code === 'mafia') mafiaNums.push(String(pid));
-      else if (code === 'don') donNum = String(pid);
-      else if (code === 'sheriff') sheriffNum = String(pid);
-    }
-    lines.push('Мафия: ' + (mafiaNums.length ? mafiaNums.join(', ') : DASH));
-    lines.push('Дон: ' + (donNum || DASH));
-    lines.push('Шериф: ' + (sheriffNum || DASH));
-
-    var winLine = DASH;
-    if (app.winningTeam === 'mafia') winLine = 'мафия';
-    else if (app.winningTeam === 'peaceful') winLine = 'мирные';
-    lines.push('Победа: ' + winLine);
-
     return lines.join('\n');
   }
 
-  function buildFullExportText() {
-    var header = buildHeaderText();
-    var rounds = app.inferRoundsForExport(app.gameLog);
-    var voteLines = [];
-    for (var r = 0; r < rounds.length; r++) {
-      voteLines.push(buildVoteBlockLine(rounds[r], r + 1));
+  function csvEscape(value) {
+    var text = value === null || value === undefined ? '' : String(value);
+    if (/[;"\n\r]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
+    return text;
+  }
+
+  function csvRow(values) {
+    return values.map(csvEscape).join(';');
+  }
+
+  function isoTime(timestamp) {
+    if (typeof timestamp !== 'number') return '';
+    try {
+      return new Date(timestamp).toISOString();
+    } catch (e) {
+      return '';
     }
-    if (!voteLines.length) return header;
-    return header + '\n\n' + voteLines.join('\n');
   }
 
-  function csvEscape(cell) {
-    var s = cell === undefined || cell === null ? '' : String(cell);
-    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-    return s;
-  }
+  function renderCsv(model) {
+    var rows = [
+      ['ПАРТИЯ'],
+      ['Поле', 'Значение'],
+      ['Вариант', model.variant.label],
+      ['Код варианта', model.variant.key],
+      ['Ведущий', model.host],
+      ['Победа', model.winnerLabel],
+      ['Количество игроков', model.playerCount],
+      ['Общие заметки', model.notes],
+      [],
+      ['СОСТАВ'],
+      [
+        '№',
+        'Игрок',
+        'Код роли',
+        'Роль',
+        'Команда',
+        'Статус',
+        'Причина выбытия',
+        'Фолы',
+        'Победа игрока',
+        'Базовые очки',
+        'Бонус',
+        'Итого',
+        'Лучший ход',
+        'Протокол',
+        'Мнение',
+        'Заметка',
+      ],
+    ];
 
-  function splitBonusForCsv(raw) {
-    var v = parseBonusFloat(raw);
-    if (v === 0) return { plus: '', minus: '' };
-    if (v > 0) return { plus: app.formatBonusForDisplay(raw), minus: '' };
-    return { plus: '', minus: app.formatBonusForDisplay(Math.abs(v)) };
-  }
+    model.players.forEach(function (player) {
+      rows.push([
+        player.id,
+        player.nick,
+        player.roleCode,
+        player.role,
+        player.teamLabel,
+        player.status,
+        player.eliminationReason,
+        player.fouls,
+        player.won === null ? '' : player.won ? 'да' : 'нет',
+        player.basePoints === null ? '' : formatPoints(player.basePoints),
+        player.bonus ? formatPoints(player.bonus) : '0',
+        player.basePoints === null && !player.bonus ? '' : formatPoints(player.totalPoints),
+        player.bestMove,
+        formatNumGroup(player.protocol),
+        formatNumGroup(player.opinion),
+        player.note,
+      ]);
+    });
 
-  var STAT_COLS = 9;
-  var VOTE_SLOT_COLS = 10;
-  var CSV_ROW_COLS = STAT_COLS + 1 + VOTE_SLOT_COLS;
-
-  function padStatRow(cells7) {
-    var row = cells7.slice();
-    while (row.length < CSV_ROW_COLS) row.push('');
-    return row.map(csvEscape);
-  }
-
-  function makeVoteRow(labelH, slotValues) {
-    var row = [];
-    while (row.length < STAT_COLS) row.push('');
-    row.push(labelH);
-    var slots = slotValues || [];
-    for (var i = 0; i < VOTE_SLOT_COLS; i++) {
-      var v = i < slots.length ? slots[i] : '';
-      row.push(v !== undefined && v !== null && v !== '' ? String(v) : '');
-    }
-    return row.map(csvEscape);
-  }
-
-  function clusterExecutedIdsComma(cluster) {
-    var last = cluster[cluster.length - 1];
-    if (!last) return DASH;
-    if (last.type === 'vote_no_elimination') return DASH;
-    if (last.type === 'vote_hang') {
-      var ids = last.eliminatedIds || [];
-      if (!ids.length) return DASH;
-      return ids.join(', ');
-    }
-    return DASH;
-  }
-
-  function clusterEliminationTag(cluster) {
-    var last = cluster[cluster.length - 1];
-    if (!last) return 'no_elimination';
-    if (last.type === 'vote_no_elimination') return 'no_elimination';
-    if (last.type === 'vote_hang') {
-      var ids = last.eliminatedIds || [];
-      if (!ids.length) return 'no_elimination';
-      if (ids.length === 1) return 'vote_hanged';
-      return 'vote_hanged_multiple';
-    }
-    return 'no_elimination';
-  }
-
-  function makeEliminatedRow(idsCommaOrDash, tagEn) {
-    var row = [];
-    while (row.length < STAT_COLS) row.push('');
-    row.push('Казнены');
-    row.push('');
-    row.push('');
-    var val =
-      idsCommaOrDash != null && String(idsCommaOrDash).trim() !== ''
-        ? String(idsCommaOrDash).trim()
-        : DASH;
-    row.push(val);
-    row.push(tagEn != null && String(tagEn).trim() !== '' ? String(tagEn).trim() : '');
-    while (row.length < CSV_ROW_COLS) row.push('');
-    return row.map(csvEscape);
-  }
-
-  function emptyPaddedRow() {
-    return padStatRow(['', '', '', '', '', '', '']);
-  }
-
-  function slotsFromIds(ids) {
-    var out = [];
-    if (!ids || !ids.length) return out;
-    for (var i = 0; i < Math.min(ids.length, VOTE_SLOT_COLS); i++) out.push(ids[i]);
-    return out;
-  }
-
-  function slotsFromVotes(candidateIds, votes) {
-    var out = [];
-    if (!candidateIds || !candidateIds.length) return out;
-    for (var i = 0; i < Math.min(candidateIds.length, VOTE_SLOT_COLS); i++) {
-      out.push(votes && votes[i] != null ? votes[i] : '');
-    }
-    return out;
-  }
-
-  function bonusRawForPlayer(bk) {
-    var m = app.bonusPointsByPlayerId;
-    if (!m || typeof m !== 'object') return undefined;
-    if (Object.prototype.hasOwnProperty.call(m, bk)) return m[bk];
-    if (Object.prototype.hasOwnProperty.call(m, Number(bk))) return m[Number(bk)];
-    return undefined;
-  }
-
-  function buildCsv() {
-    var rows = [];
-    var host = app.summaryHostName != null ? String(app.summaryHostName).trim() : '';
-    rows.push(padStatRow(['Ведущий', host || DASH, '', '', '', '', '']));
-    var winCell = DASH;
-    if (app.winningTeam === 'mafia') winCell = 'Мафия';
-    else if (app.winningTeam === 'peaceful') winCell = 'Мирные';
-    rows.push(padStatRow(['Победа', winCell, '', '', '', '', '']));
-    rows.push(emptyPaddedRow());
     rows.push(
-      padStatRow(['#', 'Игрок', 'Роль', 'ПУ', 'Доп +', 'Доп −', '∑', 'Протокол', 'Мнение'])
+      [],
+      ['ХОД ИГРЫ'],
+      [
+        '№',
+        'Дата и время',
+        'Тип',
+        'Описание',
+        'Игрок',
+        'Причина',
+        'Кандидаты',
+        'Голоса',
+        'Кандидаты и голоса',
+        'Ничья',
+        'Выбыли',
+        'Ночь',
+        'Источник',
+        'Действия',
+        'Результат',
+        'Исходные данные JSON',
+      ]
     );
-
-    var n = app.players.length;
-    for (var p = 0; p < n; p++) {
-      var pl = app.players[p];
-      var sid = pl.id;
-      var bk = String(sid);
-      var nick = pl.nick != null ? String(pl.nick).trim() : '';
-      var code = app.getEffectiveSummaryRoleCode(sid, p);
-      var roleRu = roleLabelRu(code);
-      var bm = app.bestMoveByPlayerId && app.bestMoveByPlayerId[bk];
-      var pu = app.formatBestMoveForExport ? app.formatBestMoveForExport(bm) : '';
-      var braw = bonusRawForPlayer(bk);
-      var split = splitBonusForCsv(braw);
-      var bonusVal = parseBonusFloat(braw);
-      var sum = (didPlayerWin(sid, p) ? 1 : 0) + bonusVal;
-      sum = Math.round(sum * 10) / 10;
-      var sumStr = app.formatBonusForDisplay(String(sum));
-      var protoCell = numGroupCsvCell(app.getPlayerNumGroup(app.protocolByPlayerId, sid));
-      var opinCell = numGroupCsvCell(app.getPlayerNumGroup(app.opinionByPlayerId, sid));
-      rows.push(
-        padStatRow([
-          String(sid),
-          nick || DASH,
-          roleRu,
-          pu,
-          split.plus,
-          split.minus,
-          sumStr,
-          protoCell,
-          opinCell,
-        ])
-      );
-    }
-
-    var rounds = app.inferRoundsForExport(app.gameLog);
-    var firstVoteTargetLine = 15;
-    var linesBeforeVoteBlock = 4 + n;
-    var padBeforeVotes = Math.max(0, firstVoteTargetLine - linesBeforeVoteBlock - 1);
-    for (var pe = 0; pe < padBeforeVotes; pe++) {
-      rows.push(emptyPaddedRow());
-    }
-
-    for (var r = 0; r < rounds.length; r++) {
-      var rn = r + 1;
-      var round = rounds[r];
-      if (round.kind === 'skip') {
-        rows.push(makeVoteRow('Голосование #' + rn, []));
-        rows.push(makeVoteRow('Выставленные игроки', [DASH]));
-        rows.push(makeVoteRow('Голоса за игроков', [DASH]));
-        rows.push(makeVoteRow('Голоса за игроков на переголосовании', [DASH]));
-        rows.push(makeEliminatedRow(DASH, 'vote_skipped'));
-        continue;
-      }
-      if (round.kind === 'single') {
-        var sev = round.events[0];
-        var spid = sev.playerId;
-        var pool = typeof sev.votePoolTotal === 'number' ? sev.votePoolTotal : '';
-        rows.push(makeVoteRow('Голосование #' + rn, []));
-        rows.push(makeVoteRow('Выставленные игроки', [spid]));
-        rows.push(makeVoteRow('Голоса за игроков', [pool]));
-        rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
-        rows.push(makeEliminatedRow(String(spid), 'sole_nominee_hanged'));
-        continue;
-      }
-      var cluster = round.events;
-      if (cluster.length === 1 && cluster[0].type === 'vote_no_elimination') {
-        var neOnly = cluster[0];
-        rows.push(makeVoteRow('Голосование #' + rn, []));
-        rows.push(makeVoteRow('Выставленные игроки', ['—']));
-        if (typeof neOnly.votesCast === 'number' && typeof neOnly.poolTotal === 'number') {
-          rows.push(makeVoteRow('Голоса за игроков', [neOnly.votesCast, neOnly.poolTotal]));
-        } else {
-          rows.push(makeVoteRow('Голоса за игроков', ['—']));
-        }
-        rows.push(makeVoteRow('Голоса за игроков на переголосовании', ['—']));
-        rows.push(makeEliminatedRow('—', 'no_elimination'));
-        continue;
-      }
-      var firstTie = null;
-      var secondTie = null;
-      var lastHang = null;
-      for (var i = 0; i < cluster.length; i++) {
-        if (cluster[i].type === 'vote_tie') {
-          if (!firstTie) firstTie = cluster[i];
-          else if (!secondTie) secondTie = cluster[i];
-        }
-        if (cluster[i].type === 'vote_hang') lastHang = cluster[i];
-      }
-      var nomIds = firstTie
-        ? firstTie.candidateIds || []
-        : lastHang
-          ? lastHang.candidateIds || []
-          : [];
-
-      var v1Source = firstTie || lastHang;
-      var slots1 = v1Source ? slotsFromVotes(v1Source.candidateIds, v1Source.votes) : [];
-
-      var slots4 = [];
-      if (secondTie) {
-        slots4 = slotsFromVotes(secondTie.candidateIds, secondTie.votes);
-      } else if (firstTie && lastHang && firstTie !== lastHang && !lastHang.viaRaiseAll) {
-        slots4 = slotsFromVotes(lastHang.candidateIds, lastHang.votes);
-      } else if (cluster.length && cluster[cluster.length - 1].type === 'vote_no_elimination') {
-        var ne = cluster[cluster.length - 1];
-        if (firstTie && !lastHang) {
-          if (typeof ne.votesCast === 'number' && typeof ne.poolTotal === 'number') {
-            slots4 = [ne.votesCast, ne.poolTotal];
-          }
-        }
-      }
-      if (!slots4.length) slots4 = ['—'];
-
-      rows.push(makeVoteRow('Голосование #' + rn, []));
-      var nomSlots = slotsFromIds(nomIds);
-      rows.push(makeVoteRow('Выставленные игроки', nomSlots.length ? nomSlots : ['—']));
-      rows.push(makeVoteRow('Голоса за игроков', slots1.length ? slots1 : ['—']));
-      rows.push(makeVoteRow('Голоса за игроков на переголосовании', slots4));
-      rows.push(
-        makeEliminatedRow(clusterExecutedIdsComma(cluster), clusterEliminationTag(cluster))
-      );
-    }
-
-    return rows
-      .map(function (row) {
-        return row.join(',');
-      })
-      .join('\r\n');
-  }
-
-  function copyTextToClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text).catch(function () {
-        copyTextFallback(text);
-      });
-    }
-    copyTextFallback(text);
-    return Promise.resolve();
+    model.events.forEach(function (event) {
+      rows.push([
+        event.number,
+        isoTime(event.timestamp),
+        event.type,
+        event.description,
+        event.playerId === null ? '' : event.playerId,
+        event.reasonLabel,
+        event.candidateIds.join(', '),
+        event.votes.join(', '),
+        event.votePairs.join('; '),
+        event.tiedIds.join(', '),
+        event.eliminatedIds.join(', '),
+        event.nightNumber === null ? '' : event.nightNumber,
+        event.source,
+        event.actions,
+        event.result,
+        event.rawJson,
+      ]);
+    });
+    return rows.map(csvRow).join('\r\n');
   }
 
   function copyTextFallback(text) {
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.setAttribute('readonly', '');
-    ta.style.position = 'fixed';
-    ta.style.left = '-2000px';
-    ta.style.top = '0';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-3000px';
+    document.body.appendChild(textarea);
+    textarea.select();
     try {
       document.execCommand('copy');
     } catch (e) {}
-    document.body.removeChild(ta);
+    document.body.removeChild(textarea);
+    return Promise.resolve();
   }
 
-  app.buildGameExportText = function () {
-    return buildFullExportText();
-  };
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () {
+        return copyTextFallback(text);
+      });
+    }
+    return copyTextFallback(text);
+  }
 
-  app.buildGameExportCsv = function () {
-    return '\ufeff' + buildCsv();
-  };
-
-  app.copyGameExportToClipboard = function () {
-    return copyTextToClipboard(buildFullExportText()).then(function () {
-      if (app.showToast) app.showToast('Скопировано в буфер обмена');
-    });
-  };
-
-  app.downloadGameExportCsv = function () {
-    var csv = app.buildGameExportCsv();
+  function timestampForFilename() {
     var now = new Date();
-    var pad = function (x) {
-      return x < 10 ? '0' + x : String(x);
-    };
-    var fname =
-      'mafia-export-' +
+    function pad(value) {
+      return value < 10 ? '0' + value : String(value);
+    }
+    return (
       now.getFullYear() +
       pad(now.getMonth() + 1) +
       pad(now.getDate()) +
       '-' +
       pad(now.getHours()) +
       pad(now.getMinutes()) +
-      pad(now.getSeconds()) +
-      '.csv';
-    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = fname;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
+      pad(now.getSeconds())
+    );
+  }
+
+  app.buildGameExportText = function () {
+    return renderText(app.buildGameExportModel());
+  };
+
+  app.buildGameExportCsv = function () {
+    return '\ufeff' + renderCsv(app.buildGameExportModel());
+  };
+
+  app.copyGameExportToClipboard = function () {
+    return copyText(app.buildGameExportText()).then(function () {
+      if (app.showToast) app.showToast('Протокол игры скопирован');
+    });
+  };
+
+  app.downloadGameExportCsv = function () {
+    var blob = new Blob([app.buildGameExportCsv()], { type: 'text/csv;charset=utf-8' });
+    var anchor = document.createElement('a');
+    anchor.href = URL.createObjectURL(blob);
+    anchor.download = 'mafia-game-' + timestampForFilename() + '.csv';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(anchor.href);
   };
 })(window.MafiaApp);

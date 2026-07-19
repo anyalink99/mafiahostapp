@@ -266,6 +266,7 @@
         }
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      if (app.scheduleCurrentGameHistorySync) app.scheduleCurrentGameHistorySync();
     } catch (e) {}
   }
   A.saveAuto = saveAuto;

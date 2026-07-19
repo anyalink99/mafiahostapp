@@ -132,6 +132,12 @@
     }
     if (screenId !== 'summary-screen' && app.hideSummaryPlayerModal) app.hideSummaryPlayerModal();
     if (screenId !== 'summary-screen' && app.hideSummaryLogModal) app.hideSummaryLogModal();
+    if (screenId !== 'history-screen' && app.hideHistoryDeleteConfirm) {
+      app.hideHistoryDeleteConfirm();
+    }
+    if (screenId !== 'settings-screen' && app.hideMusicDeleteConfirm) {
+      app.hideMusicDeleteConfirm();
+    }
     if (screenId !== 'menu-screen') {
       if (app.hideAuthorLinksModal) app.hideAuthorLinksModal();
       if (app.hideResetGameConfirmModal) app.hideResetGameConfirmModal();
@@ -155,6 +161,7 @@
 
   app.registerScreenRenderer('menu-screen', function () {
     if (app.updateResetButtonVisibility) app.updateResetButtonVisibility();
+    if (app.syncGameHistoryCount) app.syncGameHistoryCount();
   });
 
   // Настройки размазаны по модулям (музыка, spotify, озвучка, таймер) — пока
@@ -167,6 +174,7 @@
     if (app.syncTimerVoiceExtraControls) app.syncTimerVoiceExtraControls();
     if (app.syncMusicIntroControls) app.syncMusicIntroControls();
     if (app.syncTimerDurationInputs) app.syncTimerDurationInputs();
+    if (app.syncPlayerCardSettings) app.syncPlayerCardSettings();
     if (app.syncExperimentalModesCheckbox) app.syncExperimentalModesCheckbox();
     if (app.syncMuLookupCheckbox) app.syncMuLookupCheckbox();
   });

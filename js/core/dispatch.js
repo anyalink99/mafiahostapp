@@ -18,8 +18,10 @@
     var parts = raw.split(/[^0-9]+/).filter(function (x) {
       return x !== '';
     });
+    var limit = parseInt(el.getAttribute('data-bestmove-limit'), 10);
+    if (!isNaN(limit) && limit > 0 && parts.length > limit) parts = parts.slice(0, limit);
     var out = parts.join(', ');
-    if (endsWithSep && out !== '') out += ', ';
+    if (endsWithSep && out !== '' && (isNaN(limit) || parts.length < limit)) out += ', ';
     if (el.value !== out) el.value = out;
   }
 
@@ -411,6 +413,11 @@
         }
         return;
       }
+      if (el && el.id === 'setting-player-foul-limit') {
+        var foulLimit = parseInt(el.value, 10);
+        if (!isNaN(foulLimit) && app.setPlayerFoulLimit) app.setPlayerFoulLimit(foulLimit);
+        return;
+      }
       if (el && el.id === 'setting-timer-voice-duck-mul') {
         var v = parseFloat(el.value);
         if (isNaN(v)) return;
@@ -520,6 +527,14 @@
       }
       if (el.id === 'setting-experimental-modes') {
         if (app.setExperimentalModes) app.setExperimentalModes(!!el.checked);
+        return;
+      }
+      if (el.id === 'setting-player-bestmove-visible') {
+        if (app.setPlayerBestMoveVisible) app.setPlayerBestMoveVisible(!!el.checked);
+        return;
+      }
+      if (el.id === 'setting-player-protocol-visible') {
+        if (app.setPlayerProtocolVisible) app.setPlayerProtocolVisible(!!el.checked);
         return;
       }
       if (el.id === 'setting-mu-lookup') {

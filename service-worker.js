@@ -1,5 +1,5 @@
 // BUILD:PRECACHE-BEGIN (автогенерация scripts/build-sw.cjs — не редактировать руками)
-var CACHE_NAME = 'mafia-host-static-57c6dca82c9d';
+var CACHE_NAME = 'mafia-host-static-3367e0f872b0';
 var ASSETS = [
   './',
   './audio/1.mp3',
@@ -62,6 +62,7 @@ var ASSETS = [
   './js/events/auto/night.js',
   './js/events/auto/player.js',
   './js/events/auto/vote.js',
+  './js/events/history.js',
   './js/events/host/night-actions.js',
   './js/events/host/player.js',
   './js/events/host/side.js',
@@ -80,6 +81,7 @@ var ASSETS = [
   './js/game/urban.js',
   './js/game/variants.js',
   './js/game/vote-rules.js',
+  './js/history/game-history.js',
   './js/main.js',
   './js/modes/auto/core.js',
   './js/modes/auto/day.js',
@@ -107,6 +109,7 @@ var ASSETS = [
   './js/mu-state-apply.js',
   './js/mu-utils.js',
   './js/mu-vote-reconstruct.js',
+  './js/summary/export-model.js',
   './js/summary/export.js',
   './js/summary/log.js',
   './js/summary/modals.js',

@@ -164,6 +164,243 @@ function findChrome() {
   );
   await linkPage.close();
 
+  // Локальная история: создание и фоновое обновление снимка, восстановление,
+  // экспорт, удаление и автоматическое сохранение завершённой auto-партии.
+  var historyPage = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: 'block',
+  });
+  historyPage.on('console', function (msg) {
+    if (msg.type() === 'error') errors.push('history console.error: ' + msg.text());
+  });
+  historyPage.on('pageerror', function (err) {
+    errors.push('history pageerror: ' + err.message);
+  });
+  await historyPage.goto('http://127.0.0.1:' + port + '/', { waitUntil: 'networkidle' });
+
+  var firstHistorySetup = await historyPage.evaluate(function () {
+    var app = window.MafiaApp;
+
+    // Обычные экспорты строятся из одной модели и не теряют ночные
+    // выстрелы и роли экспериментальных вариантов.
+    app.prepareConfig.variant = 'merlin';
+    app.experimentalModesEnabled = true;
+    app.summaryRoleByPlayerId = { 1: 'merlin', 2: 'mafia', 3: 'doctor' };
+    app.players[0].nick = 'Архивный игрок';
+    app.players[0].fouls = 1;
+    app.gameLog = [
+      { type: 'elimination', playerId: 4, reason: 'shot', dayNum: 1, ts: 1 },
+      {
+        type: 'urban_night',
+        ts: 2,
+        nightNumber: 2,
+        actions: {
+          mafiaShot: 4,
+          donCheck: 7,
+          sheriffCheck: 2,
+          maniacShot: null,
+          beautyVisit: null,
+          doctorHeal: 4,
+        },
+        result: {
+          shots: [4],
+          deaths: [],
+          healed: 4,
+          donFoundSheriff: true,
+          sheriffFoundMafia: true,
+        },
+      },
+    ];
+    app.saveState();
+    var model = app.buildGameExportModel();
+    var text = app.buildGameExportText();
+    var csv = app.buildGameExportCsv();
+    var entry = app.saveCurrentGameToHistory({ silent: true });
+    return {
+      id: entry && entry.id,
+      merlin: model.players[0] && model.players[0].roleCode,
+      eventReason: model.events[0] && model.events[0].reason,
+      textHasShot: text.indexOf('Игрок №4 — убит') !== -1,
+      textHasMerlin: text.indexOf('Мерлин') !== -1,
+      textHasUrbanNight: text.indexOf('Ночь 2') !== -1,
+      csvHasShot: csv.indexOf('shot') !== -1,
+      csvHasNightActions:
+        csv.indexOf('выстрел мафии: №4') !== -1 && csv.indexOf('доктор спас №4') !== -1,
+      csvHasSpecialRoles:
+        csv.indexOf('merlin') !== -1 &&
+        csv.indexOf('doctor') !== -1 &&
+        csv.indexOf('Мерлин') !== -1 &&
+        csv.indexOf('Доктор') !== -1,
+    };
+  });
+  var firstHistoryId = firstHistorySetup.id;
+  if (!firstHistoryId) errors.push('история игр: первая игра не сохранилась');
+  if (
+    firstHistorySetup.merlin !== 'merlin' ||
+    firstHistorySetup.eventReason !== 'shot' ||
+    !firstHistorySetup.textHasShot ||
+    !firstHistorySetup.textHasMerlin ||
+    !firstHistorySetup.textHasUrbanNight ||
+    !firstHistorySetup.csvHasShot ||
+    !firstHistorySetup.csvHasNightActions ||
+    !firstHistorySetup.csvHasSpecialRoles
+  ) {
+    errors.push('экспорт: потеряны отстрелы или спецроли ' + JSON.stringify(firstHistorySetup));
+  }
+
+  await historyPage.evaluate(function () {
+    window.MafiaApp.players[0].fouls = 2;
+    window.MafiaApp.saveState();
+  });
+  await historyPage.waitForTimeout(650);
+  var historySynced = await historyPage.evaluate(function () {
+    var app = window.MafiaApp;
+    var entries = JSON.parse(localStorage.getItem(app.GAME_HISTORY_STORAGE_KEY) || '[]');
+    var badge = document.getElementById('history-menu-count');
+    var first = entries[0];
+    return {
+      count: entries.length,
+      foul: first && first.snapshot.hostState.players[0].fouls,
+      hasText: !!(first && first.exports && first.exports.text),
+      hasCsv: !!(first && first.exports && first.exports.csv),
+      badge: badge ? badge.textContent : '',
+    };
+  });
+  if (
+    historySynced.count !== 1 ||
+    historySynced.foul !== 2 ||
+    !historySynced.hasText ||
+    !historySynced.hasCsv ||
+    historySynced.badge !== '1'
+  ) {
+    errors.push('история игр: снимок не обновился ' + JSON.stringify(historySynced));
+  }
+
+  var secondHistoryId = await historyPage.evaluate(function () {
+    var app = window.MafiaApp;
+    app.clearCurrentHistoryLink();
+    app.players[0].nick = 'Вторая партия';
+    app.players[0].fouls = 0;
+    app.gameLog = [{ type: 'vote_hang', playerId: 7, dayNum: 2, ts: 2 }];
+    app.saveState();
+    var entry = app.saveCurrentGameToHistory({ silent: true });
+    app.navigateToScreen('history-screen');
+    return entry && entry.id;
+  });
+  await historyPage.waitForSelector('#history-screen.active .history-card');
+  var historyCards = await historyPage.evaluate(function () {
+    return {
+      count: document.querySelectorAll('#history-list .history-card').length,
+      current: document.querySelectorAll('#history-list .history-card.is-current').length,
+      actions: document.querySelectorAll('#history-list [data-action="history-resume"]').length,
+    };
+  });
+  if (historyCards.count !== 2 || historyCards.current !== 1 || historyCards.actions !== 2) {
+    errors.push('история игр: неверный список ' + JSON.stringify(historyCards));
+  }
+
+  var csvDownloadPromise = historyPage.waitForEvent('download');
+  await historyPage.click(
+    '[data-history-entry="' + firstHistoryId + '"] [data-action="history-export-csv"]'
+  );
+  var csvDownload = await csvDownloadPromise;
+  if (!/\.csv$/i.test(csvDownload.suggestedFilename())) {
+    errors.push('история игр: CSV получил неверное имя ' + csvDownload.suggestedFilename());
+  }
+
+  await Promise.all([
+    historyPage.waitForNavigation({ waitUntil: 'load' }),
+    historyPage.click(
+      '[data-history-entry="' + firstHistoryId + '"] [data-action="history-resume"]'
+    ),
+  ]);
+  await historyPage.waitForSelector('#game-screen.active');
+  var historyRestored = await historyPage.evaluate(function () {
+    var app = window.MafiaApp;
+    return {
+      nick: app.players[0].nick,
+      foul: app.players[0].fouls,
+      log: app.gameLog.length,
+      current: JSON.parse(localStorage.getItem('mafia_game_history_current_v1') || 'null'),
+    };
+  });
+  if (
+    historyRestored.nick !== 'Архивный игрок' ||
+    historyRestored.foul !== 2 ||
+    historyRestored.log !== 2 ||
+    !historyRestored.current ||
+    historyRestored.current.id !== firstHistoryId
+  ) {
+    errors.push('история игр: восстановлено неверное состояние ' + JSON.stringify(historyRestored));
+  }
+
+  await historyPage.evaluate(function () {
+    window.MafiaApp.navigateToScreen('history-screen');
+  });
+  await historyPage.click(
+    '[data-history-entry="' + secondHistoryId + '"] [data-action="history-delete-open"]'
+  );
+  await historyPage.waitForSelector('#modal-history-delete-confirm[data-open]');
+  await historyPage.click('[data-action="history-delete-apply"]');
+  var historyAfterDelete = await historyPage.evaluate(function () {
+    return JSON.parse(localStorage.getItem(window.MafiaApp.GAME_HISTORY_STORAGE_KEY) || '[]')
+      .length;
+  });
+  if (historyAfterDelete !== 1) {
+    errors.push('история игр: удаление оставило ' + historyAfterDelete + ' записей вместо 1');
+  }
+
+  await historyPage.click(
+    '[data-history-entry="' + firstHistoryId + '"] [data-action="history-open-summary"]'
+  );
+  await historyPage.waitForSelector('#summary-screen.active');
+
+  var autoHistoryId = await historyPage.evaluate(function () {
+    var app = window.MafiaApp;
+    app.clearCurrentHistoryLink();
+    app.prepareConfig.mode = 'auto';
+    app.prepareConfig.variant = 'standard';
+    app.experimentalModesEnabled = true;
+    app._autoInternals.savePrepareConfig();
+    var state = app._autoInternals.makeFreshState();
+    state.active = true;
+    state.phase = 'day';
+    state.dayNum = 2;
+    state.variant = 'standard';
+    state.seats = Array.from({ length: 10 }, function (_, i) {
+      return {
+        id: i + 1,
+        role: i === 9 ? 'don' : i > 6 ? 'mafia' : 'peaceful',
+        alive: true,
+        fouls: 0,
+        nick: i === 0 ? 'Автоигрок' : '',
+      };
+    });
+    app.autoState = state;
+    app._auto.endGame('mafia');
+    var entries = JSON.parse(localStorage.getItem(app.GAME_HISTORY_STORAGE_KEY) || '[]');
+    var autoEntry = entries.find(function (entry) {
+      return entry.mode === 'auto';
+    });
+    return autoEntry && autoEntry.id;
+  });
+  if (!autoHistoryId) {
+    errors.push('история игр: завершённая auto-партия не сохранилась автоматически');
+  } else {
+    await historyPage.evaluate(function () {
+      window.MafiaApp.navigateToScreen('history-screen');
+    });
+    var jsonDownloadPromise = historyPage.waitForEvent('download');
+    await historyPage.click(
+      '[data-history-entry="' + autoHistoryId + '"] [data-action="history-export-json"]'
+    );
+    var jsonDownload = await jsonDownloadPromise;
+    if (!/\.json$/i.test(jsonDownload.suggestedFilename())) {
+      errors.push('история игр: JSON получил неверное имя ' + jsonDownload.suggestedFilename());
+    }
+  }
+  await historyPage.close();
+
   // Пройтись по основным экранам через реестр рендереров.
   var screens = [
     'prepare-mode-screen',
@@ -337,6 +574,43 @@ function findChrome() {
     errors.push('контрол фолов: минус не обновил счётчик ' + foulRemoved);
   }
 
+  // Настройки карточки игрока сохраняют видимость секций и лимит фолов.
+  var playerCardSettings = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.navigateToScreen('settings-screen');
+    app.setSettingsTab('general');
+    var bestMove = document.getElementById('setting-player-bestmove-visible');
+    var protocol = document.getElementById('setting-player-protocol-visible');
+    var foulLimit = document.getElementById('setting-player-foul-limit');
+    bestMove.click();
+    protocol.click();
+    foulLimit.value = '3';
+    foulLimit.dispatchEvent(new Event('input', { bubbles: true }));
+    var cardSection = foulLimit.closest('section');
+    var voiceSection = document.getElementById('setting-timer-voice').closest('section');
+    var voiceBelow = !!(
+      cardSection.compareDocumentPosition(voiceSection) & Node.DOCUMENT_POSITION_FOLLOWING
+    );
+
+    app.players[0].fouls = 2;
+    app.players[0].eliminationReason = null;
+    app.addFoul(1);
+    var result = [
+      app.playerBestMoveVisible,
+      app.playerProtocolVisible,
+      app.getFoulLimit(),
+      voiceBelow,
+      app.players[0].fouls,
+      app.players[0].eliminationReason,
+    ].join(':');
+    app.setPlayerEliminationState(1, 'disqual');
+    app.setPlayerFoulLimit(4);
+    return result;
+  });
+  if (playerCardSettings !== 'false:false:3:true:3:disqual') {
+    errors.push('настройки карточки игрока: неверное состояние ' + playerCardSettings);
+  }
+
   // «Городская»: динамический состав на верхней границе (16 игроков).
   var urbanChecks = await page.evaluate(function () {
     var app = window.MafiaApp;
@@ -358,6 +632,24 @@ function findChrome() {
     app.revealedIndices = app.roles.map(function (_, i) {
       return i;
     });
+    var previousLog = app.gameLog.slice();
+    app.gameLog = [{ type: 'elimination', playerId: 1, reason: 'shot', ts: 1 }];
+    app.showPlayerActionsModal(1);
+    var hiddenBestMove = document.getElementById('modal-player-bestmove-wrap').style.display;
+    var hiddenProtocol = document.getElementById('modal-player-protocol-section').style.display;
+    app.hidePlayerActionsModal();
+    app.setPlayerBestMoveVisible(true);
+    app.setPlayerProtocolVisible(true);
+    app.showPlayerActionsModal(1);
+    var bestMoveInput = document.getElementById('modal-player-bestmove');
+    var bestMoveInputLimit = bestMoveInput.getAttribute('data-bestmove-limit');
+    bestMoveInput.value = '1,2,3,4,5,6';
+    bestMoveInput.dispatchEvent(new Event('input', { bubbles: true }));
+    var limitedBestMove = bestMoveInput.value;
+    var bestMoveExport = app.formatBestMoveForExport('1,2,3,4,5');
+    var shownProtocol = document.getElementById('modal-player-protocol-section').style.display;
+    app.hidePlayerActionsModal();
+    app.gameLog = previousLog;
     app.showHostToolsModal();
     var nightSection = document.getElementById('host-tools-urban-night-section');
     app.toolsRevealRoles();
@@ -404,6 +696,18 @@ function findChrome() {
       'night-modal:' + (nightTargetModal && nightTargetModal.hasAttribute('data-open') ? 1 : 0),
       'night-targets:' + nightTargetCount,
       'anchor12:' + anchor12.mafia + '/' + anchor12.peaceful,
+      'player-fields:' +
+        hiddenBestMove +
+        '/' +
+        hiddenProtocol +
+        '/' +
+        bestMoveInputLimit +
+        '/' +
+        shownProtocol +
+        '/' +
+        limitedBestMove +
+        '/' +
+        bestMoveExport,
     ].join(' ');
     // Остальные проверки ниже ожидают классический стол.
     app.hideUrbanNightTargetModal();
@@ -415,7 +719,7 @@ function findChrome() {
   });
   if (
     urbanChecks !==
-    'players:16 roles:16 mafia:3 peaceful:8 rows:repeat(8, minmax(0px, 1fr)) svg-border:0px cards:16 card-grid:4x4 maniac:rgb(20, 83, 45) night-button:1 named-urban:1 night-screen:1 night-actions:6 night-modal:1 night-targets:16 anchor12:2/5'
+    'players:16 roles:16 mafia:3 peaceful:8 rows:repeat(8, minmax(0px, 1fr)) svg-border:0px cards:16 card-grid:4x4 maniac:rgb(20, 83, 45) night-button:1 named-urban:1 night-screen:1 night-actions:6 night-modal:1 night-targets:16 anchor12:2/5 player-fields:none/none/5/flex/1, 2, 3, 4, 5/1, 2, 3, 4, 5'
   ) {
     errors.push('режим «Городская»: неверная конфигурация — ' + urbanChecks);
   }
@@ -524,6 +828,96 @@ function findChrome() {
     );
   }
 
+  // Удаление загруженной музыки требует явного подтверждения с названием объекта.
+  await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.saveMusicMeta({
+      version: 1,
+      slots: {
+        1: [
+          {
+            id: 'delete-track',
+            name: 'Ночная тема',
+            enabled: true,
+            source: { type: 'idb', blobId: '' },
+          },
+        ],
+        2: [],
+      },
+      spotify: { 1: null, 2: null },
+    });
+    app.renderMusicSettings();
+    var deleteButton = document.querySelector(
+      '[data-action="music-remove-item"][data-item-id="delete-track"]'
+    );
+    if (!deleteButton) throw new Error('Кнопка удаления трека не отрисовалась');
+    deleteButton.click();
+  });
+  await page.waitForSelector('#modal-music-delete-confirm[data-open]', { timeout: 3000 });
+  var musicDeleteModal = await page.evaluate(function () {
+    return [
+      document.getElementById('modal-music-delete-title').textContent,
+      document.getElementById('modal-music-delete-copy').textContent,
+      document.getElementById('modal-music-delete-cancel-label').textContent,
+      window.MafiaApp.getMusicSlotItems('1').length,
+    ].join('|');
+  });
+  if (
+    musicDeleteModal !==
+    'Удалить трек?|Трек «Ночная тема» будет удалён с этого устройства. Загруженный файл восстановить не получится.|Оставить трек|1'
+  ) {
+    errors.push('модалка удаления музыки: неверное содержимое ' + musicDeleteModal);
+  }
+  await page.click('[data-action="music-delete-cancel"]');
+  var musicKept = await page.evaluate(function () {
+    return window.MafiaApp.getMusicSlotItems('1').length;
+  });
+  if (musicKept !== 1) errors.push('модалка удаления музыки: отмена удалила трек');
+
+  await page.evaluate(function () {
+    window.MafiaApp.showMusicDeleteConfirm('1', 'delete-track');
+  });
+  await page.click('[data-action="music-delete-apply"]');
+  await page.waitForFunction(function () {
+    return window.MafiaApp.getMusicSlotItems('1').length === 0;
+  });
+
+  var playlistDeleteCopy = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.saveMusicMeta({
+      version: 1,
+      slots: {
+        1: [
+          {
+            id: 'delete-playlist',
+            type: 'playlist',
+            name: 'Финал',
+            tracks: [
+              { id: 'a', name: 'A', blobId: '' },
+              { id: 'b', name: 'B', blobId: '' },
+            ],
+          },
+        ],
+        2: [],
+      },
+      spotify: { 1: null, 2: null },
+    });
+    app.showMusicDeleteConfirm('1', 'delete-playlist');
+    var value = [
+      document.getElementById('modal-music-delete-title').textContent,
+      document.getElementById('modal-music-delete-copy').textContent,
+      document.getElementById('modal-music-delete-cancel-label').textContent,
+    ].join('|');
+    app.hideMusicDeleteConfirm();
+    return value;
+  });
+  if (
+    playlistDeleteCopy !==
+    'Удалить плейлист?|Плейлист «Финал» будет удалён с этого устройства. Внутри: 2 трека. Загруженные файлы восстановить не получится.|Оставить плейлист'
+  ) {
+    errors.push('модалка удаления плейлиста: неверное содержимое ' + playlistDeleteCopy);
+  }
+
   // Запуск автономной игры (полный путь setup → reveal).
   var autoPhase = await page.evaluate(function () {
     window.MafiaApp.startFreshAutoGame();
@@ -532,6 +926,23 @@ function findChrome() {
   if (autoPhase !== 'reveal:10')
     errors.push('startFreshAutoGame: ожидалось reveal:10, получено ' + autoPhase);
   await page.waitForSelector('#auto-reveal-screen.active', { timeout: 3000 });
+
+  var autoFoulLimit = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.setPlayerFoulLimit(3);
+    var seat = app.autoState.seats[0];
+    seat.fouls = 2;
+    seat.eliminationReason = null;
+    seat.alive = true;
+    app._autoInternals.addAutoFoul(1);
+    var result = seat.fouls + ':' + seat.eliminationReason + ':' + seat.alive;
+    app._autoInternals.setAutoElim(1, 'disqual');
+    app.setPlayerFoulLimit(4);
+    return result;
+  });
+  if (autoFoulLimit !== '3:disqual:false') {
+    errors.push('автономный лимит фолов: неверное состояние ' + autoFoulLimit);
+  }
 
   await page.evaluate(function () {
     window.MafiaApp.showAutoPlayerActionsModal(1);

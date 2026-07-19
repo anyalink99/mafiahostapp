@@ -100,7 +100,8 @@
     if (!pill) return;
     var span = pill.querySelector('span');
     if (span) span.textContent = 'ф: ' + p.fouls;
-    var hot = p.fouls > 2;
+    var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
+    var hot = p.fouls >= Math.max(1, foulLimit - 1);
     pill.classList.toggle('border-mafia-blood/55', hot);
     pill.classList.toggle('bg-mafia-blood', hot);
     pill.classList.toggle('border-mafia-border/35', !hot);
@@ -189,7 +190,7 @@
                     {
                       className:
                         'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
-                        (p.fouls > 2
+                        (p.fouls >= Math.max(1, (app.getFoulLimit ? app.getFoulLimit() : 4) - 1)
                           ? 'border-mafia-blood/55 bg-mafia-blood'
                           : 'border-mafia-border/35 bg-black/25'),
                     },
@@ -231,11 +232,13 @@
       return x.id === id;
     });
     if (!p || p.eliminationReason) return;
+    var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
+    if (p.fouls >= foulLimit) return;
     p.fouls++;
     var disqualified = false;
-    if (p.fouls >= 4) {
+    if (p.fouls >= foulLimit) {
       disqualified = true;
-      p.fouls = 4;
+      p.fouls = foulLimit;
       p.eliminationReason = 'disqual';
       app.gameLog.push({ type: 'elimination', ts: Date.now(), playerId: id, reason: 'disqual' });
       var vix = app.nomineeQueue.indexOf(id);

@@ -52,6 +52,8 @@
 
 <!-- @include screens/summary-screen.html -->
 
+<!-- @include screens/history-screen.html -->
+
 <!-- @include modals/modal-player-actions.html -->
 
 <!-- @include modals/modal-summary-player.html -->
@@ -67,6 +69,8 @@
 
 <!-- @include modals/modal-music-control.html -->
 
+<!-- @include modals/modal-music-delete-confirm.html -->
+
 <!-- @include modals/modal-host-tools.html -->
 
 <!-- @include modals/modal-timer-voice.html -->
@@ -74,6 +78,8 @@
 <!-- @include modals/modal-author-links.html -->
 
 <!-- @include modals/modal-reset-game-confirm.html -->
+
+<!-- @include modals/modal-history-delete-confirm.html -->
 
 <!-- @include screens/auto-setup-screen.html -->
 
@@ -181,8 +187,12 @@
 <script src="js/summary/player-data.js"></script>
 <script src="js/summary/modals.js"></script>
 <script src="js/summary/summary.js"></script>
+<script src="js/summary/export-model.js"></script>
 <script src="js/summary/export.js"></script>
 <script src="js/summary/mu-export.js"></script>
+
+<!-- local game archive -->
+<script src="js/history/game-history.js"></script>
 
 <!-- event handlers (data-action → app.uiActionHandlers) -->
 <script src="js/events/menu.js"></script>
@@ -190,6 +200,7 @@
 <script src="js/events/voice.js"></script>
 <script src="js/events/music.js"></script>
 <script src="js/events/summary.js"></script>
+<script src="js/events/history.js"></script>
 <script src="js/events/host/timer.js"></script>
 <script src="js/events/host/tools.js"></script>
 <script src="js/events/host/side.js"></script>

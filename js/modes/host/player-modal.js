@@ -19,9 +19,10 @@
     var count = document.getElementById('modal-player-foul-count');
     var minus = modal.querySelector('[data-action="player-modal-foul-minus"]');
     var plus = modal.querySelector('[data-action="player-modal-foul-plus"]');
-    if (count) count.textContent = (p.fouls || 0) + ' / 4';
+    var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
+    if (count) count.textContent = (p.fouls || 0) + ' / ' + foulLimit;
     if (minus) minus.disabled = !!p.eliminationReason || !p.fouls;
-    if (plus) plus.disabled = !!p.eliminationReason || p.fouls >= 4;
+    if (plus) plus.disabled = !!p.eliminationReason || p.fouls >= foulLimit;
   };
 
   app.syncPlayerNickFromModal = function () {
@@ -190,15 +191,13 @@
       app.bonusNoteByPlayerId = {};
     var key = String(id);
     var bmWrap = document.getElementById('modal-player-bestmove-wrap');
-    var bm = document.getElementById('modal-player-bestmove');
     var showBm = app.showSummaryBestMoveField ? app.showSummaryBestMoveField(id) : true;
     if (bmWrap) bmWrap.style.display = showBm ? 'flex' : 'none';
-    if (bm) {
-      bm.value = app.normalizeNumberListText
-        ? app.normalizeNumberListText(app.bestMoveByPlayerId[key])
-        : app.bestMoveByPlayerId[key] || '';
-      bm.disabled = !showBm;
-    }
+    if (app.syncBestMoveField)
+      app.syncBestMoveField('modal-player-bestmove', app.bestMoveByPlayerId[key], showBm);
+    var protocolSection = document.getElementById('modal-player-protocol-section');
+    if (protocolSection)
+      protocolSection.style.display = app.playerProtocolVisible === false ? 'none' : 'flex';
     if (app.fillNumGroupFields && app.getPlayerNumGroup) {
       app.fillNumGroupFields(
         'modal-player-protocol-',

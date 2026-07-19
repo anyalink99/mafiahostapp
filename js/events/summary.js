@@ -52,6 +52,9 @@
     var val = el && el.dataset ? el.dataset.summaryTeam : '';
     app.winningTeam = val === 'mafia' || val === 'peaceful' ? val : null;
     app.saveState();
+    if (app.winningTeam && app.saveCurrentGameToHistory) {
+      app.saveCurrentGameToHistory({ silent: true, assumePersisted: true });
+    }
     app.renderSummary();
     // Десктоп-панель игрока гейтит секции по выбору победителя.
     app.emit('roles-visibility-changed');

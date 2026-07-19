@@ -80,10 +80,11 @@
       <line x1="23" y1="8" x2="18" y2="13" />
     </symbol>
     <symbol id="icon-elim-hang" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <g transform="translate(12 12) scale(1.18) translate(-12 -12)">
-        <path d="M12 2v8.5" />
-        <ellipse cx="12" cy="15.5" rx="4" ry="5.5" />
-      </g>
+      <path d="m9.5 5.1 3.8-3 5.6 7-3.8 3z" />
+      <path d="m12.2 8.8-8 6.4" />
+      <path d="m3.2 14 2.5 3.1 2.2-1.8-2.5-3.1" />
+      <path d="M12.5 21h9" />
+      <path d="m14 21 .9-3h4.2l.9 3" />
     </symbol>
     <symbol id="icon-elim-shot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <g transform="translate(12 14.25) scale(1.32) translate(-12 -14.25)">
@@ -103,10 +104,10 @@
 
 <div id="menu-screen" class="screen active flex flex-col items-center p-6 sm:p-8">
     <div class="absolute inset-0 z-0 bg-gradient-to-b from-mafia-blood/20 via-mafia-black to-mafia-black" style="pointer-events: none;" aria-hidden="true"></div>
-    <div class="relative z-10 text-center animate-fade-in flex flex-col items-center justify-center flex-1 min-h-0 w-full">
+    <div class="menu-main relative z-10 text-center animate-fade-in flex flex-col items-center justify-center flex-1 min-h-0 w-full overflow-y-auto">
         <h1 class="font-display font-bold text-4xl min-[400px]:text-5xl sm:text-6xl md:text-7xl text-mafia-gold tracking-widest drop-shadow-lg leading-tight">МАФИЯ</h1>
         <p class="font-display text-mafia-goldLight/80 text-base sm:text-xl mt-2 tracking-widest uppercase">Ведущий</p>
-        <div class="mt-10 sm:mt-14 flex flex-col gap-4 max-w-sm w-full mx-auto flex-shrink-0">
+        <div class="menu-actions mt-10 sm:mt-14 flex flex-col gap-4 max-w-sm w-full mx-auto flex-shrink-0">
             <button type="button" id="btn-setup" data-action="prepare-enter" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
                 Подготовка
             </button>
@@ -115,6 +116,10 @@
             </button>
             <button type="button" id="btn-summary" data-goto="summary-screen" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
                 Подведение итогов
+            </button>
+            <button type="button" id="btn-history" data-goto="history-screen" class="relative w-full py-4 px-12 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
+                <span>История игр</span>
+                <span id="history-menu-count" class="hidden absolute right-4 top-1/2 -translate-y-1/2 min-w-6 h-6 px-1.5 items-center justify-center rounded-full border border-mafia-gold/30 bg-mafia-blood/30 text-mafia-gold text-xs tabular-nums" aria-label="Сохранённых игр: 0">0</span>
             </button>
             <button type="button" id="btn-settings" data-goto="settings-screen" class="w-full py-3 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-gold/90 font-medium text-sm tracking-wide uppercase transition-all duration-200 rounded-sm cursor-pointer">
                 Настройки
@@ -196,6 +201,65 @@
       <div id="settings-tab-general" class="hidden w-full mx-auto max-w-lg lg:max-w-none lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 space-y-8 lg:space-y-0">
       <div class="space-y-8">
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Таймер</h2>
+            <div class="space-y-3">
+                <label class="flex items-center justify-between gap-3 text-sm text-mafia-cream/90">
+                    <span>Длительность по умолчанию</span>
+                    <span class="flex items-center gap-2">
+                        <input type="number" id="setting-timer-main" min="5" max="999" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
+                        <span class="text-mafia-cream/60">с</span>
+                    </span>
+                </label>
+                <label class="flex items-center justify-between gap-3 text-sm text-mafia-cream/90">
+                    <span>Короткая кнопка</span>
+                    <span class="flex items-center gap-2">
+                        <input type="number" id="setting-timer-short" min="5" max="999" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
+                        <span class="text-mafia-cream/60">с</span>
+                    </span>
+                </label>
+            </div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Карточка игрока</h2>
+            <div class="space-y-4">
+                <label class="flex items-start gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                    <input type="checkbox" id="setting-player-bestmove-visible" class="mafia-checkbox mt-0.5">
+                    <span>
+                        <span class="block">Показывать лучший ход</span>
+                        <span class="mt-0.5 block text-xs leading-relaxed text-mafia-cream/50">Только у первого убитого игрока</span>
+                    </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                    <input type="checkbox" id="setting-player-protocol-visible" class="mafia-checkbox mt-0.5">
+                    <span>
+                        <span class="block">Показывать протокол и мнение</span>
+                        <span class="mt-0.5 block text-xs leading-relaxed text-mafia-cream/50">В игровой карточке и при подведении итогов</span>
+                    </span>
+                </label>
+                <label class="flex items-center justify-between gap-3 border-t border-mafia-border/60 pt-4 text-sm text-mafia-cream/90">
+                    <span>Фолов до удаления</span>
+                    <input type="number" id="setting-player-foul-limit" min="1" max="10" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
+                </label>
+            </div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Экспериментальные режимы</h2>
+            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                <input type="checkbox" id="setting-experimental-modes" class="mafia-checkbox">
+                <span>Включить</span>
+            </label>
+        </section>
+      </div>
+      <div class="space-y-8">
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">MafiaUniverse</h2>
+            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                <input type="checkbox" id="setting-mu-lookup" class="mafia-checkbox">
+                <span>Подтягивать псевдонимы из базы MU</span>
+            </label>
+            <p class="mt-2 text-xs text-mafia-cream/55">При вводе ника в поля игроков показываем подсказки из mafiauniverse.org через проксирующий сервис. Если выключить — работаем только с локальной историей.</p>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Озвучка</h2>
             <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
                 <input type="checkbox" id="setting-timer-voice" class="mafia-checkbox">
@@ -240,42 +304,6 @@
                 <span class="text-mafia-gold/90 tabular-nums normal-case tracking-normal"><span id="setting-night-wait-label">10</span> с</span>
             </div>
             <input type="range" id="setting-night-wait" min="0" max="20" step="1" value="10" class="mt-2 w-full accent-mafia-gold">
-        </section>
-      </div>
-      <div class="space-y-8">
-        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
-            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Таймер</h2>
-            <div class="space-y-3">
-                <label class="flex items-center justify-between gap-3 text-sm text-mafia-cream/90">
-                    <span>Длительность по умолчанию</span>
-                    <span class="flex items-center gap-2">
-                        <input type="number" id="setting-timer-main" min="5" max="999" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
-                        <span class="text-mafia-cream/60">с</span>
-                    </span>
-                </label>
-                <label class="flex items-center justify-between gap-3 text-sm text-mafia-cream/90">
-                    <span>Короткая кнопка</span>
-                    <span class="flex items-center gap-2">
-                        <input type="number" id="setting-timer-short" min="5" max="999" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
-                        <span class="text-mafia-cream/60">с</span>
-                    </span>
-                </label>
-            </div>
-        </section>
-        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
-            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Экспериментальные режимы</h2>
-            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
-                <input type="checkbox" id="setting-experimental-modes" class="mafia-checkbox">
-                <span>Включить</span>
-            </label>
-        </section>
-        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
-            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">MafiaUniverse</h2>
-            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
-                <input type="checkbox" id="setting-mu-lookup" class="mafia-checkbox">
-                <span>Подтягивать псевдонимы из базы MU</span>
-            </label>
-            <p class="mt-2 text-xs text-mafia-cream/55">При вводе ника в поля игроков показываем подсказки из mafiauniverse.org через проксирующий сервис. Если выключить — работаем только с локальной историей.</p>
         </section>
       </div>
       </div>
@@ -365,6 +393,7 @@
             <button type="button" data-action="prepare-enter" class="screen-nav-vert__btn">Подготовка</button>
             <button type="button" data-goto="game-screen" class="screen-nav-vert__btn">Игровой стол</button>
             <button type="button" data-goto="summary-screen" class="screen-nav-vert__btn">Итоги</button>
+            <button type="button" data-goto="history-screen" class="screen-nav-vert__btn">История</button>
             <button type="button" data-goto="settings-screen" class="screen-nav-vert__btn">Настройки</button>
             <button type="button" data-goto="menu-screen" class="screen-nav-vert__btn">Меню</button>
         </nav>
@@ -516,7 +545,10 @@
         <!-- Колонка 2: экспорт + ход игры -->
         <div class="flex-shrink-0 lg:flex-1 min-w-0 min-h-0 flex flex-col gap-4 lg:overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0 order-3 lg:order-none">
             <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5 flex-shrink-0">
-                <h2 class="font-display text-mafia-gold text-base tracking-widest mb-3">Экспорт</h2>
+                <div class="mb-3 flex items-center justify-between gap-3">
+                    <h2 class="font-display text-mafia-gold text-base tracking-widest">Экспорт</h2>
+                    <button type="button" data-action="history-save-current" class="rounded border border-mafia-gold/45 bg-mafia-blood/25 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-mafia-gold transition-colors hover:bg-mafia-blood/40">Сохранить игру</button>
+                </div>
                 <div class="flex flex-col sm:flex-row gap-2">
                     <button type="button" data-action="export-copy-text" class="w-full sm:flex-1 py-2.5 border-2 border-mafia-gold/50 bg-mafia-blood/30 hover:bg-mafia-blood/45 text-mafia-gold font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Скопировать текст</button>
                     <button type="button" data-action="export-download-csv" class="w-full sm:flex-1 py-2.5 border border-mafia-border bg-mafia-card hover:bg-mafia-border text-mafia-cream/90 font-semibold rounded text-sm uppercase tracking-wider cursor-pointer transition-colors">Экспортировать таблицу</button>
@@ -535,6 +567,36 @@
             </section>
         </div>
     </div>
+</div>
+
+<div id="history-screen" class="screen flex flex-col min-h-0 gap-4 p-4 sm:p-6 overflow-hidden">
+    <div class="flex items-center justify-between flex-shrink-0 py-2 lg:hidden">
+        <button type="button" data-goto="menu-screen" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
+        <span class="screen-title-label font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">История игр</span>
+    </div>
+    <main class="history-shell mh-content-cap flex-1 min-h-0 w-full max-w-6xl mx-auto">
+        <section class="history-archive-head" aria-labelledby="history-title">
+            <div class="min-w-0">
+                <p class="history-archive-head__eyebrow">Локальный архив ведущего</p>
+                <div class="flex min-w-0 items-baseline gap-3">
+                    <h1 id="history-title" class="history-archive-head__title">История игр</h1>
+                    <output id="history-count" class="history-archive-head__count" aria-live="polite">0</output>
+                </div>
+                <p class="history-archive-head__hint">Игры хранятся только на этом устройстве.</p>
+            </div>
+            <button type="button" id="history-save-current" data-action="history-save-current" class="history-save-current hidden">
+                <span class="history-save-current__mark" aria-hidden="true">+</span>
+                <span id="history-save-current-label">Сохранить текущую</span>
+            </button>
+        </section>
+        <div id="history-list" class="history-list" aria-live="polite"></div>
+        <section id="history-empty" class="history-empty hidden">
+            <div class="history-empty__seal" aria-hidden="true">∅</div>
+            <h2 class="history-empty__title">Архив пока пуст</h2>
+            <p class="history-empty__text">Сохрани текущую партию здесь или заверши игру — финальный результат попадёт в историю автоматически.</p>
+            <button type="button" data-action="prepare-enter" class="history-empty__action">Начать игру</button>
+        </section>
+    </main>
 </div>
 
 <div id="modal-player-actions" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-player-actions-title">
@@ -580,9 +642,9 @@
         <div id="modal-player-game-extras" class="mt-5 flex flex-col gap-3 border-t border-mafia-border/60 pt-4 lg:hidden">
             <div id="modal-player-bestmove-wrap" class="flex flex-col gap-1 text-xs text-mafia-cream/70">
                 <span class="font-display text-mafia-gold/90">Лучший ход</span>
-                <input type="text" id="modal-player-bestmove" data-numlist inputmode="numeric" autocomplete="off" placeholder="напр. 3, 7, 9" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                <input type="text" id="modal-player-bestmove" data-numlist data-bestmove-list inputmode="numeric" autocomplete="off" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
             </div>
-            <div class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
+            <div id="modal-player-protocol-section" class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
                 <div class="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-1.5">
                     <span></span>
                     <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Протокол</span>
@@ -628,7 +690,7 @@
             </div>
             <div id="modal-summary-bestmove-wrap" class="flex flex-col gap-1 text-xs text-mafia-cream/70">
                 <span class="font-display text-mafia-gold/90">Лучший ход</span>
-                <input type="text" id="modal-summary-bestmove" data-numlist inputmode="numeric" autocomplete="off" placeholder="напр. 3, 7, 9" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                <input type="text" id="modal-summary-bestmove" data-numlist data-bestmove-list inputmode="numeric" autocomplete="off" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
             </div>
             <div id="modal-summary-protocol-section" class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
                 <div class="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-1.5">
@@ -743,6 +805,19 @@
     </div>
 </div>
 
+<div id="modal-music-delete-confirm" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-music-delete-title" aria-describedby="modal-music-delete-copy">
+    <div class="absolute inset-0" data-action="music-delete-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-sm w-full shadow-xl">
+        <button type="button" class="modal-panel__close-x" data-action="music-delete-cancel" aria-label="Закрыть">×</button>
+        <h2 id="modal-music-delete-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-3">Удалить трек?</h2>
+        <p id="modal-music-delete-copy" class="text-mafia-cream/70 text-sm text-center mb-5">Загруженный файл будет удалён с этого устройства.</p>
+        <div class="flex flex-col gap-2.5">
+            <button type="button" data-action="music-delete-apply" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Удалить</button>
+            <button type="button" data-action="music-delete-cancel" id="modal-music-delete-cancel-label" class="w-full py-2 text-mafia-cream/60 hover:text-mafia-cream text-sm uppercase tracking-wider cursor-pointer">Оставить трек</button>
+        </div>
+    </div>
+</div>
+
 <div id="modal-host-tools" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-host-tools-title">
     <div class="absolute inset-0" data-action="host-tools-close" aria-hidden="true"></div>
     <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg p-5 max-w-sm w-full shadow-xl">
@@ -816,6 +891,19 @@
             <button type="button" data-action="reset-game-confirm-apply" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Сброс игры</button>
             <button type="button" data-action="reset-game-confirm-apply-with-nicks" class="w-full py-3 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream font-semibold uppercase tracking-wider rounded cursor-pointer">Сброс игры и псевдонимов</button>
             <button type="button" data-action="reset-game-confirm-cancel" class="w-full py-2 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-history-delete-confirm" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-history-delete-title">
+    <div class="absolute inset-0" data-action="history-delete-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-sm w-full shadow-xl">
+        <button type="button" class="modal-panel__close-x" data-action="history-delete-cancel" aria-label="Закрыть">×</button>
+        <h2 id="modal-history-delete-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-3">Удалить игру?</h2>
+        <p id="modal-history-delete-copy" class="text-mafia-cream/70 text-sm text-center mb-5">Сохранённая игра исчезнет с этого устройства.</p>
+        <div class="flex flex-col gap-2.5">
+            <button type="button" data-action="history-delete-apply" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Удалить</button>
+            <button type="button" data-action="history-delete-cancel" class="w-full py-2 text-mafia-cream/60 hover:text-mafia-cream text-sm uppercase tracking-wider cursor-pointer">Оставить игру</button>
         </div>
     </div>
 </div>
@@ -1198,8 +1286,12 @@
 <script src="js/summary/player-data.js"></script>
 <script src="js/summary/modals.js"></script>
 <script src="js/summary/summary.js"></script>
+<script src="js/summary/export-model.js"></script>
 <script src="js/summary/export.js"></script>
 <script src="js/summary/mu-export.js"></script>
+
+<!-- local game archive -->
+<script src="js/history/game-history.js"></script>
 
 <!-- event handlers (data-action → app.uiActionHandlers) -->
 <script src="js/events/menu.js"></script>
@@ -1207,6 +1299,7 @@
 <script src="js/events/voice.js"></script>
 <script src="js/events/music.js"></script>
 <script src="js/events/summary.js"></script>
+<script src="js/events/history.js"></script>
 <script src="js/events/host/timer.js"></script>
 <script src="js/events/host/tools.js"></script>
 <script src="js/events/host/side.js"></script>

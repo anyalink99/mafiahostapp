@@ -37,6 +37,7 @@
   };
 
   app.startFreshAutoGame = function () {
+    if (app.clearCurrentHistoryLink) app.clearCurrentHistoryLink();
     A.loadPrepareConfig();
     var variant =
       app.experimentalModesEnabled && A.isAutoSupportedVariant(app.prepareConfig.variant)
@@ -70,6 +71,15 @@
   };
 
   app.restartAutoGame = function () {
+    if (
+      app.autoState &&
+      app.autoState.active &&
+      app.autoState.phase !== 'setup' &&
+      app.saveCurrentGameToHistory
+    ) {
+      app.saveCurrentGameToHistory({ silent: true });
+    }
+    if (app.clearCurrentHistoryLink) app.clearCurrentHistoryLink();
     A.clearAllAutoTimers();
     app.autoState = A.makeFreshState();
     A.saveAuto();

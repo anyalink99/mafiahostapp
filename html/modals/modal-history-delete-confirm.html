@@ -1,0 +1,12 @@
+<div id="modal-history-delete-confirm" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-history-delete-title">
+    <div class="absolute inset-0" data-action="history-delete-cancel" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-sm w-full shadow-xl">
+        <button type="button" class="modal-panel__close-x" data-action="history-delete-cancel" aria-label="Закрыть">×</button>
+        <h2 id="modal-history-delete-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-3">Удалить игру?</h2>
+        <p id="modal-history-delete-copy" class="text-mafia-cream/70 text-sm text-center mb-5">Сохранённая игра исчезнет с этого устройства.</p>
+        <div class="flex flex-col gap-2.5">
+            <button type="button" data-action="history-delete-apply" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Удалить</button>
+            <button type="button" data-action="history-delete-cancel" class="w-full py-2 text-mafia-cream/60 hover:text-mafia-cream text-sm uppercase tracking-wider cursor-pointer">Оставить игру</button>
+        </div>
+    </div>
+</div>

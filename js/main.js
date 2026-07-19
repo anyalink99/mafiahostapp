@@ -81,6 +81,7 @@
     if (app.initMusic) app.initMusic();
     app.bindUiEvents();
     if (app.applyGameTypeFromQuery) app.applyGameTypeFromQuery();
+    if (app.consumeGameHistoryRestore) app.consumeGameHistoryRestore();
     if (app.updateResetButtonVisibility) app.updateResetButtonVisibility();
     app.registerServiceWorker();
     if (app.prefetchDefaultTracks) app.prefetchDefaultTracks();

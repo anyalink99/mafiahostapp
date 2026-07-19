@@ -65,6 +65,65 @@
       <div id="settings-tab-general" class="hidden w-full mx-auto max-w-lg lg:max-w-none lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 space-y-8 lg:space-y-0">
       <div class="space-y-8">
         <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Таймер</h2>
+            <div class="space-y-3">
+                <label class="flex items-center justify-between gap-3 text-sm text-mafia-cream/90">
+                    <span>Длительность по умолчанию</span>
+                    <span class="flex items-center gap-2">
+                        <input type="number" id="setting-timer-main" min="5" max="999" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
+                        <span class="text-mafia-cream/60">с</span>
+                    </span>
+                </label>
+                <label class="flex items-center justify-between gap-3 text-sm text-mafia-cream/90">
+                    <span>Короткая кнопка</span>
+                    <span class="flex items-center gap-2">
+                        <input type="number" id="setting-timer-short" min="5" max="999" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
+                        <span class="text-mafia-cream/60">с</span>
+                    </span>
+                </label>
+            </div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Карточка игрока</h2>
+            <div class="space-y-4">
+                <label class="flex items-start gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                    <input type="checkbox" id="setting-player-bestmove-visible" class="mafia-checkbox mt-0.5">
+                    <span>
+                        <span class="block">Показывать лучший ход</span>
+                        <span class="mt-0.5 block text-xs leading-relaxed text-mafia-cream/50">Только у первого убитого игрока</span>
+                    </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                    <input type="checkbox" id="setting-player-protocol-visible" class="mafia-checkbox mt-0.5">
+                    <span>
+                        <span class="block">Показывать протокол и мнение</span>
+                        <span class="mt-0.5 block text-xs leading-relaxed text-mafia-cream/50">В игровой карточке и при подведении итогов</span>
+                    </span>
+                </label>
+                <label class="flex items-center justify-between gap-3 border-t border-mafia-border/60 pt-4 text-sm text-mafia-cream/90">
+                    <span>Фолов до удаления</span>
+                    <input type="number" id="setting-player-foul-limit" min="1" max="10" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
+                </label>
+            </div>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Экспериментальные режимы</h2>
+            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                <input type="checkbox" id="setting-experimental-modes" class="mafia-checkbox">
+                <span>Включить</span>
+            </label>
+        </section>
+      </div>
+      <div class="space-y-8">
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
+            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">MafiaUniverse</h2>
+            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
+                <input type="checkbox" id="setting-mu-lookup" class="mafia-checkbox">
+                <span>Подтягивать псевдонимы из базы MU</span>
+            </label>
+            <p class="mt-2 text-xs text-mafia-cream/55">При вводе ника в поля игроков показываем подсказки из mafiauniverse.org через проксирующий сервис. Если выключить — работаем только с локальной историей.</p>
+        </section>
+        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
             <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Озвучка</h2>
             <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
                 <input type="checkbox" id="setting-timer-voice" class="mafia-checkbox">
@@ -109,42 +168,6 @@
                 <span class="text-mafia-gold/90 tabular-nums normal-case tracking-normal"><span id="setting-night-wait-label">10</span> с</span>
             </div>
             <input type="range" id="setting-night-wait" min="0" max="20" step="1" value="10" class="mt-2 w-full accent-mafia-gold">
-        </section>
-      </div>
-      <div class="space-y-8">
-        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
-            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Таймер</h2>
-            <div class="space-y-3">
-                <label class="flex items-center justify-between gap-3 text-sm text-mafia-cream/90">
-                    <span>Длительность по умолчанию</span>
-                    <span class="flex items-center gap-2">
-                        <input type="number" id="setting-timer-main" min="5" max="999" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
-                        <span class="text-mafia-cream/60">с</span>
-                    </span>
-                </label>
-                <label class="flex items-center justify-between gap-3 text-sm text-mafia-cream/90">
-                    <span>Короткая кнопка</span>
-                    <span class="flex items-center gap-2">
-                        <input type="number" id="setting-timer-short" min="5" max="999" step="1" inputmode="numeric" autocomplete="off" class="w-20 rounded border border-mafia-border bg-mafia-card px-2 py-1.5 text-center text-sm text-mafia-cream tabular-nums outline-none focus:border-mafia-gold/45">
-                        <span class="text-mafia-cream/60">с</span>
-                    </span>
-                </label>
-            </div>
-        </section>
-        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
-            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">Экспериментальные режимы</h2>
-            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
-                <input type="checkbox" id="setting-experimental-modes" class="mafia-checkbox">
-                <span>Включить</span>
-            </label>
-        </section>
-        <section class="bg-mafia-coal border border-mafia-border rounded-lg p-4 sm:p-5">
-            <h2 class="font-display text-mafia-gold text-lg tracking-widest mb-3">MafiaUniverse</h2>
-            <label class="flex items-center gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
-                <input type="checkbox" id="setting-mu-lookup" class="mafia-checkbox">
-                <span>Подтягивать псевдонимы из базы MU</span>
-            </label>
-            <p class="mt-2 text-xs text-mafia-cream/55">При вводе ника в поля игроков показываем подсказки из mafiauniverse.org через проксирующий сервис. Если выключить — работаем только с локальной историей.</p>
         </section>
       </div>
       </div>

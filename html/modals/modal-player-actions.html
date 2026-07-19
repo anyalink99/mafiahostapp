@@ -41,9 +41,9 @@
         <div id="modal-player-game-extras" class="mt-5 flex flex-col gap-3 border-t border-mafia-border/60 pt-4 lg:hidden">
             <div id="modal-player-bestmove-wrap" class="flex flex-col gap-1 text-xs text-mafia-cream/70">
                 <span class="font-display text-mafia-gold/90">Лучший ход</span>
-                <input type="text" id="modal-player-bestmove" data-numlist inputmode="numeric" autocomplete="off" placeholder="напр. 3, 7, 9" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
+                <input type="text" id="modal-player-bestmove" data-numlist data-bestmove-list inputmode="numeric" autocomplete="off" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
             </div>
-            <div class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
+            <div id="modal-player-protocol-section" class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
                 <div class="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-1.5">
                     <span></span>
                     <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Протокол</span>

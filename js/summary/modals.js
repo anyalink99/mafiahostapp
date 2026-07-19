@@ -259,13 +259,13 @@
     if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object')
       app.opinionByPlayerId = {};
     var bmWrap = document.getElementById('modal-summary-bestmove-wrap');
-    var bm = document.getElementById('modal-summary-bestmove');
     var showBm = app.showSummaryBestMoveField(playerId);
     if (bmWrap) bmWrap.style.display = showBm ? 'flex' : 'none';
-    if (bm) {
-      bm.value = app.normalizeNumberListText(app.bestMoveByPlayerId[bk]);
-      bm.disabled = !showBm;
-    }
+    if (app.syncBestMoveField)
+      app.syncBestMoveField('modal-summary-bestmove', app.bestMoveByPlayerId[bk], showBm);
+    var protocolSection = document.getElementById('modal-summary-protocol-section');
+    if (protocolSection)
+      protocolSection.style.display = app.playerProtocolVisible === false ? 'none' : 'flex';
     app.fillNumGroupFields(
       'modal-summary-protocol-',
       app.getPlayerNumGroup(app.protocolByPlayerId, playerId)

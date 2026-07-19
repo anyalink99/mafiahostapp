@@ -22,6 +22,100 @@
   };
 
   var MUSIC_PANEL_MS = 260;
+  var pendingMusicDelete = null;
+
+  function findMusicItem(slot, itemId) {
+    var items = app.getMusicSlotItems ? app.getMusicSlotItems(slot) : [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i] && items[i].id === itemId) return items[i];
+    }
+    return null;
+  }
+
+  function musicTrackCountLabel(count) {
+    var n = Math.abs(count) % 100;
+    var last = n % 10;
+    var word = 'треков';
+    if (n < 11 || n > 19) {
+      if (last === 1) word = 'трек';
+      else if (last >= 2 && last <= 4) word = 'трека';
+    }
+    return count + ' ' + word;
+  }
+
+  app.showMusicDeleteConfirm = function (slot, itemId) {
+    var key = String(slot) === '2' ? '2' : '1';
+    var item = findMusicItem(key, itemId);
+    if (!item) return;
+
+    var isPlaylist = item.type === 'playlist';
+    var name = String(item.name || (isPlaylist ? 'Плейлист' : 'Трек'));
+    var title = document.getElementById('modal-music-delete-title');
+    var copy = document.getElementById('modal-music-delete-copy');
+    var cancel = document.getElementById('modal-music-delete-cancel-label');
+    if (title) title.textContent = isPlaylist ? 'Удалить плейлист?' : 'Удалить трек?';
+    if (copy) {
+      if (isPlaylist) {
+        var count = Array.isArray(item.tracks) ? item.tracks.length : 0;
+        copy.textContent =
+          'Плейлист «' +
+          name +
+          '» будет удалён с этого устройства. Внутри: ' +
+          musicTrackCountLabel(count) +
+          '. Загруженные файлы восстановить не получится.';
+      } else {
+        copy.textContent =
+          'Трек «' +
+          name +
+          '» будет удалён с этого устройства. Загруженный файл восстановить не получится.';
+      }
+    }
+    if (cancel) cancel.textContent = isPlaylist ? 'Оставить плейлист' : 'Оставить трек';
+
+    pendingMusicDelete = {
+      slot: key,
+      id: itemId,
+      type: isPlaylist ? 'playlist' : 'track',
+    };
+    var modal = document.getElementById('modal-music-delete-confirm');
+    if (modal && app.modalSetOpen) app.modalSetOpen(modal, true);
+  };
+
+  app.hideMusicDeleteConfirm = function () {
+    pendingMusicDelete = null;
+    var modal = document.getElementById('modal-music-delete-confirm');
+    if (modal && app.modalSetOpen) app.modalSetOpen(modal, false);
+  };
+
+  app.applyMusicDelete = function () {
+    if (!pendingMusicDelete || !app.musicRemoveItem) return;
+    var target = pendingMusicDelete;
+    var modal = document.getElementById('modal-music-delete-confirm');
+    pendingMusicDelete = null;
+    if (modal && app.modalSetOpen) app.modalSetOpen(modal, false);
+
+    if (app.expandedMusicItemIdBySlot) {
+      if (
+        app.expandedMusicItemIdBySlot['1'] === target.id ||
+        app.expandedMusicItemIdBySlot['2'] === target.id
+      ) {
+        app.expandedMusicItemIdBySlot['1'] = '';
+        app.expandedMusicItemIdBySlot['2'] = '';
+      }
+    }
+
+    app
+      .musicRemoveItem(target.slot, target.id)
+      .then(function (removed) {
+        if (app.renderMusicSettings) app.renderMusicSettings();
+        if (removed && app.showToast) {
+          app.showToast(target.type === 'playlist' ? 'Плейлист удалён' : 'Трек удалён');
+        }
+      })
+      .catch(function () {
+        if (app.showToast) app.showToast('Не удалось удалить музыку');
+      });
+  };
 
   function musicSettingsFindLiByItemId(itemId) {
     var screen = document.getElementById('settings-screen');

@@ -16,6 +16,9 @@
     s.result = team;
     A.clearAllAutoTimers();
     A.saveAuto();
+    if (app.saveCurrentGameToHistory) {
+      app.saveCurrentGameToHistory({ silent: true, assumePersisted: true });
+    }
     app.navigateToScreen('auto-end-screen');
   }
   A.endGame = endGame;

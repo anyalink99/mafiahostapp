@@ -121,21 +121,15 @@
   app.uiActionHandlers['music-remove-item'] = function (el) {
     var sid = el.getAttribute('data-slot');
     var iid = el.getAttribute('data-item-id');
-    if (!sid || !iid) return;
+    if (sid && iid && app.showMusicDeleteConfirm) app.showMusicDeleteConfirm(sid, iid);
+  };
 
-    if (app.expandedMusicItemIdBySlot) {
-      if (
-        app.expandedMusicItemIdBySlot['1'] === iid ||
-        app.expandedMusicItemIdBySlot['2'] === iid
-      ) {
-        app.expandedMusicItemIdBySlot['1'] = '';
-        app.expandedMusicItemIdBySlot['2'] = '';
-      }
-    }
+  app.uiActionHandlers['music-delete-cancel'] = function () {
+    if (app.hideMusicDeleteConfirm) app.hideMusicDeleteConfirm();
+  };
 
-    app.musicRemoveItem(sid, iid).then(function () {
-      if (app.renderMusicSettings) app.renderMusicSettings();
-    });
+  app.uiActionHandlers['music-delete-apply'] = function () {
+    if (app.applyMusicDelete) app.applyMusicDelete();
   };
 
   /* ── Spotify action handlers ── */

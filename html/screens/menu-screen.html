@@ -1,9 +1,9 @@
 <div id="menu-screen" class="screen active flex flex-col items-center p-6 sm:p-8">
     <div class="absolute inset-0 z-0 bg-gradient-to-b from-mafia-blood/20 via-mafia-black to-mafia-black" style="pointer-events: none;" aria-hidden="true"></div>
-    <div class="relative z-10 text-center animate-fade-in flex flex-col items-center justify-center flex-1 min-h-0 w-full">
+    <div class="menu-main relative z-10 text-center animate-fade-in flex flex-col items-center justify-center flex-1 min-h-0 w-full overflow-y-auto">
         <h1 class="font-display font-bold text-4xl min-[400px]:text-5xl sm:text-6xl md:text-7xl text-mafia-gold tracking-widest drop-shadow-lg leading-tight">МАФИЯ</h1>
         <p class="font-display text-mafia-goldLight/80 text-base sm:text-xl mt-2 tracking-widest uppercase">Ведущий</p>
-        <div class="mt-10 sm:mt-14 flex flex-col gap-4 max-w-sm w-full mx-auto flex-shrink-0">
+        <div class="menu-actions mt-10 sm:mt-14 flex flex-col gap-4 max-w-sm w-full mx-auto flex-shrink-0">
             <button type="button" id="btn-setup" data-action="prepare-enter" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
                 Подготовка
             </button>
@@ -12,6 +12,10 @@
             </button>
             <button type="button" id="btn-summary" data-goto="summary-screen" class="w-full py-4 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
                 Подведение итогов
+            </button>
+            <button type="button" id="btn-history" data-goto="history-screen" class="relative w-full py-4 px-12 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-cream/90 font-medium text-base tracking-wide transition-all duration-200 rounded-sm cursor-pointer">
+                <span>История игр</span>
+                <span id="history-menu-count" class="hidden absolute right-4 top-1/2 -translate-y-1/2 min-w-6 h-6 px-1.5 items-center justify-center rounded-full border border-mafia-gold/30 bg-mafia-blood/30 text-mafia-gold text-xs tabular-nums" aria-label="Сохранённых игр: 0">0</span>
             </button>
             <button type="button" id="btn-settings" data-goto="settings-screen" class="w-full py-3 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-gold/90 font-medium text-sm tracking-wide uppercase transition-all duration-200 rounded-sm cursor-pointer">
                 Настройки
