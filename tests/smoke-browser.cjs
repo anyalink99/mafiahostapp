@@ -541,14 +541,14 @@ function findChrome() {
       ':' +
       modal.hasAttribute('data-open') +
       ':' +
-      Math.round(window.innerHeight - panelRect.bottom) +
+      Math.round(panelRect.top + panelRect.height / 2 - window.innerHeight / 2) +
       ':' +
       getComputedStyle(close).display +
       ':' +
       parseFloat(getComputedStyle(nick).fontSize)
     );
   });
-  if (foulAdded !== '1:1 / 4:true:8:flex:16') {
+  if (foulAdded !== '1:1 / 4:true:0:flex:16') {
     errors.push('контрол фолов: плюс не обновил счётчик ' + foulAdded);
   }
   await page.click('[data-action="player-modal-foul-minus"]');
@@ -868,7 +868,7 @@ function findChrome() {
   ) {
     errors.push('модалка удаления музыки: неверное содержимое ' + musicDeleteModal);
   }
-  await page.click('[data-action="music-delete-cancel"]');
+  await page.click('#modal-music-delete-cancel-label');
   var musicKept = await page.evaluate(function () {
     return window.MafiaApp.getMusicSlotItems('1').length;
   });
