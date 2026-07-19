@@ -978,10 +978,14 @@ function findChrome() {
   await dpage.waitForSelector('#game-screen.active', { timeout: 5000 });
 
   // Модалка игрока перехватывается в unified-панель (registerModalInterceptor).
+  var desktopPlayersWidthBefore = await dpage.evaluate(function () {
+    return document.getElementById('players-list').getBoundingClientRect().width;
+  });
   await dpage.evaluate(function () {
     window.MafiaApp.showPlayerActionsModal(3);
   });
   await dpage.waitForSelector('.unified-player-slot.is-open', { timeout: 3000 });
+  await dpage.waitForTimeout(420);
   var unifiedNum = await dpage.evaluate(function () {
     var n = document.getElementById('unified-player-num');
     return n ? n.textContent : null;
@@ -989,6 +993,99 @@ function findChrome() {
   if (unifiedNum !== '3') {
     errors.push('unified-панель: ожидался игрок 3, получено ' + unifiedNum);
   }
+
+  var desktopPanelLayout = await dpage.evaluate(function () {
+    function rect(el) {
+      var r = el.getBoundingClientRect();
+      return { left: r.left, right: r.right, width: r.width };
+    }
+    var list = document.getElementById('players-list');
+    var panel = document.querySelector('#game-screen .unified-player-slot');
+    var workspace = panel.closest('.desktop-workspace');
+    var right = document.getElementById('game-side-right');
+    var collisions = 0;
+    list.querySelectorAll('.player-slot__row').forEach(function (row) {
+      var status = row.children[0].getBoundingClientRect();
+      var number = row.children[1].getBoundingClientRect();
+      var foul = row.children[2].getBoundingClientRect();
+      if (number.left < status.right - 1 || number.right > foul.left + 1) collisions++;
+    });
+    return {
+      list: rect(list),
+      panel: rect(panel),
+      workspace: rect(workspace),
+      rightDisplay: getComputedStyle(right).display,
+      collisions: collisions,
+      overflow: list.scrollWidth - list.clientWidth,
+    };
+  });
+  if (Math.abs(desktopPanelLayout.list.width - desktopPlayersWidthBefore) > 1) {
+    errors.push('unified-панель сжимает стол на широком desktop');
+  }
+  if (
+    desktopPanelLayout.panel.width < 340 ||
+    Math.abs(desktopPanelLayout.panel.right - desktopPanelLayout.workspace.right) > 1
+  ) {
+    errors.push('unified-панель неверно выровнена поверх правого инспектора');
+  }
+  if (desktopPanelLayout.rightDisplay === 'none') {
+    errors.push('правый инспектор удалён из layout вместо перекрытия drawer-панелью');
+  }
+  if (desktopPanelLayout.collisions || desktopPanelLayout.overflow > 1) {
+    errors.push('карточки игроков пересекаются или выходят за ширину desktop-сетки');
+  }
+
+  // Закрытие должно быть обратной анимацией, а не мгновенным исчезновением.
+  var openPanelWidth = desktopPanelLayout.panel.width;
+  await dpage.locator('#unified-player-panel [data-action="unified-player-close"]').first().click();
+  await dpage.waitForTimeout(80);
+  var closingPanelWidth = await dpage.evaluate(function () {
+    return document.querySelector('#game-screen .unified-player-slot').getBoundingClientRect()
+      .width;
+  });
+  await dpage.waitForTimeout(420);
+  var closedPanelWidth = await dpage.evaluate(function () {
+    return document.querySelector('#game-screen .unified-player-slot').getBoundingClientRect()
+      .width;
+  });
+  if (!(closingPanelWidth > 0 && closingPanelWidth < openPanelWidth && closedPanelWidth < 1)) {
+    errors.push('unified-панель закрывается без плавной обратной анимации');
+  }
+
+  // На узком desktop drawer также не участвует в расчёте flex-колонок.
+  await dpage.setViewportSize({ width: 1180, height: 900 });
+  await dpage.waitForTimeout(300);
+  var mediumPlayersWidthBefore = await dpage.evaluate(function () {
+    return document.getElementById('players-list').getBoundingClientRect().width;
+  });
+  await dpage.evaluate(function () {
+    window.MafiaApp.showPlayerActionsModal(3);
+  });
+  await dpage.waitForSelector('#game-screen .unified-player-slot.is-open', { timeout: 3000 });
+  await dpage.waitForTimeout(420);
+  var mediumPanelLayout = await dpage.evaluate(function () {
+    var list = document.getElementById('players-list').getBoundingClientRect();
+    var panel = document.querySelector('#game-screen .unified-player-slot').getBoundingClientRect();
+    return { listWidth: list.width, panelWidth: panel.width };
+  });
+  if (
+    Math.abs(mediumPanelLayout.listWidth - mediumPlayersWidthBefore) > 1 ||
+    mediumPanelLayout.panelWidth < 340
+  ) {
+    errors.push(
+      'unified-панель ломает компоновку на desktop 1024–1279px: ' +
+        JSON.stringify({ before: mediumPlayersWidthBefore, after: mediumPanelLayout })
+    );
+  }
+  await dpage.evaluate(function () {
+    window.MafiaApp.hidePlayerActionsModal();
+  });
+  await dpage.waitForTimeout(420);
+  await dpage.setViewportSize({ width: 1366, height: 900 });
+  await dpage.evaluate(function () {
+    window.MafiaApp.showPlayerActionsModal(3);
+  });
+  await dpage.waitForSelector('#game-screen .unified-player-slot.is-open', { timeout: 3000 });
 
   // Переход экрана закрывает панель (навигационный гвард панели).
   await dpage.evaluate(function () {
@@ -999,6 +1096,35 @@ function findChrome() {
     return !!document.querySelector('.unified-player-slot.is-open');
   });
   if (slotStillOpen) errors.push('unified-панель не закрылась при переходе экрана');
+
+  // История использует ту же ширину, что глобальный таймер, и общий чёрный фон экранов.
+  await dpage.setViewportSize({ width: 1600, height: 900 });
+  await dpage.waitForTimeout(300);
+  await dpage.evaluate(function () {
+    window.MafiaApp.navigateToScreen('history-screen');
+  });
+  await dpage.waitForSelector('#history-screen.active', { timeout: 3000 });
+  var desktopHistoryLayout = await dpage.evaluate(function () {
+    var timer = document.getElementById('timer-panel-wrap').getBoundingClientRect();
+    var shell = document.querySelector('#history-screen .history-shell').getBoundingClientRect();
+    var style = getComputedStyle(document.getElementById('history-screen'));
+    return {
+      timerLeft: timer.left,
+      timerWidth: timer.width,
+      shellLeft: shell.left,
+      shellWidth: shell.width,
+      backgroundImage: style.backgroundImage,
+    };
+  });
+  if (
+    Math.abs(desktopHistoryLayout.shellLeft - desktopHistoryLayout.timerLeft) > 1 ||
+    Math.abs(desktopHistoryLayout.shellWidth - desktopHistoryLayout.timerWidth) > 1
+  ) {
+    errors.push('desktop-история не совпадает по ширине с глобальным таймером');
+  }
+  if (desktopHistoryLayout.backgroundImage !== 'none') {
+    errors.push('desktop-история содержит лишнюю фоновую подложку');
+  }
 
   // Городская ночь на ПК раскрывается встроенным слотом и возвращает body обратно при закрытии.
   await dpage.evaluate(function () {

@@ -912,11 +912,6 @@ input.mafia-checkbox:active:not(:disabled) {
 /* ============================================================
    Локальная история игр — «архив дел» ведущего
    ============================================================ */
-#history-screen {
-  background:
-    radial-gradient(circle at 88% 7%, rgba(127, 29, 29, 0.14), transparent 30rem), #0c0a09;
-}
-
 .history-shell {
   display: flex;
   flex-direction: column;
@@ -1464,6 +1459,60 @@ input.mafia-checkbox:active:not(:disabled) {
 @media (min-width: 1280px) {
   .player-detail-slot {
     --k-slot-w: 24rem;
+  }
+}
+
+/* На среднем desktop панель игрока работает как правый drawer. Она не участвует
+   в расчёте flex-колонок и поэтому не сжимает таблицы до нечитаемой ширины. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .desktop-workspace {
+    position: relative;
+  }
+  .desktop-workspace > .unified-player-slot {
+    --k-slot-w: min(22rem, 100%);
+    position: absolute;
+    z-index: 30;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    margin-inline: 0;
+    filter: drop-shadow(-18px 0 24px rgba(0, 0, 0, 0.42));
+    transform: translateX(1rem);
+    transition:
+      width var(--k-dur-3) var(--k-ease),
+      opacity var(--k-dur-2) var(--k-ease),
+      transform var(--k-dur-3) var(--k-ease);
+  }
+  .desktop-workspace > .unified-player-slot.is-open {
+    width: min(var(--k-slot-w), 100%);
+    transform: translateX(0);
+  }
+}
+
+/* На широком игровом столе карточка игрока раскрывается поверх правого инспектора.
+   Сетка остаётся неподвижной, а инспектор плавно возвращается при закрытии. */
+@media (min-width: 1280px) {
+  #game-screen .desktop-workspace {
+    position: relative;
+  }
+  #game-screen .unified-player-slot {
+    --k-slot-w: 22rem;
+    position: absolute;
+    z-index: 30;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    margin-inline: 0;
+    filter: drop-shadow(-18px 0 24px rgba(0, 0, 0, 0.42));
+    transform: translateX(1rem);
+    transition:
+      width var(--k-dur-3) var(--k-ease),
+      opacity var(--k-dur-2) var(--k-ease),
+      transform var(--k-dur-3) var(--k-ease);
+  }
+  #game-screen .unified-player-slot.is-open {
+    width: min(var(--k-slot-w), 100%);
+    transform: translateX(0);
   }
 }
 #setup-slot {
