@@ -231,8 +231,12 @@
     // когда наш app сам присваивает значение (открытие модалки игрока
     // через input.value = player.nick, без события).
     try {
-      var proto = HTMLInputElement.prototype;
-      var origDesc = Object.getOwnPropertyDescriptor(proto, 'value');
+      var proto = Object.getPrototypeOf(input);
+      var origDesc = null;
+      while (proto && !origDesc) {
+        origDesc = Object.getOwnPropertyDescriptor(proto, 'value');
+        proto = Object.getPrototypeOf(proto);
+      }
       if (origDesc && origDesc.set && origDesc.get) {
         Object.defineProperty(input, 'value', {
           configurable: true,

@@ -636,6 +636,18 @@ body.prepare-nick-drag-active #prepare-players-list .player-slot {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Однострочный textarea не попадает в эвристику Android Autofill для логинов,
+   но внешне и по поведению остаётся обычным полем псевдонима. */
+textarea.nickname-single-line {
+  height: 2.375rem;
+  min-height: 2.375rem;
+  max-height: 2.375rem;
+  overflow: hidden;
+  resize: none;
+  white-space: pre;
+}
+
 input.mafia-checkbox {
   -webkit-appearance: none;
   appearance: none;

@@ -158,10 +158,27 @@ function findChrome() {
   await linkPage.goto('http://127.0.0.1:' + port + '/?gameType=URBAN', {
     waitUntil: 'networkidle',
   });
-  await linkPage.waitForSelector(
-    '#prepare-mode-screen.active [data-variant="urban"].prepare-toggle-active',
-    { timeout: 3000 }
-  );
+  var uppercaseGameTypeState = await linkPage.evaluate(function () {
+    var app = window.MafiaApp;
+    var screen = document.getElementById('prepare-mode-screen');
+    var urban = document.querySelector('[data-variant="urban"]');
+    return {
+      enabled: app.experimentalModesEnabled,
+      mode: app.prepareConfig.mode,
+      variant: app.prepareConfig.variant,
+      screenActive: !!(screen && screen.classList.contains('active')),
+      urbanActive: !!(urban && urban.classList.contains('prepare-toggle-active')),
+    };
+  });
+  if (
+    !uppercaseGameTypeState.enabled ||
+    uppercaseGameTypeState.mode !== 'host' ||
+    uppercaseGameTypeState.variant !== 'urban' ||
+    !uppercaseGameTypeState.screenActive ||
+    !uppercaseGameTypeState.urbanActive
+  ) {
+    errors.push('gameType=URBAN: неверная нормализация ' + JSON.stringify(uppercaseGameTypeState));
+  }
   await linkPage.close();
 
   // Локальная история: создание и фоновое обновление снимка, восстановление,
@@ -424,7 +441,10 @@ function findChrome() {
       var input = document.getElementById(id);
       return {
         id: id,
-        type: input.type,
+        tagName: input.tagName,
+        rows: input.rows,
+        wrap: input.wrap,
+        singleLine: input.hasAttribute('data-single-line-nickname'),
         autocomplete: input.getAttribute('autocomplete'),
         autocorrect: input.getAttribute('autocorrect'),
         autocapitalize: input.getAttribute('autocapitalize'),
@@ -434,8 +454,11 @@ function findChrome() {
   });
   nicknameFieldHints.forEach(function (hint) {
     if (
-      hint.type !== 'text' ||
-      !/^section-mafia-[a-z]+ nickname$/.test(hint.autocomplete || '') ||
+      hint.tagName !== 'TEXTAREA' ||
+      hint.rows !== 1 ||
+      hint.wrap !== 'off' ||
+      !hint.singleLine ||
+      hint.autocomplete !== 'off' ||
       hint.autocorrect !== 'off' ||
       hint.autocapitalize !== 'words' ||
       hint.spellcheck !== false
@@ -443,6 +466,42 @@ function findChrome() {
       errors.push('псевдоним: неверные подсказки мобильного ввода ' + JSON.stringify(hint));
     }
   });
+
+  // Enter в псевдониме завершает ввод и не превращает визуально однострочное поле
+  // в многострочное. Проверяем тот же путь, которым пользуется кнопка «Готово» клавиатуры.
+  await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.navigateToScreen('prepare-screen');
+    app.showPlayerActionsModal(1);
+    var field = document.getElementById('modal-player-nick');
+    field.value = 'Альфа';
+    field.focus();
+  });
+  await page.keyboard.press('Enter');
+  var nicknameEnterResult = await page.evaluate(function () {
+    var field = document.getElementById('modal-player-nick');
+    var result = {
+      value: field.value,
+      blurred: document.activeElement !== field,
+      height: field.getBoundingClientRect().height,
+      scrollHeight: field.scrollHeight,
+    };
+    field.value = '';
+    window.MafiaApp.hidePlayerActionsModal();
+    window.MafiaApp.summaryRoleByPlayerId = {};
+    window.MafiaApp.saveState();
+    return result;
+  });
+  if (
+    nicknameEnterResult.value !== 'Альфа' ||
+    nicknameEnterResult.value.indexOf('\n') !== -1 ||
+    !nicknameEnterResult.blurred ||
+    nicknameEnterResult.height > 46
+  ) {
+    errors.push(
+      'псевдоним: Enter нарушил однострочный ввод ' + JSON.stringify(nicknameEnterResult)
+    );
+  }
 
   // На подготовке заполненный псевдоним переносится pointer-жестом даже в пустой слот;
   // короткий клик после drag не должен попутно открыть карточку игрока.
@@ -557,11 +616,13 @@ function findChrome() {
     input.focus();
   });
   await page.waitForFunction(function () {
-    return document.querySelectorAll('.mu-ac-dropdown .mu-ac-item').length === 18;
+    var input = document.getElementById('summary-host-name');
+    var dropdown = document.getElementById(input.getAttribute('aria-controls'));
+    return !!(dropdown && dropdown.querySelectorAll('.mu-ac-item').length === 18);
   });
   var autocompleteLayout = await page.evaluate(function () {
     var input = document.getElementById('summary-host-name');
-    var dd = document.querySelector('.mu-ac-dropdown');
+    var dd = document.getElementById(input.getAttribute('aria-controls'));
     var ir = input.getBoundingClientRect();
     var dr = dd.getBoundingClientRect();
     return {
@@ -588,13 +649,15 @@ function findChrome() {
     errors.push('MU autocomplete: неверная геометрия ' + JSON.stringify(autocompleteLayout));
   }
   await page.evaluate(function () {
-    var dd = document.querySelector('.mu-ac-dropdown');
+    var input = document.getElementById('summary-host-name');
+    var dd = document.getElementById(input.getAttribute('aria-controls'));
     dd.scrollTop = 180;
     dd.dispatchEvent(new Event('scroll'));
   });
   await page.waitForTimeout(50);
   var autocompleteScroll = await page.evaluate(function () {
-    var dd = document.querySelector('.mu-ac-dropdown');
+    var input = document.getElementById('summary-host-name');
+    var dd = document.getElementById(input.getAttribute('aria-controls'));
     return {
       visible: getComputedStyle(dd).display !== 'none',
       scrollTop: dd.scrollTop,

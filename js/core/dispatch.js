@@ -66,6 +66,30 @@
     // :active залипает/срабатывает хаотично.
     document.addEventListener('touchstart', function () {}, { passive: true });
 
+    // Android Autofill не показывает панель учётных данных для textarea, поэтому поля
+    // псевдонима сделаны визуально однострочными textarea. Не даём Enter создать перенос:
+    // действие «Готово» завершает ввод и скрывает клавиатуру, как у обычного input.
+    function finishSingleLineNicknameInput(e) {
+      if (e.isComposing) return;
+      var field =
+        e.target && e.target.closest
+          ? e.target.closest('textarea[data-single-line-nickname]')
+          : null;
+      if (!field) return;
+      e.preventDefault();
+      field.blur();
+    }
+
+    document.body.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') finishSingleLineNicknameInput(e);
+    });
+
+    document.body.addEventListener('beforeinput', function (e) {
+      if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
+        finishSingleLineNicknameInput(e);
+      }
+    });
+
     // Доступность: Enter/Space по vote-плитке открывает подсчёт голосов.
     // Сам тап/клик по плитке обрабатывает click-делегат (vote-open-count);
     // CSS touch-action: manipulation убирает задержку тапа на телефоне.
