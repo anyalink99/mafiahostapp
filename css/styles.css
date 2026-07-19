@@ -199,6 +199,97 @@ select,
   user-select: none;
 }
 
+/* На подготовке заполненный псевдоним можно перетащить в другой слот.
+   Вся карточка остаётся обычной кнопкой при коротком тапе; точки справа только обозначают жест. */
+#prepare-players-list .player-slot.has-nick {
+  cursor: grab;
+}
+
+.prepare-nick-drag-handle {
+  color: rgba(212, 175, 55, 0.42);
+  transition:
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.prepare-nick-drag-handle::before {
+  width: 0.75rem;
+  height: 1.125rem;
+  content: '';
+  background-image: radial-gradient(circle, currentColor 1.25px, transparent 1.5px);
+  background-position: 0 0;
+  background-size: 0.375rem 0.375rem;
+}
+
+#prepare-players-list .player-slot:not(.has-nick) .prepare-nick-drag-handle {
+  visibility: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #prepare-players-list .player-slot.has-nick:hover .prepare-nick-drag-handle,
+  #prepare-players-list .player-slot.has-nick:focus-visible .prepare-nick-drag-handle {
+    color: rgba(212, 175, 55, 0.78);
+  }
+}
+
+body.prepare-nick-drag-active,
+body.prepare-nick-drag-active #prepare-players-list .player-slot {
+  cursor: grabbing !important;
+}
+
+#prepare-players-list .player-slot.is-nick-drag-source {
+  z-index: 1;
+  border-color: rgba(212, 175, 55, 0.38);
+  opacity: 0.36;
+  transform: scale(0.97);
+}
+
+#prepare-players-list .player-slot.is-nick-drop-target {
+  z-index: 2;
+  border-color: rgba(212, 175, 55, 0.9);
+  background-color: rgba(41, 37, 36, 0.98);
+  box-shadow:
+    inset 0 0 0 1px rgba(212, 175, 55, 0.58),
+    0 0 0 2px rgba(212, 175, 55, 0.12);
+  transform: translateY(-2px);
+}
+
+.prepare-nick-drag-ghost {
+  position: fixed;
+  z-index: 120;
+  max-width: min(72vw, 18rem);
+  overflow: hidden;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(212, 175, 55, 0.72);
+  border-radius: 0.5rem;
+  background: rgba(28, 25, 23, 0.97);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.46);
+  color: rgba(250, 248, 245, 0.95);
+  font:
+    600 0.8125rem/1.25 Manrope,
+    sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: left, top, transform;
+}
+
+@keyframes prepareNickSwapConfirmed {
+  0%,
+  100% {
+    border-color: rgb(68, 64, 60);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+  45% {
+    border-color: rgba(212, 175, 55, 0.82);
+    box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.32);
+  }
+}
+
+#prepare-players-list .player-slot.is-nick-swap-confirmed {
+  animation: prepareNickSwapConfirmed 440ms ease-out;
+}
+
 /* Нажатие карточки игрока — управляем классом из координатора жестов, а не :active
    (тот залипал после свайпа/удержания без перерендера). */
 #players-list .player-cell.player-slot.is-pressed {

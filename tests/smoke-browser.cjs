@@ -417,6 +417,95 @@ function findChrome() {
     await page.waitForSelector('#' + screens[i] + '.active', { timeout: 3000 });
   }
 
+  // На подготовке заполненный псевдоним переносится pointer-жестом даже в пустой слот;
+  // короткий клик после drag не должен попутно открыть карточку игрока.
+  await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.players[0].nick = 'Альфа';
+    app.players[1].nick = 'Бета';
+    app.players[2].nick = '';
+    app.navigateToScreen('prepare-screen');
+  });
+  var dragBoxes = await page.evaluate(function () {
+    function center(playerId) {
+      var slot = document.querySelector(
+        '#prepare-players-list [data-player-id="' + playerId + '"]'
+      );
+      var rect = slot.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
+    return { source: center(1), target: center(3) };
+  });
+  await page.mouse.move(dragBoxes.source.x, dragBoxes.source.y);
+  await page.mouse.down();
+  await page.mouse.move(dragBoxes.target.x, dragBoxes.target.y, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(80);
+  var nicknameDragResult = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var modal = document.getElementById('modal-player-actions');
+    return {
+      sourceNick: app.players[0].nick,
+      targetNick: app.players[2].nick,
+      sourceDraggable:
+        document
+          .querySelector('#prepare-players-list [data-player-id="1"]')
+          .getAttribute('data-has-nick') === 'true',
+      targetDraggable:
+        document
+          .querySelector('#prepare-players-list [data-player-id="3"]')
+          .getAttribute('data-has-nick') === 'true',
+      modalOpen: modal.hasAttribute('data-open'),
+      ghostExists: !!document.querySelector('.prepare-nick-drag-ghost'),
+      bodyDragging: document.body.classList.contains('prepare-nick-drag-active'),
+      statusText: document.getElementById('prepare-nick-swap-status').textContent,
+    };
+  });
+  if (
+    nicknameDragResult.sourceNick !== '' ||
+    nicknameDragResult.targetNick !== 'Альфа' ||
+    nicknameDragResult.sourceDraggable ||
+    !nicknameDragResult.targetDraggable ||
+    nicknameDragResult.modalOpen ||
+    nicknameDragResult.ghostExists ||
+    nicknameDragResult.bodyDragging ||
+    nicknameDragResult.statusText.indexOf('слот №3') === -1
+  ) {
+    errors.push(
+      'подготовка: неверный результат перетаскивания псевдонима ' +
+        JSON.stringify(nicknameDragResult)
+    );
+  }
+
+  // Клавиатурная альтернатива следует геометрии сетки: Shift+↓ меняет соседние слоты.
+  await page.focus('#prepare-players-list [data-player-id="3"]');
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.waitForTimeout(30);
+  var nicknameKeyboardResult = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var focused = document.activeElement;
+    var result = {
+      player2: app.players[1].nick,
+      player3: app.players[2].nick,
+      focusedId: focused && focused.getAttribute('data-player-id'),
+    };
+    app.players[0].nick = '';
+    app.players[1].nick = '';
+    app.players[2].nick = '';
+    app.saveState();
+    return result;
+  });
+  if (
+    nicknameKeyboardResult.player2 !== 'Альфа' ||
+    nicknameKeyboardResult.player3 !== 'Бета' ||
+    nicknameKeyboardResult.focusedId !== '2'
+  ) {
+    errors.push(
+      'подготовка: клавиатурная перестановка псевдонима не сработала ' +
+        JSON.stringify(nicknameKeyboardResult)
+    );
+  }
+
   // MU autocomplete: список совпадает с шириной поля, остаётся внутри viewport,
   // прокручивается сам и поддерживает клавиатурный выбор.
   await page.evaluate(function () {

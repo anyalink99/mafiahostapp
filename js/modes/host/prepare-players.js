@@ -142,13 +142,22 @@
             type: 'button',
             className:
               'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-1.5 py-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2 ' +
-              (compact ? 'player-slot--compact' : ''),
+              (compact ? 'player-slot--compact ' : '') +
+              (nickTrim ? 'has-nick' : ''),
             'data-action': 'player-slot-open',
             'data-player-id': String(p.id),
+            'data-has-nick': nickTrim ? 'true' : 'false',
+            'aria-keyshortcuts': nickTrim
+              ? 'Shift+ArrowUp Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight'
+              : null,
+            title: nickTrim
+              ? 'Нажмите для редактирования или перетащите в другой слот'
+              : 'Нажмите, чтобы добавить псевдоним',
             'aria-label':
               (nickTrim ? 'Игрок №' + p.id + ', псевдоним ' + nickTrim : 'Игрок №' + p.id) +
               ', роль ' +
-              roleLabel,
+              roleLabel +
+              (nickTrim ? '. Псевдоним можно перетащить в другой слот' : ''),
           },
           [
             h(
@@ -172,7 +181,11 @@
                   },
                   '№' + p.id
                 ),
-                h('div', { className: 'invisible h-8 w-8 sm:h-9 sm:w-9', 'aria-hidden': 'true' }),
+                h('span', {
+                  className:
+                    'prepare-nick-drag-handle flex h-8 w-8 shrink-0 items-center justify-center sm:h-9 sm:w-9',
+                  'aria-hidden': 'true',
+                }),
               ]
             ),
             h(
@@ -194,6 +207,255 @@
     }
     return true;
   };
+
+  app.swapPlayerNicks = function (sourcePlayerId, targetPlayerId) {
+    if (sourcePlayerId === targetPlayerId) return false;
+    var source = app.players.find(function (player) {
+      return player.id === sourcePlayerId;
+    });
+    var target = app.players.find(function (player) {
+      return player.id === targetPlayerId;
+    });
+    if (!source || !target) return false;
+
+    var sourceNick = source.nick != null ? String(source.nick) : '';
+    var targetNick = target.nick != null ? String(target.nick) : '';
+    if (!sourceNick.trim() || sourceNick === targetNick) return false;
+
+    source.nick = targetNick;
+    target.nick = sourceNick;
+    app.renderPreparePlayers();
+    app.renderPlayers();
+    app.saveState();
+    return true;
+  };
+
+  function initPrepareNicknameDrag() {
+    var list = document.getElementById('prepare-players-list');
+    if (!list || list.dataset.nicknameDragBound === 'true') return;
+    list.dataset.nicknameDragBound = 'true';
+
+    var drag = null;
+    var DRAG_THRESHOLD_PX = 8;
+
+    function playerIdFromSlot(slot) {
+      if (!slot) return null;
+      var value = parseInt(slot.getAttribute('data-player-id'), 10);
+      return isNaN(value) ? null : value;
+    }
+
+    function slotAtPoint(x, y) {
+      var hit = document.elementFromPoint(x, y);
+      var slot = hit && hit.closest ? hit.closest('#prepare-players-list [data-player-id]') : null;
+      return slot && list.contains(slot) ? slot : null;
+    }
+
+    function nicknameForPlayer(playerId) {
+      var player = app.players.find(function (item) {
+        return item.id === playerId;
+      });
+      return player && player.nick != null ? String(player.nick).trim() : '';
+    }
+
+    function ensureLiveStatus() {
+      var status = document.getElementById('prepare-nick-swap-status');
+      if (status) return status;
+      status = document.createElement('div');
+      status.id = 'prepare-nick-swap-status';
+      status.className = 'sr-only';
+      status.setAttribute('aria-live', 'polite');
+      status.setAttribute('aria-atomic', 'true');
+      list.parentNode.appendChild(status);
+      return status;
+    }
+
+    function announce(message) {
+      var status = ensureLiveStatus();
+      status.textContent = '';
+      window.setTimeout(function () {
+        status.textContent = message;
+      }, 20);
+    }
+
+    function positionGhost(x, y) {
+      if (!drag || !drag.ghost) return;
+      var putOnRight = x < window.innerWidth - 190;
+      var left = x + (putOnRight ? 14 : -14);
+      var top = Math.max(28, Math.min(window.innerHeight - 28, y));
+      drag.ghost.style.left = left + 'px';
+      drag.ghost.style.top = top + 'px';
+      drag.ghost.style.transform = putOnRight
+        ? 'translate3d(0, -50%, 0)'
+        : 'translate3d(-100%, -50%, 0)';
+    }
+
+    function beginDrag(e) {
+      if (!drag || drag.active) return;
+      drag.active = true;
+      drag.source.classList.add('is-nick-drag-source');
+      drag.source.setAttribute('aria-grabbed', 'true');
+      document.body.classList.add('prepare-nick-drag-active');
+
+      var ghost = document.createElement('div');
+      ghost.className = 'prepare-nick-drag-ghost';
+      ghost.setAttribute('aria-hidden', 'true');
+      ghost.textContent = '№' + drag.sourceId + ' · ' + drag.sourceNick;
+      document.body.appendChild(ghost);
+      drag.ghost = ghost;
+      positionGhost(e.clientX, e.clientY);
+    }
+
+    function updateDropTarget(e) {
+      if (!drag || !drag.active) return;
+      positionGhost(e.clientX, e.clientY);
+      var target = slotAtPoint(e.clientX, e.clientY);
+      if (target === drag.source) target = null;
+      if (target === drag.target) return;
+      if (drag.target) drag.target.classList.remove('is-nick-drop-target');
+      drag.target = target;
+      if (drag.target) drag.target.classList.add('is-nick-drop-target');
+    }
+
+    function clearDragVisuals() {
+      if (!drag) return;
+      if (drag.source) {
+        drag.source.classList.remove('is-nick-drag-source');
+        drag.source.removeAttribute('aria-grabbed');
+      }
+      if (drag.target) drag.target.classList.remove('is-nick-drop-target');
+      if (drag.ghost && drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost);
+      document.body.classList.remove('prepare-nick-drag-active');
+    }
+
+    function markSwappedSlots(firstId, secondId, focusId) {
+      [firstId, secondId].forEach(function (playerId) {
+        var slot = list.querySelector('[data-player-id="' + playerId + '"]');
+        if (!slot) return;
+        slot.classList.add('is-nick-swap-confirmed');
+        window.setTimeout(function () {
+          slot.classList.remove('is-nick-swap-confirmed');
+        }, 460);
+      });
+      if (focusId != null) {
+        var focusSlot = list.querySelector('[data-player-id="' + focusId + '"]');
+        if (focusSlot) focusSlot.focus();
+      }
+    }
+
+    function finishDrag(e, cancelled) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      var completedDrag = drag.active;
+      var sourceId = drag.sourceId;
+      var targetId = drag.target ? playerIdFromSlot(drag.target) : null;
+      var movedNick = drag.sourceNick;
+      clearDragVisuals();
+      drag = null;
+
+      if (!completedDrag) return;
+      app._lastGestureTs = Date.now();
+      if (cancelled || targetId == null || !app.swapPlayerNicks(sourceId, targetId)) return;
+
+      markSwappedSlots(sourceId, targetId, null);
+      announce('Псевдоним ' + movedNick + ' перемещён в слот №' + targetId);
+      if (navigator.vibrate) {
+        try {
+          navigator.vibrate(25);
+        } catch (_error) {}
+      }
+    }
+
+    list.addEventListener('pointerdown', function (e) {
+      if (drag || e.isPrimary === false || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      var screen = document.getElementById('prepare-screen');
+      if (!screen || !screen.classList.contains('active')) return;
+      var source = e.target.closest && e.target.closest('[data-player-id][data-has-nick="true"]');
+      if (!source || !list.contains(source)) return;
+      var sourceId = playerIdFromSlot(source);
+      var sourceNick = nicknameForPlayer(sourceId);
+      if (sourceId == null || !sourceNick) return;
+
+      drag = {
+        pointerId: e.pointerId,
+        source: source,
+        sourceId: sourceId,
+        sourceNick: sourceNick,
+        startX: e.clientX,
+        startY: e.clientY,
+        active: false,
+        target: null,
+        ghost: null,
+      };
+      try {
+        source.setPointerCapture(e.pointerId);
+      } catch (_error) {}
+    });
+
+    list.addEventListener(
+      'pointermove',
+      function (e) {
+        if (!drag || e.pointerId !== drag.pointerId) return;
+        if (!drag.active) {
+          var dx = e.clientX - drag.startX;
+          var dy = e.clientY - drag.startY;
+          if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD_PX) return;
+          beginDrag(e);
+        }
+        e.preventDefault();
+        updateDropTarget(e);
+      },
+      { passive: false }
+    );
+
+    list.addEventListener('pointerup', function (e) {
+      if (drag && drag.active) e.preventDefault();
+      finishDrag(e, false);
+    });
+
+    list.addEventListener('pointercancel', function (e) {
+      finishDrag(e, true);
+    });
+
+    list.addEventListener('lostpointercapture', function (e) {
+      if (drag && drag.pointerId === e.pointerId) finishDrag(e, true);
+    });
+
+    list.addEventListener('keydown', function (e) {
+      if (!e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
+      var offsets = {
+        ArrowUp: -1,
+        ArrowDown: 1,
+        ArrowLeft: -Math.ceil(app.players.length / 2),
+        ArrowRight: Math.ceil(app.players.length / 2),
+      };
+      if (!Object.prototype.hasOwnProperty.call(offsets, e.key)) return;
+      var source = e.target.closest && e.target.closest('[data-player-id][data-has-nick="true"]');
+      if (!source || !list.contains(source)) return;
+
+      var cards = Array.prototype.slice.call(list.querySelectorAll('[data-player-id]'));
+      var sourcePosition = cards.indexOf(source);
+      var targetPosition = sourcePosition + offsets[e.key];
+      var rowCount = Math.ceil(app.players.length / 2);
+      if (
+        targetPosition < 0 ||
+        targetPosition >= cards.length ||
+        (e.key === 'ArrowUp' && sourcePosition % rowCount === 0) ||
+        (e.key === 'ArrowDown' && sourcePosition % rowCount === rowCount - 1) ||
+        (e.key === 'ArrowLeft' && sourcePosition < rowCount) ||
+        (e.key === 'ArrowRight' && sourcePosition >= rowCount)
+      ) {
+        return;
+      }
+
+      var sourceId = playerIdFromSlot(source);
+      var targetId = playerIdFromSlot(cards[targetPosition]);
+      var movedNick = nicknameForPlayer(sourceId);
+      if (sourceId == null || targetId == null || !app.swapPlayerNicks(sourceId, targetId)) return;
+      e.preventDefault();
+      app._lastGestureTs = Date.now();
+      markSwappedSlots(sourceId, targetId, targetId);
+      announce('Псевдоним ' + movedNick + ' перемещён в слот №' + targetId);
+    });
+  }
 
   app.shufflePlayerNicks = function () {
     var nonEmptyNicks = app.players
@@ -224,5 +486,6 @@
 
   app.registerScreenRenderer('prepare-screen', function () {
     app.renderPreparePlayers();
+    initPrepareNicknameDrag();
   });
 })(window.MafiaApp);
