@@ -417,6 +417,33 @@ function findChrome() {
     await page.waitForSelector('#' + screens[i] + '.active', { timeout: 3000 });
   }
 
+  // Псевдонимы размечены как обычные имена, а не учётные данные: мобильный Autofill
+  // не должен классифицировать эти поля как логин и предлагать сохранённые пароли.
+  var nicknameFieldHints = await page.evaluate(function () {
+    return ['modal-player-nick', 'modal-summary-nick', 'modal-auto-player-nick'].map(function (id) {
+      var input = document.getElementById(id);
+      return {
+        id: id,
+        type: input.type,
+        autocomplete: input.getAttribute('autocomplete'),
+        autocorrect: input.getAttribute('autocorrect'),
+        autocapitalize: input.getAttribute('autocapitalize'),
+        spellcheck: input.spellcheck,
+      };
+    });
+  });
+  nicknameFieldHints.forEach(function (hint) {
+    if (
+      hint.type !== 'text' ||
+      !/^section-mafia-[a-z]+ nickname$/.test(hint.autocomplete || '') ||
+      hint.autocorrect !== 'off' ||
+      hint.autocapitalize !== 'words' ||
+      hint.spellcheck !== false
+    ) {
+      errors.push('псевдоним: неверные подсказки мобильного ввода ' + JSON.stringify(hint));
+    }
+  });
+
   // На подготовке заполненный псевдоним переносится pointer-жестом даже в пустой слот;
   // короткий клик после drag не должен попутно открыть карточку игрока.
   await page.evaluate(function () {
