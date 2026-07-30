@@ -48,6 +48,7 @@
       donKillPicked: kasperNight,
       victimId: null,
       sheriffPredetermined: null,
+      turnStartedAt: 0,
     };
     if (A.isSheriffRandomCheckNight(s)) {
       var sheriffSeat = null;
@@ -99,9 +100,43 @@
     var s = app.autoState;
     if (!s.night) return;
     s.phase = 'night-action';
+    s.night.turnStartedAt = Date.now();
     A.saveAuto();
     app.navigateToScreen('auto-night-action-screen');
   };
+
+  function stopNightTurnStopwatch() {
+    if (app._autoEphemeral.nightTurnTimer) {
+      clearInterval(app._autoEphemeral.nightTurnTimer);
+      app._autoEphemeral.nightTurnTimer = null;
+    }
+  }
+
+  function updateNightTurnStopwatch() {
+    var s = app.autoState;
+    var timer = el('auto-night-action-timer');
+    if (!timer || !s || s.phase !== 'night-action' || !s.night) return;
+    var startedAt = Number(s.night.turnStartedAt) || Date.now();
+    var elapsedMs = Math.max(0, Date.now() - startedAt);
+    var elapsedSeconds = Math.floor(elapsedMs / 100) / 10;
+    timer.textContent = elapsedSeconds.toFixed(1) + ' с';
+    timer.classList.toggle(
+      'auto-night-stopwatch-over',
+      elapsedMs >= A.NIGHT_TURN_RECOMMENDED_SEC * 1000
+    );
+  }
+
+  function startNightTurnStopwatch() {
+    stopNightTurnStopwatch();
+    var s = app.autoState;
+    if (!s || !s.night) return;
+    if (!Number(s.night.turnStartedAt)) {
+      s.night.turnStartedAt = Date.now();
+      A.saveAuto();
+    }
+    updateNightTurnStopwatch();
+    app._autoEphemeral.nightTurnTimer = setInterval(updateNightTurnStopwatch, 100);
+  }
 
   app.renderAutoNightAction = function () {
     var s = app.autoState;
@@ -125,6 +160,7 @@
         body.appendChild(node);
       });
     }
+    startNightTurnStopwatch();
   };
 
   function renderNightActionSections(seat) {
@@ -307,7 +343,7 @@
       h(
         'p',
         { className: 'text-mafia-cream/85 text-sm leading-relaxed' },
-        'Сделай вид, что обдумываешь действие. Не показывай экран соседям. Жми «Готово», когда таймер истечёт.'
+        'Сделай вид, что обдумываешь действие около 7 секунд. Не показывай экран соседям.'
       ),
       h('div', { className: 'mt-4 text-center text-mafia-gold/60 font-display text-7xl' }, '♠'),
     ]);
@@ -316,8 +352,10 @@
   app.handleNightTurnDone = function () {
     var s = app.autoState;
     if (!s.night) return;
+    stopNightTurnStopwatch();
     A.pushHistory();
     s.night.cursor++;
+    s.night.turnStartedAt = 0;
     if (s.night.cursor >= s.night.turnOrder.length) {
       transitionToNightResult();
     } else {
@@ -391,6 +429,7 @@
 
   function transitionToNightResult() {
     var s = app.autoState;
+    stopNightTurnStopwatch();
     var isKasperAutoKill = A.isKasperKillNight(s);
     var victimId;
     if (isKasperAutoKill) {

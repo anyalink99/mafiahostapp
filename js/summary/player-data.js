@@ -27,7 +27,7 @@
     return Math.max(1, Math.min(10, parsed));
   }
 
-  app.playerProtocolVisible = readBooleanPreference(PLAYER_PROTOCOL_VISIBLE_KEY, true);
+  app.playerProtocolVisible = readBooleanPreference(PLAYER_PROTOCOL_VISIBLE_KEY, false);
   app.playerBestMoveVisible = readBooleanPreference(PLAYER_BEST_MOVE_VISIBLE_KEY, true);
   try {
     app.playerFoulLimit = clampFoulLimit(localStorage.getItem(FOUL_LIMIT_KEY));

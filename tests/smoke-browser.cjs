@@ -837,7 +837,10 @@ function findChrome() {
     var bestMove = document.getElementById('setting-player-bestmove-visible');
     var protocol = document.getElementById('setting-player-protocol-visible');
     var foulLimit = document.getElementById('setting-player-foul-limit');
+    var protocolDefault = app.playerProtocolVisible;
     bestMove.click();
+    protocol.click();
+    var protocolAfterEnable = app.playerProtocolVisible;
     protocol.click();
     foulLimit.value = '3';
     foulLimit.dispatchEvent(new Event('input', { bubbles: true }));
@@ -851,6 +854,8 @@ function findChrome() {
     app.players[0].eliminationReason = null;
     app.addFoul(1);
     var result = [
+      protocolDefault,
+      protocolAfterEnable,
       app.playerBestMoveVisible,
       app.playerProtocolVisible,
       app.getFoulLimit(),
@@ -862,7 +867,7 @@ function findChrome() {
     app.setPlayerFoulLimit(4);
     return result;
   });
-  if (playerCardSettings !== 'false:false:3:true:3:disqual') {
+  if (playerCardSettings !== 'false:true:false:false:3:true:3:disqual') {
     errors.push('настройки карточки игрока: неверное состояние ' + playerCardSettings);
   }
 
@@ -1084,6 +1089,9 @@ function findChrome() {
     app._autoEphemeral.introMusicActive = false;
 
     app.startFreshAutoGame();
+    app.autoState.seats.forEach(function (seat, index) {
+      if (!seat.phantom) seat.role = app.autoState.reveal.remainingRoles[index] || 'peaceful';
+    });
     app._auto.transitionToNightIntro();
     app._auto.transitionToNight(1);
     app._auto.transitionToDay(1);
@@ -1260,6 +1268,158 @@ function findChrome() {
   if (autoPhase !== 'reveal:10')
     errors.push('startFreshAutoGame: ожидалось reveal:10, получено ' + autoPhase);
   await page.waitForSelector('#auto-reveal-screen.active', { timeout: 3000 });
+
+  // Новая auto-раздача: уменьшающаяся колода, 3-секундный полноэкранный показ,
+  // очистка роли из DOM и отдельный безопасный экран передачи телефона.
+  var autoRevealInitial = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    return {
+      cards: document.querySelectorAll('#auto-reveal-cards [data-action="auto-reveal-card"]')
+        .length,
+      remaining: app.autoState.reveal.remainingRoles.length,
+      assigned: app.autoState.seats.filter(function (seat) {
+        return !seat.phantom && !!seat.role;
+      }).length,
+    };
+  });
+  if (
+    autoRevealInitial.cards !== 10 ||
+    autoRevealInitial.remaining !== 10 ||
+    autoRevealInitial.assigned !== 0
+  ) {
+    errors.push('автораздача: неверная начальная колода ' + JSON.stringify(autoRevealInitial));
+  }
+
+  await page.click('#auto-reveal-cards [data-card-index="4"]');
+  var autoRevealShowing = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    return {
+      stage: app.autoState.reveal.stage,
+      remaining: app.autoState.reveal.remainingRoles.length,
+      assigned: !!app.autoState.seats[0].role,
+      overlay: document.getElementById('auto-reveal-overlay').classList.contains('is-open'),
+      countdown: document.getElementById('auto-reveal-overlay-countdown').textContent,
+    };
+  });
+  if (
+    autoRevealShowing.stage !== 'showing' ||
+    autoRevealShowing.remaining !== 9 ||
+    !autoRevealShowing.assigned ||
+    !autoRevealShowing.overlay ||
+    autoRevealShowing.countdown !== '3'
+  ) {
+    errors.push('автораздача: роль не показана корректно ' + JSON.stringify(autoRevealShowing));
+  }
+
+  await page.waitForFunction(
+    function () {
+      return window.MafiaApp.autoState.reveal.stage === 'pass';
+    },
+    null,
+    { timeout: 4500 }
+  );
+  var autoRevealPass = await page.evaluate(function () {
+    return {
+      roleText: document.getElementById('auto-reveal-overlay-name').textContent,
+      roleIconCount: document.getElementById('auto-reveal-overlay-icon').children.length,
+      passVisible: !document.getElementById('auto-reveal-pass').classList.contains('hidden'),
+    };
+  });
+  if (autoRevealPass.roleText || autoRevealPass.roleIconCount || !autoRevealPass.passVisible) {
+    errors.push('автораздача: роль осталась после показа ' + JSON.stringify(autoRevealPass));
+  }
+
+  await page.click('[data-action="auto-reveal-confirm"]');
+  var autoRevealSecond = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    return {
+      cursor: app.autoState.reveal.cursor,
+      cards: document.querySelectorAll('#auto-reveal-cards [data-action="auto-reveal-card"]')
+        .length,
+      remaining: app.autoState.reveal.remainingRoles.length,
+      secondAssigned: !!app.autoState.seats[1].role,
+    };
+  });
+  if (
+    autoRevealSecond.cursor !== 2 ||
+    autoRevealSecond.cards !== 9 ||
+    autoRevealSecond.remaining !== 9 ||
+    autoRevealSecond.secondAssigned
+  ) {
+    errors.push('автораздача: неверный экран второго игрока ' + JSON.stringify(autoRevealSecond));
+  }
+
+  var autoRevealThreeCardRatio = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var savedReveal = JSON.parse(JSON.stringify(app.autoState.reveal));
+    app.autoState.reveal.cursor = 8;
+    app.autoState.reveal.stage = 'pick';
+    app.autoState.reveal.remainingRoles = app.autoState.reveal.remainingRoles.slice(0, 3);
+    app.renderAutoReveal();
+    var rects = Array.from(document.querySelectorAll('#auto-reveal-cards .auto-reveal-card')).map(
+      function (card) {
+        var rect = card.getBoundingClientRect();
+        return rect.width / rect.height;
+      }
+    );
+    app.autoState.reveal = savedReveal;
+    app.renderAutoReveal();
+    return rects;
+  });
+  if (
+    autoRevealThreeCardRatio.length !== 3 ||
+    autoRevealThreeCardRatio.some(function (ratio) {
+      return Math.abs(ratio - 5 / 7) > 0.02;
+    })
+  ) {
+    errors.push(
+      'автораздача: три оставшиеся карты деформированы ' + JSON.stringify(autoRevealThreeCardRatio)
+    );
+  }
+
+  // Во время любого ночного хода идёт общий секундомер с ориентиром в 7 секунд.
+  await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var roles = app.autoState.reveal.remainingRoles.slice();
+    var roleIndex = 0;
+    app.autoState.seats.forEach(function (seat) {
+      if (!seat.phantom && !seat.role) seat.role = roles[roleIndex++] || 'peaceful';
+    });
+    app._auto.transitionToNight(1);
+    app.startNightTurn();
+  });
+  var nightTimerStart = await page.evaluate(function () {
+    return document.getElementById('auto-night-action-timer').textContent;
+  });
+  await page.waitForTimeout(350);
+  var nightTimerProgress = await page.evaluate(function () {
+    return parseFloat(document.getElementById('auto-night-action-timer').textContent);
+  });
+  var nightTimerOver = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.autoState.night.turnStartedAt = Date.now() - 7100;
+    app.renderAutoNightAction();
+    var timer = document.getElementById('auto-night-action-timer');
+    return {
+      value: parseFloat(timer.textContent),
+      over: timer.classList.contains('auto-night-stopwatch-over'),
+    };
+  });
+  if (
+    nightTimerStart !== '0.0 с' ||
+    nightTimerProgress < 0.2 ||
+    nightTimerOver.value < 7 ||
+    !nightTimerOver.over
+  ) {
+    errors.push(
+      'ночной секундомер: неверное состояние ' +
+        JSON.stringify({
+          start: nightTimerStart,
+          progress: nightTimerProgress,
+          over: nightTimerOver,
+        })
+    );
+  }
 
   var autoFoulLimit = await page.evaluate(function () {
     var app = window.MafiaApp;

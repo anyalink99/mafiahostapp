@@ -935,14 +935,15 @@
         <button type="button" data-action="auto-back-to-menu" class="text-mafia-gold/80 hover:text-mafia-gold text-sm sm:text-base uppercase tracking-wider cursor-pointer">← Меню</button>
         <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest">Раздача ролей</span>
     </div>
-    <div class="flex-1 min-h-0 flex flex-col items-center justify-center text-center max-w-md w-full mx-auto">
+    <div class="flex-1 min-h-0 flex flex-col items-center text-center max-w-md w-full mx-auto">
         <p class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest uppercase mb-1">Ход игрока</p>
-        <h1 id="auto-reveal-num" class="font-display font-bold text-7xl sm:text-8xl text-mafia-gold mb-6 tabular-nums">№1</h1>
-        <p id="auto-reveal-prompt" class="text-mafia-cream/75 text-sm sm:text-base mb-6 px-4">Удерживай круг, чтобы увидеть свою роль. Отпустишь — экран очистится.</p>
-        <button id="auto-reveal-hold-btn" type="button" class="auto-reveal-hold-btn select-none flex flex-col items-center justify-center w-56 h-56 sm:w-64 sm:h-64 rounded-full border-2 border-mafia-gold/60 bg-mafia-coal text-mafia-gold/95 cursor-pointer transition-all active:scale-95">
-            <span class="font-display text-lg tracking-widest uppercase">Удерживай</span>
-        </button>
-        <button id="auto-reveal-confirm" type="button" data-action="auto-reveal-confirm" class="hidden mt-6 w-full max-w-xs py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Видел, передаю дальше</button>
+        <h1 id="auto-reveal-num" class="font-display font-bold text-5xl sm:text-6xl text-mafia-gold mb-2 tabular-nums">№1</h1>
+        <p id="auto-reveal-prompt" class="text-mafia-cream/75 text-sm sm:text-base mb-3 px-4">Выбери одну из закрытых карт.</p>
+        <div id="auto-reveal-cards" class="cards-grid w-full overflow-hidden"></div>
+        <div id="auto-reveal-pass" class="hidden flex-1 min-h-0 w-full flex flex-col items-center justify-center">
+            <div class="text-mafia-gold/35 font-display text-7xl sm:text-8xl mb-6" aria-hidden="true">♠</div>
+            <button id="auto-reveal-confirm" type="button" data-action="auto-reveal-confirm" class="w-full max-w-xs py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold uppercase tracking-wider rounded cursor-pointer">Увидел, передаю дальше</button>
+        </div>
     </div>
     <div id="auto-reveal-overlay" class="hidden fixed inset-0 z-[80] flex flex-col items-center justify-center text-center p-6 pointer-events-none">
         <div id="auto-reveal-overlay-bg" class="absolute inset-0"></div>
@@ -950,6 +951,8 @@
             <div id="auto-reveal-overlay-icon" class="role-icon role-icon--large mb-4 text-mafia-gold/95" aria-hidden="true"></div>
             <p class="font-display text-mafia-gold/90 text-xl sm:text-2xl tracking-[0.3em] uppercase mb-3">Твоя роль</p>
             <h1 id="auto-reveal-overlay-name" class="font-display font-bold text-5xl sm:text-7xl tracking-wider"></h1>
+            <p class="mt-8 text-mafia-cream/70 text-sm uppercase tracking-widest">Скроется через</p>
+            <div id="auto-reveal-overlay-countdown" class="font-display text-mafia-gold text-5xl sm:text-6xl font-bold tabular-nums" aria-live="polite">3</div>
         </div>
     </div>
 </div>
@@ -1016,6 +1019,10 @@
         <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest"><span id="auto-night-action-label">Ночь 1</span></span>
     </div>
     <div class="flex-1 min-h-0 flex flex-col max-w-md w-full mx-auto pt-2">
+        <div class="auto-night-stopwatch flex-shrink-0 mb-3 text-center" aria-label="Время ночного хода">
+            <p class="text-mafia-cream/55 text-xs uppercase tracking-widest">Рекомендуемое время — 7 секунд</p>
+            <div id="auto-night-action-timer" class="font-display text-mafia-gold text-4xl sm:text-5xl font-bold tabular-nums" aria-live="off">0.0 с</div>
+        </div>
         <div id="auto-night-action-body" class="flex-1 min-h-0 overflow-auto"></div>
         <div class="flex-shrink-0 mt-3">
             <button id="auto-night-action-done" type="button" data-action="auto-night-turn-done" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold text-base uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">

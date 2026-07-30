@@ -56,6 +56,8 @@
   A.LAST_WORDS_SEC = 60;
   A.DEFAULT_DAY_SEC = 60;
   A.REVOTE_SEC = 30;
+  A.REVEAL_SEC = 3;
+  A.NIGHT_TURN_RECOMMENDED_SEC = 7;
   A.BACK_HOLD_MS = 5000;
   A.BACK_MOVE_THRESHOLD_PX = 24;
   var HISTORY_LIMIT = 120;
@@ -145,7 +147,14 @@
       active: false,
       phase: 'setup',
       seats: [],
-      reveal: { cursor: 1 },
+      reveal: {
+        version: 2,
+        cursor: 1,
+        stage: 'pick',
+        remainingRoles: [],
+        selectedRole: null,
+        showUntil: 0,
+      },
       nightNum: 0,
       night: null,
       day: null,
@@ -230,9 +239,8 @@
 
   app.autoState = makeFreshState();
   app._autoEphemeral = {
-    holdActive: false,
-    holdPid: null,
-    holdViewed: false,
+    revealInterval: null,
+    revealTimeout: null,
     nightTurnTimer: null,
     nightTurnTickEnd: 0,
     dayTimerInterval: null,
@@ -307,6 +315,7 @@
       s.merlinGuess = d.merlinGuess && typeof d.merlinGuess === 'object' ? d.merlinGuess : null;
       s.history = Array.isArray(d.history) ? d.history : [];
       app.autoState = s;
+      if (A.normalizeRevealState && A.normalizeRevealState(s)) saveAuto();
     } catch (e) {}
   }
   A.loadAuto = loadAuto;
@@ -465,6 +474,14 @@
 
   A.clearAllAutoTimers = function () {
     var e = app._autoEphemeral;
+    if (e.revealInterval) {
+      clearInterval(e.revealInterval);
+      e.revealInterval = null;
+    }
+    if (e.revealTimeout) {
+      clearTimeout(e.revealTimeout);
+      e.revealTimeout = null;
+    }
     if (e.nightTurnTimer) {
       clearInterval(e.nightTurnTimer);
       e.nightTurnTimer = null;

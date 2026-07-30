@@ -63,7 +63,7 @@
 
   function shouldBlockBackHold(target) {
     if (!target || !target.closest) return false;
-    if (target.closest('#auto-reveal-hold-btn')) return true;
+    if (target.closest('#auto-reveal-cards, #auto-reveal-overlay')) return true;
     if (target.closest('[data-player-table-mode="auto"][data-player-id]')) return true;
     if (target.closest('input,textarea,select,[contenteditable="true"]')) return true;
     if (target.closest('.modal-overlay[data-open]')) return true;

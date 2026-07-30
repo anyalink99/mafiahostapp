@@ -20,6 +20,9 @@
   app.uiActionHandlers['auto-reveal-confirm'] = function () {
     app.advanceReveal();
   };
+  app.uiActionHandlers['auto-reveal-card'] = function (target) {
+    app.chooseAutoRevealCard(parseInt(target.getAttribute('data-card-index'), 10));
+  };
 
   app.uiActionHandlers['auto-back-to-menu'] = function () {
     app._autoInternals.clearAllAutoTimers();

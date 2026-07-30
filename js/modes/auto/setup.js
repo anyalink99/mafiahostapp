@@ -47,13 +47,27 @@
     var fresh = A.makeFreshState();
     fresh.active = true;
     fresh.phase = 'reveal';
-    fresh.reveal = { cursor: 1 };
+    var realRoleCount = variant === 'kasper' ? dealt.length - 1 : dealt.length;
+    fresh.reveal = {
+      version: 2,
+      cursor: 1,
+      stage: 'pick',
+      remainingRoles: dealt.slice(0, realRoleCount),
+      selectedRole: null,
+      showUntil: 0,
+    };
     fresh.dayNum = 0;
     fresh.nightNum = 0;
     fresh.playerCount = A.DEFAULT_PLAYER_COUNT;
     fresh.variant = variant;
     for (var i = 0; i < A.DEFAULT_PLAYER_COUNT; i++) {
-      fresh.seats.push({ id: i + 1, role: dealt[i], alive: true, fouls: 0, nick: '' });
+      fresh.seats.push({
+        id: i + 1,
+        role: variant === 'kasper' && i === 9 ? dealt[i] : null,
+        alive: true,
+        fouls: 0,
+        nick: '',
+      });
     }
     // Каспер: 10-й — фантом до его автоубийства в первую активную ночь.
     // alive=true (его «голос» учитывается в пуле дневного голосования),

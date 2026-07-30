@@ -4,6 +4,10 @@
         <span class="font-display text-mafia-gold/80 text-sm sm:text-base tracking-widest"><span id="auto-night-action-label">Ночь 1</span></span>
     </div>
     <div class="flex-1 min-h-0 flex flex-col max-w-md w-full mx-auto pt-2">
+        <div class="auto-night-stopwatch flex-shrink-0 mb-3 text-center" aria-label="Время ночного хода">
+            <p class="text-mafia-cream/55 text-xs uppercase tracking-widest">Рекомендуемое время — 7 секунд</p>
+            <div id="auto-night-action-timer" class="font-display text-mafia-gold text-4xl sm:text-5xl font-bold tabular-nums" aria-live="off">0.0 с</div>
+        </div>
         <div id="auto-night-action-body" class="flex-1 min-h-0 overflow-auto"></div>
         <div class="flex-shrink-0 mt-3">
             <button id="auto-night-action-done" type="button" data-action="auto-night-turn-done" class="w-full py-3 bg-mafia-blood hover:bg-mafia-bloodLight border-2 border-mafia-gold text-mafia-gold font-semibold text-base uppercase tracking-wider rounded cursor-pointer transition-all active:scale-[0.98]">
