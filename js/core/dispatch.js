@@ -107,94 +107,21 @@
       true
     );
 
-    // ── Единый слой жестов на Pointer Events ──
-    // Игроки (game-screen): палец — удержание=выставление, вертикальный свайп=±фол,
-    // тап открывает модалку (через click). Мышь — ПКМ=выставление, колесо=±фол, ЛКМ=модалка.
-    // Таймер (#timer-pill): перетаскивание пальцем меняет время; мышь — колесом.
-    // Прокрутку во время жеста гасит CSS touch-action на самих элементах, поэтому ВСЕ
-    // слушатели passive — нет глобальных тормозов прокрутки/касаний.
-    (function initPointerInput() {
+    // Жесты игроков host/auto принадлежат playerTable. Здесь остаётся только
+    // перетаскивание таймера обычного ведущего.
+    (function initTimerPointerInput() {
       if (!window.PointerEvent) return;
-      var LONG_PRESS_MS = 450,
-        SWIPE_Y_MIN = 30,
-        MOVE_CANCEL_PX = 15,
-        TIMER_DRAG_PX = 9;
-      var cur = null; // одно активное взаимодействие за раз, по pointerId
-      var pressedEl = null; // карточка с визуальным «нажатием» (.is-pressed)
-
-      // Нажатое состояние ведём сами (класс .is-pressed), а не через CSS :active:
-      // :active не сбрасывается после свайпа без перерендера и «залипал».
-      // Pointer Events гарантируют ровно один pointerup/pointercancel — класс всегда снимется.
-      function setPressed(el) {
-        if (pressedEl === el) return;
-        clearPressed();
-        pressedEl = el;
-        if (el) el.classList.add('is-pressed');
-      }
-      function clearPressed() {
-        if (pressedEl) {
-          pressedEl.classList.remove('is-pressed');
-          pressedEl = null;
-        }
-      }
-      function toggleNominee(pid, opts) {
-        var inQ = app.nomineeQueue && app.nomineeQueue.indexOf(pid) !== -1;
-        return inQ
-          ? app.removePlayerFromNomineeQueue(pid, opts)
-          : app.addPlayerToNomineeQueue(pid, opts);
-      }
-      function clearLp() {
-        if (cur && cur.lpTimer) {
-          clearTimeout(cur.lpTimer);
-          cur.lpTimer = null;
-        }
-      }
+      var TIMER_DRAG_PX = 9;
+      var current = null;
 
       document.addEventListener(
         'pointerdown',
         function (e) {
-          if (cur || !gameScreenActive()) return;
+          if (current || !gameScreenActive()) return;
           var pill = e.target.closest && e.target.closest('#timer-pill');
           if (pill && e.pointerType !== 'mouse') {
-            cur = { kind: 'timer', id: e.pointerId, y0: e.clientY, base: app.timeLeft };
-            return;
+            current = { pointerId: e.pointerId, y0: e.clientY, base: app.timeLeft };
           }
-          var slot = e.target.closest && e.target.closest('[data-action="player-slot-open"]');
-          if (!slot) return;
-          var pid = parseInt(slot.getAttribute('data-player-id'), 10);
-          if (isNaN(pid)) return;
-          setPressed(slot);
-          if (e.pointerType === 'mouse') {
-            // ПКМ — выставить/снять (аналог удержания). ЛКМ — модалка через click.
-            if (e.button === 2) {
-              toggleNominee(pid);
-              app._lastGestureTs = Date.now();
-            }
-            return;
-          }
-          cur = {
-            kind: 'player',
-            id: e.pointerId,
-            pid: pid,
-            x0: e.clientX,
-            y0: e.clientY,
-            fired: false,
-            moved: false,
-            lpTimer: null,
-          };
-          cur.lpTimer = setTimeout(function () {
-            if (!cur || cur.kind !== 'player' || cur.fired || cur.moved) return;
-            cur.lpTimer = null;
-            var changed = toggleNominee(cur.pid, { skipRender: true });
-            if (!changed) return;
-            cur.fired = true;
-            if (app.patchPlayerSlotVoteIndicator) app.patchPlayerSlotVoteIndicator(cur.pid);
-            if (navigator.vibrate) {
-              try {
-                navigator.vibrate(40);
-              } catch (_e) {}
-            }
-          }, LONG_PRESS_MS);
         },
         { passive: true }
       );
@@ -202,21 +129,9 @@
       document.addEventListener(
         'pointermove',
         function (e) {
-          if (!cur || e.pointerId !== cur.id) return;
-          if (cur.kind === 'timer') {
-            if (app.setTimer)
-              app.setTimer(cur.base + Math.round((cur.y0 - e.clientY) / TIMER_DRAG_PX));
-            return;
-          }
-          if (
-            cur.kind === 'player' &&
-            !cur.moved &&
-            (Math.abs(e.clientX - cur.x0) > MOVE_CANCEL_PX ||
-              Math.abs(e.clientY - cur.y0) > MOVE_CANCEL_PX)
-          ) {
-            cur.moved = true;
-            clearLp();
-          }
+          if (!current || e.pointerId !== current.pointerId) return;
+          if (app.setTimer)
+            app.setTimer(current.base + Math.round((current.y0 - e.clientY) / TIMER_DRAG_PX));
         },
         { passive: true }
       );
@@ -224,35 +139,7 @@
       document.addEventListener(
         'pointerup',
         function (e) {
-          clearPressed();
-          if (!cur || e.pointerId !== cur.id) return;
-          var g = cur;
-          if (g.kind === 'timer') {
-            cur = null;
-            return;
-          }
-          clearLp();
-          cur = null;
-          if (g.fired) {
-            // Индикатор и очередь уже обновлены точечно при срабатывании удержания;
-            // полный renderPlayers не нужен — он бы пересоздал карточку и оборвал
-            // плавный возврат из «нажатого» состояния (резкий скачок размера).
-            app._lastGestureTs = Date.now();
-            return;
-          }
-          var dy = e.clientY - g.y0,
-            dx = e.clientX - g.x0;
-          if (Math.abs(dy) >= SWIPE_Y_MIN && Math.abs(dy) > Math.abs(dx)) {
-            app._lastGestureTs = Date.now();
-            if (dy < 0) app.addFoul(g.pid);
-            else app.removeFoul(g.pid);
-            if (navigator.vibrate) {
-              try {
-                navigator.vibrate(25);
-              } catch (_e) {}
-            }
-          }
-          // чистый тап — модалку откроет click-обработчик (player-slot-open)
+          if (current && e.pointerId === current.pointerId) current = null;
         },
         { passive: true }
       );
@@ -260,14 +147,13 @@
       document.addEventListener(
         'pointercancel',
         function (e) {
-          clearPressed();
-          if (!cur || e.pointerId !== cur.id) return;
-          clearLp();
-          cur = null;
+          if (current && e.pointerId === current.pointerId) current = null;
         },
         { passive: true }
       );
     })();
+
+    if (app.playerTable) app.playerTable.bindGestures();
 
     document.body.addEventListener('click', function (e) {
       let t = e.target.closest('[data-goto]');
@@ -588,11 +474,10 @@
       return !!(gs && gs.classList.contains('active'));
     }
 
-    // ПК-шорткаты на game-screen: колесо над таймером — подкрутка времени (±5 с),
-    // колесо над игроком — ±фол (аналог свайпа на телефоне). Лёгкий троттлинг.
+    // Колесо над таймером — подкрутка времени (±5 с). Колесо/ПКМ над
+    // игроками обоих режимов обрабатывает playerTable.
     var TIMER_WHEEL_STEP = 5;
     var lastTimerWheelTs = 0;
-    var lastFoulWheelTs = 0;
     document.body.addEventListener(
       'wheel',
       function (e) {
@@ -608,31 +493,10 @@
           lastTimerWheelTs = nowT;
           e.preventDefault();
           app.adjustTimer(e.deltaY < 0 ? TIMER_WHEEL_STEP : -TIMER_WHEEL_STEP);
-          return;
-        }
-        var slot = e.target.closest('[data-action="player-slot-open"]');
-        if (slot) {
-          var pidW = parseInt(slot.getAttribute('data-player-id'), 10);
-          if (isNaN(pidW)) return;
-          e.preventDefault();
-          var nowF = Date.now();
-          if (nowF - lastFoulWheelTs < 140) return;
-          lastFoulWheelTs = nowF;
-          if (e.deltaY < 0) app.addFoul(pidW);
-          else app.removeFoul(pidW);
         }
       },
       { passive: false }
     );
-
-    // ПКМ по игроку обрабатывается в pointerdown (button===2). Здесь только гасим
-    // нативное контекстное меню над слотом (и callout долгого нажатия на телефоне).
-    document.body.addEventListener('contextmenu', function (e) {
-      if (!gameScreenActive()) return;
-      if (e.target && e.target.closest && e.target.closest('[data-action="player-slot-open"]')) {
-        e.preventDefault();
-      }
-    });
 
     // Возврат вкладки/приложения из фона — мгновенно пересчитать таймер по часам.
     document.addEventListener('visibilitychange', function () {

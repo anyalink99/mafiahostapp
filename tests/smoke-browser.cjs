@@ -181,6 +181,82 @@ function findChrome() {
   }
   await linkPage.close();
 
+  // Regression: editing a nickname before the card deal must not create a hidden
+  // "peaceful" override. A completed deal is committed as one canonical role map
+  // and survives reload without being shadowed by summary corrections.
+  var rolePage = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: 'block',
+  });
+  rolePage.on('console', function (msg) {
+    if (msg.type() === 'error') errors.push('role regression console.error: ' + msg.text());
+  });
+  rolePage.on('pageerror', function (err) {
+    errors.push('role regression pageerror: ' + err.message);
+  });
+  await rolePage.goto('http://127.0.0.1:' + port + '/', { waitUntil: 'networkidle' });
+  var roleDealResult = await rolePage.evaluate(function () {
+    var app = window.MafiaApp;
+    app.navigateToScreen('prepare-screen');
+    app.showPlayerActionsModal(1);
+    document.getElementById('modal-player-nick').value = 'Role regression';
+    app.hidePlayerActionsModal();
+
+    var before = {
+      assignments: Object.keys(app.roleState.assignmentsByPlayerId).length,
+      corrections: Object.keys(app.summaryRoleCorrections).length,
+    };
+    var deck = app.roles.slice();
+    var mafiaIndex = deck.findIndex(function (role) {
+      return app.mapDealRoleToCode(role) === 'mafia';
+    });
+    var first = deck[0];
+    deck[0] = deck[mafiaIndex];
+    deck[mafiaIndex] = first;
+    app.rolesApi.beginDeal(deck, { shuffle: false, save: false });
+    app.initCards(true);
+    for (var i = 0; i < deck.length; i++) app.showRole(i);
+
+    var firstSlot = document.querySelector('#prepare-players-list [data-player-id="1"]');
+    return {
+      before: before,
+      assigned: app.rolesApi.getAssignedRole(1, 0),
+      effective: app.rolesApi.getEffectiveRole(1, 0),
+      assignmentCount: Object.keys(app.roleState.assignmentsByPlayerId).length,
+      correctionCount: Object.keys(app.summaryRoleCorrections).length,
+      renderedBlack: !!(firstSlot && firstSlot.querySelector('.bg-mafia-black')),
+      nick: app.players[0].nick,
+    };
+  });
+  await rolePage.reload({ waitUntil: 'networkidle' });
+  var roleAfterReload = await rolePage.evaluate(function () {
+    var app = window.MafiaApp;
+    return {
+      assigned: app.rolesApi.getAssignedRole(1, 0),
+      effective: app.rolesApi.getEffectiveRole(1, 0),
+      nick: app.players[0].nick,
+    };
+  });
+  if (
+    roleDealResult.before.assignments !== 0 ||
+    roleDealResult.before.corrections !== 0 ||
+    roleDealResult.assigned !== 'mafia' ||
+    roleDealResult.effective !== 'mafia' ||
+    roleDealResult.assignmentCount !== 10 ||
+    roleDealResult.correctionCount !== 0 ||
+    !roleDealResult.renderedBlack ||
+    roleDealResult.nick !== 'Role regression' ||
+    roleAfterReload.assigned !== 'mafia' ||
+    roleAfterReload.effective !== 'mafia' ||
+    roleAfterReload.nick !== 'Role regression'
+  ) {
+    errors.push(
+      'role deal after nickname edit: invalid state ' +
+        JSON.stringify({ deal: roleDealResult, reload: roleAfterReload })
+    );
+  }
+  await rolePage.close();
+
   // Локальная история: создание и фоновое обновление снимка, восстановление,
   // экспорт, удаление и автоматическое сохранение завершённой auto-партии.
   var historyPage = await browser.newPage({
@@ -437,7 +513,7 @@ function findChrome() {
   // Псевдонимы размечены как обычные имена, а не учётные данные: мобильный Autofill
   // не должен классифицировать эти поля как логин и предлагать сохранённые пароли.
   var nicknameFieldHints = await page.evaluate(function () {
-    return ['modal-player-nick', 'modal-summary-nick', 'modal-auto-player-nick'].map(function (id) {
+    return ['modal-player-nick', 'modal-summary-nick'].map(function (id) {
       var input = document.getElementById(id);
       return {
         id: id,
@@ -953,6 +1029,85 @@ function findChrome() {
   });
   if (missingInternals.length) errors.push('нет _autoInternals: ' + missingInternals.join(', '));
 
+  // Музыка автоведущего маршрутизируется по фазам: раздача/обычная ночь — слот 1,
+  // знакомство и свободная посадка — intro слота 2, с началом дня автофон выключается.
+  var autoMusicFlow = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    var saved = {
+      musicGetSlotPlayablePool: app.musicGetSlotPlayablePool,
+      spotifyGetSlotPlaylist: app.spotifyGetSlotPlaylist,
+      spotifyIsAuthenticated: app.spotifyIsAuthenticated,
+      musicSetSessionVolumeMul: app.musicSetSessionVolumeMul,
+      musicStartSlot: app.musicStartSlot,
+      stopMusic: app.stopMusic,
+      getCurrentMusicSlot: app.getCurrentMusicSlot,
+      hasActiveMusicSession: app.hasActiveMusicSession,
+      isMusicPlaying: app.isMusicPlaying,
+    };
+    var calls = [];
+    var currentSlot = null;
+    var active = false;
+    app.musicGetSlotPlayablePool = function () {
+      return [{ id: 'smoke-track' }];
+    };
+    app.spotifyGetSlotPlaylist = function () {
+      return null;
+    };
+    app.spotifyIsAuthenticated = function () {
+      return false;
+    };
+    app.musicSetSessionVolumeMul = function (mul) {
+      calls.push('volume:' + (mul === null ? 'default' : mul));
+    };
+    app.musicStartSlot = function (slot, opts) {
+      currentSlot = String(slot);
+      active = true;
+      calls.push('start:' + slot + ':' + (opts && opts.intro ? 'intro' : 'normal'));
+    };
+    app.stopMusic = function () {
+      currentSlot = null;
+      active = false;
+      calls.push('stop');
+    };
+    app.getCurrentMusicSlot = function () {
+      return currentSlot;
+    };
+    app.hasActiveMusicSession = function () {
+      return active;
+    };
+    app.isMusicPlaying = function () {
+      return active;
+    };
+    app._autoEphemeral.autoMusicActive = false;
+    app._autoEphemeral.autoMusicSlot = null;
+    app._autoEphemeral.autoMusicStartedAt = 0;
+    app._autoEphemeral.introMusicActive = false;
+
+    app.startFreshAutoGame();
+    app._auto.transitionToNightIntro();
+    app._auto.transitionToNight(1);
+    app._auto.transitionToDay(1);
+    app._auto.clearAllAutoTimers();
+
+    Object.keys(saved).forEach(function (key) {
+      app[key] = saved[key];
+    });
+    return calls.join('|');
+  });
+  var expectedAutoMusicFlow =
+    'volume:default|start:1:normal|' +
+    'volume:default|start:2:intro|' +
+    'volume:default|start:1:normal|stop';
+  if (autoMusicFlow !== expectedAutoMusicFlow) {
+    errors.push(
+      'авторежим: неверная маршрутизация музыки — ожидалось «' +
+        expectedAutoMusicFlow +
+        '», получено «' +
+        autoMusicFlow +
+        '»'
+    );
+  }
+
   // Логика голосования (host): креативный попил 3/3/3/1 → 5/5/0 → 5/5.
   // Циклы переголосования не лимитированы; «подъём» — только при повторе.
   var voteFlow = await page.evaluate(function () {
@@ -1126,17 +1281,109 @@ function findChrome() {
   await page.evaluate(function () {
     window.MafiaApp.showAutoPlayerActionsModal(1);
   });
-  await page.click('[data-action="auto-player-modal-foul-plus"]');
-  await page.click('[data-action="auto-player-modal-foul-minus"]');
+  await page.click('[data-action="player-modal-foul-plus"]');
+  await page.click('[data-action="player-modal-foul-minus"]');
   var autoFoulControl = await page.evaluate(function () {
     var app = window.MafiaApp;
-    var count = document.getElementById('modal-auto-player-foul-count');
-    var minus = document.querySelector('[data-action="auto-player-modal-foul-minus"]');
+    var count = document.getElementById('modal-player-foul-count');
+    var minus = document.querySelector('[data-action="player-modal-foul-minus"]');
     app.hideAutoPlayerActionsModal();
     return app.autoState.seats[0].fouls + ':' + count.textContent + ':' + minus.disabled;
   });
   if (autoFoulControl !== '0:0 / 4:true') {
     errors.push('автономный контрол фолов: неверное состояние ' + autoFoulControl);
+  }
+
+  // Единый playerTable даёт auto-столу те же Pointer Events-жесты, что host:
+  // удержание выставляет, вертикальный свайп добавляет/убирает фол.
+  await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.autoState.phase = 'day';
+    app.autoState.day = { dayNum: 1, timeLeft: 60, nominees: [] };
+    app.autoState.seats.forEach(function (seat) {
+      seat.fouls = 0;
+      seat.eliminationReason = null;
+      seat.alive = true;
+    });
+    app.navigateToScreen('auto-day-screen');
+  });
+  var autoGestureBoxes = await page.evaluate(function () {
+    function center(id) {
+      var slot = document.querySelector('#auto-day-players-list [data-player-id="' + id + '"]');
+      var rect = slot.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
+    return { one: center(1), two: center(2) };
+  });
+  await page.evaluate(function (point) {
+    var slot = document.querySelector('#auto-day-players-list [data-player-id="1"]');
+    slot.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 71,
+        pointerType: 'touch',
+        clientX: point.x,
+        clientY: point.y,
+        buttons: 1,
+      })
+    );
+  }, autoGestureBoxes.one);
+  await page.waitForTimeout(520);
+  await page.evaluate(function (point) {
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 71,
+        pointerType: 'touch',
+        clientX: point.x,
+        clientY: point.y,
+      })
+    );
+  }, autoGestureBoxes.one);
+  await page.evaluate(function (point) {
+    var slot = document.querySelector('#auto-day-players-list [data-player-id="2"]');
+    slot.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 72,
+        pointerType: 'touch',
+        clientX: point.x,
+        clientY: point.y + 35,
+        buttons: 1,
+      })
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 72,
+        pointerType: 'touch',
+        clientX: point.x,
+        clientY: point.y - 35,
+        buttons: 1,
+      })
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 72,
+        pointerType: 'touch',
+        clientX: point.x,
+        clientY: point.y - 35,
+      })
+    );
+  }, autoGestureBoxes.two);
+  var autoGesturesResult = await page.evaluate(function () {
+    return {
+      nominees: window.MafiaApp.autoState.day.nominees.slice(),
+      secondFouls: window.MafiaApp.autoState.seats[1].fouls,
+    };
+  });
+  if (
+    autoGesturesResult.nominees.length !== 1 ||
+    autoGesturesResult.nominees[0] !== 1 ||
+    autoGesturesResult.secondFouls !== 1
+  ) {
+    errors.push('единые жесты auto-стола не сработали: ' + JSON.stringify(autoGesturesResult));
   }
 
   // ── Десктоп-контекст (lg+): desktop-shell/player-panel/setup-slot работают

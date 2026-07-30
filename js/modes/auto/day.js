@@ -7,7 +7,6 @@
 
   var A = app._auto;
   var el = A.el;
-  var h = app.h;
 
   A.transitionToDay = function (dayNum) {
     var s = app.autoState;
@@ -121,146 +120,13 @@
     A.saveAuto();
   };
 
-  function autoPlayerStatusEl(seat) {
-    var s = app.autoState;
-    var inQueue = !!(s.day && s.day.nominees.indexOf(seat.id) !== -1);
-    return app.playerStatusBadge(seat.eliminationReason, inQueue);
-  }
-
-  var SLOT_ROW_CLASS =
-    'player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1';
-
-  function invisibleCell() {
-    return h(
-      'div',
-      { className: 'flex min-w-0 justify-start' },
-      h('div', { className: 'invisible h-8 w-8', 'aria-hidden': 'true' })
-    );
-  }
-
   function renderAutoDayPlayers() {
-    var list = el('auto-day-players-list');
-    if (!list) return;
-    var s = app.autoState;
-    list.innerHTML = '';
-    var rows = Math.ceil(A.playerCount() / 2);
-    var order = app.playerSeatIndicesForTwoColumnDisplay(A.playerCount());
-    list.className = 'grid grid-flow-col grid-cols-2 gap-2 flex-1 min-h-0 min-w-0 overflow-hidden';
-    list.style.gridTemplateRows = 'repeat(' + rows + ', minmax(0, 1fr))';
-    order.forEach(function (idx) {
-      var seat = s.seats[idx];
-      if (!seat) return;
-      var out = !!seat.eliminationReason || seat.alive === false;
-      var phantom = A.isPhantomSeat(seat);
-      var phantomCls = phantom ? ' opacity-[0.4] cursor-not-allowed' : out ? ' opacity-[0.55]' : '';
-      var hoverCls = phantom ? '' : ' hover:border-mafia-gold/35 active:scale-[0.98]';
-      var nickTrim = seat.nick ? seat.nick.trim() : '';
-
-      var children;
-      if (phantom) {
-        children = [
-          h('div', { className: SLOT_ROW_CLASS }, [
-            invisibleCell(),
-            h(
-              'span',
-              {
-                className:
-                  'font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold/55 tabular-nums sm:text-4xl',
-              },
-              '№' + seat.id
-            ),
-            h(
-              'div',
-              { className: 'flex min-w-0 justify-end' },
-              h('div', { className: 'invisible h-8 w-8', 'aria-hidden': 'true' })
-            ),
-          ]),
-          h(
-            'div',
-            {
-              className:
-                'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/40 bg-black/20 px-2 py-1 text-center font-sans text-sm leading-snug text-mafia-gold/75 italic',
-            },
-            'Каспер'
-          ),
-        ];
-      } else {
-        children = [
-          h('div', { className: SLOT_ROW_CLASS }, [
-            h('div', { className: 'flex min-w-0 justify-start' }, autoPlayerStatusEl(seat)),
-            h(
-              'span',
-              {
-                className:
-                  'font-display text-3xl font-bold leading-none tracking-wide text-mafia-gold tabular-nums sm:text-4xl',
-              },
-              '№' + seat.id
-            ),
-            h(
-              'div',
-              { className: 'flex min-w-0 justify-end' },
-              h(
-                'div',
-                {
-                  className:
-                    'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
-                    (seat.fouls >= Math.max(1, (app.getFoulLimit ? app.getFoulLimit() : 4) - 1)
-                      ? 'border-mafia-blood/55 bg-mafia-blood'
-                      : 'border-mafia-border/35 bg-black/25'),
-                },
-                h(
-                  'span',
-                  {
-                    className:
-                      'font-sans font-semibold leading-none tabular-nums text-sm sm:text-base text-mafia-cream/95',
-                  },
-                  'ф: ' + seat.fouls
-                )
-              )
-            ),
-          ]),
-          h(
-            'div',
-            {
-              className:
-                'player-slot-nick mt-1 mb-2 min-h-[1.75rem] w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 py-1 text-center font-sans text-sm leading-snug ' +
-                (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30'),
-            },
-            nickTrim || 'Псевдоним'
-          ),
-        ];
-      }
-
-      var btn = h(
-        'button',
-        {
-          type: 'button',
-          className:
-            'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-2 pt-2 pb-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2.5 sm:pt-2.5 sm:pb-1.5' +
-            hoverCls +
-            phantomCls,
-          'data-action': phantom ? null : 'auto-day-player-slot-open',
-          'data-player-id': String(seat.id),
-        },
-        children
-      );
-      list.appendChild(btn);
-    });
-    refreshAutoDaySwitchHostButton();
+    if (app.playerTable) app.playerTable.render('auto', 'auto-day-players-list');
   }
   A.renderAutoDayPlayers = renderAutoDayPlayers;
 
   A.patchAutoPlayerSlotStatus = function (seatId) {
-    var list = el('auto-day-players-list');
-    if (!list) return;
-    var btn = list.querySelector('[data-player-id="' + seatId + '"]');
-    if (!btn) return;
-    var seat = A.seatById(seatId);
-    if (!seat) return;
-    var row = btn.querySelector('.player-slot__row');
-    if (!row || !row.children[0]) return;
-    row.children[0].innerHTML = '';
-    row.children[0].appendChild(autoPlayerStatusEl(seat));
+    if (app.playerTable) app.playerTable.patchStatus('auto', seatId);
   };
 
   function refreshAutoDaySwitchHostButton() {
@@ -346,13 +212,15 @@
 
   function addAutoFoul(seatId) {
     var seat = A.seatById(seatId);
-    if (!seat) return;
-    if (A.isPhantomSeat(seat)) return;
+    if (!seat) return false;
+    if (A.isPhantomSeat(seat)) return false;
     var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
-    if (seat.fouls >= foulLimit) return;
+    if (seat.fouls >= foulLimit || seat.eliminationReason) return false;
+    var disqualified = false;
     A.mutate(function (st) {
       seat.fouls++;
       if (seat.fouls >= foulLimit && !seat.eliminationReason) {
+        disqualified = true;
         seat.fouls = foulLimit;
         seat.eliminationReason = 'disqual';
         seat.alive = false;
@@ -362,19 +230,22 @@
         }
       }
     });
-    renderAutoDayPlayers();
+    if (disqualified) renderAutoDayPlayers();
+    else if (app.playerTable) app.playerTable.patchFoul('auto', seatId, true);
     refreshAutoDayNominees();
+    return true;
   }
   A.addAutoFoul = addAutoFoul;
 
   function removeAutoFoul(seatId) {
     var seat = A.seatById(seatId);
-    if (!seat || seat.fouls <= 0) return;
-    if (A.isPhantomSeat(seat)) return;
+    if (!seat || seat.fouls <= 0 || seat.eliminationReason) return false;
+    if (A.isPhantomSeat(seat)) return false;
     A.mutate(function () {
       seat.fouls--;
     });
-    renderAutoDayPlayers();
+    if (app.playerTable) app.playerTable.patchFoul('auto', seatId, false);
+    return true;
   }
   A.removeAutoFoul = removeAutoFoul;
 
@@ -418,111 +289,77 @@
     A.transitionToNight((s.nightNum || 0) + 1);
   };
 
-  // ============ Auto player modal ============
-
-  app.syncAutoPlayerModalFoulControl = function (seatId) {
-    var seat = A.seatById(seatId);
-    if (!seat) return;
-    var modal = el('modal-auto-player-actions');
-    if (!modal) return;
-    var count = el('modal-auto-player-foul-count');
-    var minus = modal.querySelector('[data-action="auto-player-modal-foul-minus"]');
-    var plus = modal.querySelector('[data-action="auto-player-modal-foul-plus"]');
-    var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
-    if (count) count.textContent = (seat.fouls || 0) + ' / ' + foulLimit;
-    if (minus) minus.disabled = !!seat.eliminationReason || !seat.fouls;
-    if (plus) plus.disabled = !!seat.eliminationReason || seat.fouls >= foulLimit;
-  };
-
-  app.showAutoPlayerActionsModal = function (seatId) {
-    var seat = A.seatById(seatId);
-    if (!seat) return;
-    if (A.isPhantomSeat(seat)) return;
-    var modal = el('modal-auto-player-actions');
-    if (!modal) return;
-    var titleEl = el('modal-auto-player-actions-title');
-    if (titleEl) titleEl.textContent = 'Игрок №' + seatId;
-    var nickInp = el('modal-auto-player-nick');
-    if (nickInp) nickInp.value = seat.nick != null ? String(seat.nick) : '';
-    var whenActive = el('modal-auto-player-actions-when-active');
-    var whenOut = el('modal-auto-player-actions-when-out');
-    var out = !!seat.eliminationReason;
-    if (whenActive) whenActive.classList.remove('hidden');
-    if (whenOut) whenOut.classList.toggle('hidden', !out);
-
-    var inQueue = app.autoState.day && app.autoState.day.nominees.indexOf(seatId) !== -1;
-    app.syncAutoPlayerModalFoulControl(seatId);
-    var voteBtn = modal.querySelector('[data-action="auto-player-modal-vote"]');
-    if (voteBtn) {
-      voteBtn.classList.toggle('hidden', out);
-      if (!out) voteBtn.textContent = inQueue ? 'Убрать с голосования' : 'Выставить';
-    }
-    var elims = modal.querySelectorAll('[data-action="auto-player-modal-elim"]');
-    var elimOn =
-      'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border ring-2 ring-mafia-gold bg-mafia-blood/45 border-mafia-gold text-mafia-gold transition-colors cursor-pointer';
-    var elimOff =
-      'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border bg-mafia-card text-mafia-cream/80 hover:border-mafia-gold/45 transition-colors cursor-pointer';
-    var elimDisabled =
-      'modal-player-elim-btn w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded border border-mafia-border/45 bg-mafia-card/50 text-mafia-cream/30 opacity-55 cursor-not-allowed';
-    for (var ei = 0; ei < elims.length; ei++) {
-      var b = elims[ei];
-      var er = b.getAttribute('data-elim');
-      var isCurrent = seat.eliminationReason === er;
-      if (er === 'hang' && !inQueue && !isCurrent) {
-        b.disabled = true;
-        b.setAttribute('aria-disabled', 'true');
-        b.title = 'Сначала выставьте в очередь голосования';
-        b.className = elimDisabled;
-        continue;
-      }
-      b.disabled = false;
-      b.removeAttribute('aria-disabled');
-      b.className = isCurrent ? elimOn : elimOff;
-      b.title = app.ELIM_REASON_TITLES[er] || '';
-    }
-    modal.dataset.playerId = String(seatId);
-    if (app.modalSetOpen) app.modalSetOpen(modal, true);
-  };
-
-  function syncAutoPlayerNickFromModal() {
-    var modal = el('modal-auto-player-actions');
-    if (!modal) return;
-    var pidStr = modal.dataset.playerId;
-    if (!pidStr) return;
-    var pid = parseInt(pidStr, 10);
-    if (isNaN(pid)) return;
-    var seat = A.seatById(pid);
-    if (!seat) return;
-    var inp = el('modal-auto-player-nick');
-    if (!inp) return;
-    var newNick = inp.value.slice(0, 32);
-    if (newNick !== (seat.nick || '')) {
-      A.pushHistory();
-      seat.nick = newNick;
-      A.saveAuto();
-    }
-  }
-
-  app.hideAutoPlayerActionsModal = function () {
-    var modal = el('modal-auto-player-actions');
-    if (!modal) return;
-    var wasOpen = modal.hasAttribute('data-open');
-    if (wasOpen) syncAutoPlayerNickFromModal();
-    if (app.modalSetOpen) app.modalSetOpen(modal, false);
-    if (wasOpen) {
-      var ds = el('auto-day-screen');
-      if (ds && ds.classList.contains('active')) renderAutoDayPlayers();
-    }
-  };
-
   A.withAutoModalSeatId = function (cb) {
-    var modal = el('modal-auto-player-actions');
+    var modal = el('modal-player-actions');
     if (!modal) return;
     var pidStr = modal.dataset.playerId;
     if (!pidStr) return;
     var pid = parseInt(pidStr, 10);
     if (!isNaN(pid)) cb(pid);
   };
+
+  app.playerTable.register('auto', {
+    targetId: 'auto-day-players-list',
+    isActive: function () {
+      var screen = el('auto-day-screen');
+      return !!(screen && screen.classList.contains('active'));
+    },
+    getPlayers: function () {
+      return app.autoState.seats;
+    },
+    getPlayer: function (id) {
+      return A.seatById(id);
+    },
+    isUnavailable: function (seat) {
+      return A.isPhantomSeat(seat);
+    },
+    unavailableLabel: function () {
+      return 'Каспер';
+    },
+    isOut: function (seat) {
+      return !!seat.eliminationReason || seat.alive === false;
+    },
+    isNominated: function (id) {
+      return !!(app.autoState.day && app.autoState.day.nominees.indexOf(id) !== -1);
+    },
+    toggleNominee: function (id, opts) {
+      return toggleAutoNominee(id, opts);
+    },
+    addFoul: function (id) {
+      return addAutoFoul(id);
+    },
+    removeFoul: function (id) {
+      return removeAutoFoul(id);
+    },
+    openPlayer: function (id) {
+      if (app.showPlayerActionsModal) app.showPlayerActionsModal(id, 'auto');
+    },
+    updateNick: function (id, nick) {
+      var seat = A.seatById(id);
+      if (!seat) return false;
+      var next = String(nick == null ? '' : nick).slice(0, 32);
+      if ((seat.nick || '') === next) return false;
+      A.mutate(function () {
+        seat.nick = next;
+      });
+      return true;
+    },
+    canEliminate: function (id, reason) {
+      return (
+        reason !== 'hang' || !!(app.autoState.day && app.autoState.day.nominees.indexOf(id) !== -1)
+      );
+    },
+    setElimination: function (id, reason) {
+      if (!this.canEliminate(id, reason)) return false;
+      A.setAutoElim(id, reason);
+      return true;
+    },
+    render: function () {
+      renderAutoDayPlayers();
+      refreshAutoDayNominees();
+    },
+    afterRender: refreshAutoDaySwitchHostButton,
+  });
 
   app.registerScreenRenderer('auto-day-screen', function () {
     app.renderAutoDay();

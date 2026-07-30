@@ -103,8 +103,6 @@
 
 <!-- @include screens/auto-end-screen.html -->
 
-<!-- @include modals/modal-auto-player-actions.html -->
-
 <!-- @include modals/modal-auto-switch-host.html -->
 
 <!-- @include modals/modal-auto-vote-count.html -->
@@ -150,6 +148,10 @@
 <script src="js/game/merlin.js"></script>
 <script src="js/game/donskaya.js"></script>
 <script src="js/game/urban.js"></script>
+<script src="js/game/roles.js"></script>
+
+<!-- shared game-table surface: renderer, gestures, mode adapters -->
+<script src="js/ui/player-table.js"></script>
 
 <!-- modes: host flow + auto flow -->
 <script src="js/modes/host/cards.js"></script>
@@ -162,6 +164,7 @@
 <script src="js/modes/host/night-actions.js"></script>
 <script src="js/modes/host/tools.js"></script>
 <script src="js/modes/auto/core.js"></script>
+<script src="js/modes/auto/music.js"></script>
 <script src="js/modes/auto/setup.js"></script>
 <script src="js/modes/auto/reveal.js"></script>
 <script src="js/modes/auto/intro.js"></script>
@@ -212,7 +215,6 @@
 <script src="js/events/auto/night.js"></script>
 <script src="js/events/auto/day.js"></script>
 <script src="js/events/auto/vote.js"></script>
-<script src="js/events/auto/player.js"></script>
 <script src="js/events/auto/merlin-guess.js"></script>
 
 <!-- dispatcher binds DOM → uiActionHandlers; must load after all handler files -->

@@ -65,6 +65,11 @@
     if (!el || el.disabled) return;
     var code = el.dataset ? el.dataset.summaryRole : null;
     if (code && app.renderModalSummaryRoleRadios) app.renderModalSummaryRoleRadios(code, true);
+    var modal = document.getElementById('modal-summary-player');
+    var playerId = modal ? parseInt(modal.dataset.playerId, 10) : NaN;
+    if (code && !isNaN(playerId) && app.rolesApi) {
+      app.rolesApi.setSummaryCorrection(playerId, code);
+    }
     app.emit('player-role-picked', 'modal-summary-role-icons');
   };
 

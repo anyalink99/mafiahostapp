@@ -35,8 +35,12 @@
     container.style.setProperty('--card-cols', String(cardColumns));
     container.style.setProperty('--card-rows', String(cardRows));
     if (!noShuffle) {
-      app.roles = [...app.roles].sort(() => Math.random() - 0.5);
-      app.revealedIndices = [];
+      if (app.rolesApi) {
+        app.rolesApi.beginDeal(app.roles, { shuffle: true, save: false });
+      } else {
+        app.roles = [...app.roles].sort(() => Math.random() - 0.5);
+        app.revealedIndices = [];
+      }
     }
     for (let i = 0; i < app.roles.length; i++) {
       const wrap = document.createElement('div');
@@ -164,10 +168,17 @@
 
     const wasRevealed = card.classList.contains('revealed');
     if (!wasRevealed) {
+      var changed = app.rolesApi
+        ? app.rolesApi.revealCard(index, { save: false })
+        : app.revealedIndices.indexOf(index) === -1;
+      if (!changed) return;
       card.classList.add('revealed');
-      if (app.revealedIndices.indexOf(index) === -1) app.revealedIndices.push(index);
+      if (!app.rolesApi) app.revealedIndices.push(index);
       app.updateCardNumbers();
       app.saveState();
+      if (app.rolesApi && app.rolesApi.hasCompleteDeal() && app.renderPreparePlayers) {
+        app.renderPreparePlayers();
+      }
     }
 
     const role = app.roles[index];

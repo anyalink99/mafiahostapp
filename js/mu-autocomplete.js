@@ -498,12 +498,7 @@
 
   function attachToCommonInputs() {
     if (!app.MU || !app.MU.canSearch()) return;
-    var ids = [
-      'modal-player-nick',
-      'modal-summary-nick',
-      'modal-auto-player-nick',
-      'summary-host-name',
-    ];
+    var ids = ['modal-player-nick', 'modal-summary-nick', 'summary-host-name'];
     for (var i = 0; i < ids.length; i++) {
       var el = document.getElementById(ids[i]);
       if (el) app.attachMUAutocomplete(el);

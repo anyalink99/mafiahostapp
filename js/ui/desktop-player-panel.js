@@ -534,9 +534,13 @@
     var roleCode = getSelectedRoleFromRow(sourceRowId);
     if (!roleCode) return;
 
-    app.summaryRoleByPlayerId = app.summaryRoleByPlayerId || {};
-    app.summaryRoleByPlayerId[String(pid)] = roleCode;
-    if (app.saveState) app.saveState();
+    if (app.rolesApi) {
+      if (sourceRowId === 'modal-summary-role-icons') {
+        app.rolesApi.setSummaryCorrection(pid, roleCode);
+      } else {
+        app.rolesApi.assignPlayerRole(pid, roleCode, { source: 'manual' });
+      }
+    }
 
     // Пересинк обеих radio-групп: они должны показывать одно и то же.
     if (app.getEffectiveSummaryRoleCode) {

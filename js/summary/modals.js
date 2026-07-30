@@ -107,13 +107,6 @@
 
   app.renderModalSummaryRoleRadios = renderModalSummaryRoleRadios;
 
-  function getModalSummarySelectedRoleCode() {
-    var row = document.getElementById('modal-summary-role-icons');
-    if (!row) return null;
-    var picked = row.querySelector('[role="radio"][aria-checked="true"]');
-    return picked && picked.dataset.summaryRole ? picked.dataset.summaryRole : null;
-  }
-
   app.hideSummaryPlayerModal = function () {
     var m = document.getElementById('modal-summary-player');
     if (m && app.modalSetOpen) app.modalSetOpen(m, false);
@@ -250,8 +243,10 @@
       app.bonusPointsByPlayerId = {};
     if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object')
       app.bonusNoteByPlayerId = {};
-    if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object')
-      app.summaryRoleByPlayerId = {};
+    if (!app.summaryRoleCorrections || typeof app.summaryRoleCorrections !== 'object') {
+      app.summaryRoleCorrections = {};
+      app.summaryRoleByPlayerId = app.summaryRoleCorrections;
+    }
     if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object')
       app.bestMoveByPlayerId = {};
     if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object')
@@ -322,13 +317,7 @@
       var v = bonusInp ? parseBonusFloat(bonusInp.value) : 0;
       if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object')
         app.bonusPointsByPlayerId = {};
-      if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object')
-        app.summaryRoleByPlayerId = {};
       app.bonusPointsByPlayerId[String(pid)] = v;
-      var roleCode = getModalSummarySelectedRoleCode();
-      if (roleCode) {
-        app.summaryRoleByPlayerId[String(pid)] = roleCode;
-      }
     }
     app.saveState();
     app.hideSummaryPlayerModal();

@@ -48,23 +48,11 @@
   }
 
   function startNightIntroMusic() {
-    if (app._autoEphemeral.introMusicActive) return;
-    var hasLocal = false,
-      hasSpotify = false;
-    if (app.musicGetSlotPlayablePool) {
-      try {
-        hasLocal = (app.musicGetSlotPlayablePool('2') || []).length > 0;
-      } catch (_) {}
+    if (A.startAutoMusicSlot) {
+      A.startAutoMusicSlot('2', { intro: true, leadInSec: A.INTRO_PRE_SEC });
+      return;
     }
-    if (app.spotifyGetSlotPlaylist && app.spotifyIsAuthenticated) {
-      try {
-        var sp = app.spotifyGetSlotPlaylist('2');
-        hasSpotify = !!(sp && sp.playlistId && app.spotifyIsAuthenticated());
-      } catch (_) {}
-    }
-    if (!hasLocal && !hasSpotify) return;
-    if (!app.musicStartSlot) return;
-    if (app.musicSetSessionVolumeMul) app.musicSetSessionVolumeMul(null);
+    if (!app.musicStartSlot || app._autoEphemeral.introMusicActive) return;
     // Знакомство: трек стартует в начале pre-стадии (INTRO_PRE_SEC с) с разгоном к
     // дропу, чтобы дроп пришёлся на старт самого знакомства. Разгон фиксирован под
     // длину предкаунтдауна (но обрезается длиной проигрыша, если дроп ближе).
@@ -75,6 +63,10 @@
   }
 
   function stopIntroMusic() {
+    if (A.stopAutoMusic) {
+      A.stopAutoMusic();
+      return;
+    }
     if (!app._autoEphemeral.introMusicActive) return;
     if (app.stopMusic) {
       try {
@@ -105,6 +97,7 @@
 
   function startIntroBriefing() {
     showIntroStage('main');
+    if (A.setAutoIntroMusicStage) A.setAutoIntroMusicStage('main');
     var mainEl = el('auto-intro-main-countdown');
     if (mainEl) mainEl.textContent = String(A.INTRO_MAIN_SEC);
     A.playSfx('mafia-wakes-acquaintance.mp3');
@@ -134,7 +127,8 @@
   function startIntroGap() {
     showIntroStage('gap');
     A.playSfx('mafia-leaves-acquaintance.mp3');
-    if (app.musicSetSessionVolumeMul) app.musicSetSessionVolumeMul(0.5);
+    if (A.setAutoIntroMusicStage) A.setAutoIntroMusicStage('ambient');
+    else if (app.musicSetSessionVolumeMul) app.musicSetSessionVolumeMul(0.5);
     var endTs = Date.now() + INTRO_GAP_SEC * 1000;
     var c = el('auto-intro-gap-countdown');
     if (c) c.textContent = String(INTRO_GAP_SEC);

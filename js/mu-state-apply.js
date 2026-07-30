@@ -5,7 +5,7 @@
 // Что синхронизируется:
 //   - имя ведущего, MU-id ведущего
 //   - победитель
-//   - по каждому игроку: ник, фолы, MU-id, роль (через summaryRoleByPlayerId),
+//   - по каждому игроку: ник, фолы, MU-id, роль (через rolesApi),
 //     лучший ход, доп. баллы (+/− сворачиваются в один signed-float)
 //   - голосования (gameLog vote_* events перегенерируются из data.votings)
 //
@@ -83,11 +83,19 @@
       slot.muPlayerId = null;
     }
 
-    // роль (через override итогов)
+    // Роль — подтверждённое назначение текущей игры, не исправление итогов.
     var roleCode = MU_ROLE_TO_CODE[Number(p.roleId)];
-    app.summaryRoleByPlayerId = app.summaryRoleByPlayerId || {};
     if (roleCode) {
-      app.summaryRoleByPlayerId[String(sid)] = roleCode;
+      if (app.rolesApi) {
+        app.rolesApi.assignPlayerRole(sid, roleCode, {
+          source: 'mu-import',
+          save: false,
+          emit: false,
+        });
+      } else {
+        app.summaryRoleByPlayerId = app.summaryRoleByPlayerId || {};
+        app.summaryRoleByPlayerId[String(sid)] = roleCode;
+      }
     }
 
     // лучший ход
@@ -175,6 +183,12 @@
   app.applyMUStateToApp = function (data) {
     if (!data || typeof data !== 'object') return;
     applyHeader(data);
+    if (app.rolesApi) {
+      app.rolesApi.replaceAssignments(
+        {},
+        { source: 'mu-import', save: false, emit: false, clearSummaryCorrections: true }
+      );
+    }
     if (Array.isArray(data.players)) {
       for (var i = 0; i < Math.min(data.players.length, app.players.length); i++) {
         applyPlayer(data.players[i], i);
@@ -186,6 +200,7 @@
         app.saveState();
       } catch (e) {}
     }
+    if (app.emit) app.emit('roles-changed', { reason: 'mu-import' });
     rerenderAll();
   };
 })((window.MafiaApp = window.MafiaApp || {}));

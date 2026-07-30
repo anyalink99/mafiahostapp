@@ -82,7 +82,17 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.bonusPointsByPlayerId = {};
 
-  app.summaryRoleByPlayerId = {};
+  app.roleState = {
+    version: 1,
+    assignmentsByPlayerId: {},
+    source: null,
+    revision: 0,
+  };
+
+  app.summaryRoleCorrections = {};
+  // Совместимый alias для старых сохранений/интеграций. Новому коду следует
+  // использовать rolesApi.setSummaryCorrection().
+  app.summaryRoleByPlayerId = app.summaryRoleCorrections;
 
   app.bonusNoteByPlayerId = {};
 
@@ -118,9 +128,11 @@ window.MafiaApp = window.MafiaApp || {};
         timerEndsAt: app.timerEndsAt,
         gameLog: app.gameLog,
         playerRoleOverrides: app.playerRoleOverrides,
+        roleState: app.rolesApi ? app.rolesApi.serialize() : app.roleState,
         winningTeam: app.winningTeam,
         bonusPointsByPlayerId: app.bonusPointsByPlayerId,
-        summaryRoleByPlayerId: app.summaryRoleByPlayerId,
+        summaryRoleCorrections: app.summaryRoleCorrections,
+        summaryRoleByPlayerId: app.summaryRoleCorrections,
         bonusNoteByPlayerId: app.bonusNoteByPlayerId,
         bestMoveByPlayerId: app.bestMoveByPlayerId,
         protocolByPlayerId: app.protocolByPlayerId,
@@ -218,13 +230,18 @@ window.MafiaApp = window.MafiaApp || {};
       ) {
         app.bonusPointsByPlayerId = data.summary.bonusByPlayer;
       } else app.bonusPointsByPlayerId = {};
-      if (
-        data.summaryRoleByPlayerId &&
-        typeof data.summaryRoleByPlayerId === 'object' &&
-        !Array.isArray(data.summaryRoleByPlayerId)
-      ) {
-        app.summaryRoleByPlayerId = data.summaryRoleByPlayerId;
-      } else app.summaryRoleByPlayerId = {};
+      var loadedSummaryCorrections =
+        data.summaryRoleCorrections &&
+        typeof data.summaryRoleCorrections === 'object' &&
+        !Array.isArray(data.summaryRoleCorrections)
+          ? data.summaryRoleCorrections
+          : data.summaryRoleByPlayerId &&
+              typeof data.summaryRoleByPlayerId === 'object' &&
+              !Array.isArray(data.summaryRoleByPlayerId)
+            ? data.summaryRoleByPlayerId
+            : {};
+      app.summaryRoleCorrections = loadedSummaryCorrections;
+      app.summaryRoleByPlayerId = app.summaryRoleCorrections;
       if (
         data.bonusNoteByPlayerId &&
         typeof data.bonusNoteByPlayerId === 'object' &&
@@ -268,6 +285,12 @@ window.MafiaApp = window.MafiaApp || {};
       app.gameSideShowRoles = !!data.gameSideShowRoles;
       app.gameSideNotes = typeof data.gameSideNotes === 'string' ? data.gameSideNotes : '';
       app.gameSideNotesCollapsed = !!data.gameSideNotesCollapsed;
+      if (app.rolesApi && app.rolesApi.hydrate) {
+        app.rolesApi.hydrate(data.roleState, {
+          summaryRoleCorrections: loadedSummaryCorrections,
+          winnerChosen: app.winningTeam === 'mafia' || app.winningTeam === 'peaceful',
+        });
+      }
       if (!app.playerRoleOverrides || !Object.keys(app.playerRoleOverrides).length) {
         if (data.summary && Array.isArray(data.summary.rolesManual)) {
           for (var rmi = 0; rmi < data.summary.rolesManual.length; rmi++) {
@@ -332,7 +355,18 @@ window.MafiaApp = window.MafiaApp || {};
     app.playerRoleOverrides = {};
     app.winningTeam = null;
     app.bonusPointsByPlayerId = {};
-    app.summaryRoleByPlayerId = {};
+    if (app.rolesApi) {
+      app.rolesApi.reset({ clearDeal: false, save: false, emit: false });
+    } else {
+      app.roleState = {
+        version: 1,
+        assignmentsByPlayerId: {},
+        source: null,
+        revision: 0,
+      };
+      app.summaryRoleCorrections = {};
+      app.summaryRoleByPlayerId = app.summaryRoleCorrections;
+    }
     app.bonusNoteByPlayerId = {};
     app.bestMoveByPlayerId = {};
     app.protocolByPlayerId = {};
@@ -375,6 +409,12 @@ window.MafiaApp = window.MafiaApp || {};
     if (app.activeVoteRound) return true;
     if (app.urbanNightDraft) return true;
     if (app.gameLog && app.gameLog.length > 0) return true;
+    if (
+      app.roleState &&
+      app.roleState.assignmentsByPlayerId &&
+      Object.keys(app.roleState.assignmentsByPlayerId).length > 0
+    )
+      return true;
     if (app.playerRoleOverrides && Object.keys(app.playerRoleOverrides).length > 0) return true;
     if (app.winningTeam) return true;
     if (app.bonusPointsByPlayerId && Object.keys(app.bonusPointsByPlayerId).length > 0) return true;

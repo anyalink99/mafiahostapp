@@ -12,8 +12,15 @@
   function goBackOneStep() {
     A.clearAllAutoTimers();
     A.hideRevealOverlay();
-    var pmodal = el('modal-auto-player-actions');
-    if (pmodal && app.modalSetOpen) app.modalSetOpen(pmodal, false);
+    var pmodal = el('modal-player-actions');
+    if (
+      pmodal &&
+      pmodal.dataset.tableMode === 'auto' &&
+      pmodal.hasAttribute('data-open') &&
+      app.hidePlayerActionsModal
+    ) {
+      app.hidePlayerActionsModal();
+    }
     if (app.hideAutoVoteCountModal) app.hideAutoVoteCountModal();
     var snap = A.popHistory();
     if (!snap) return;
@@ -57,7 +64,7 @@
   function shouldBlockBackHold(target) {
     if (!target || !target.closest) return false;
     if (target.closest('#auto-reveal-hold-btn')) return true;
-    if (target.closest('[data-action="auto-day-player-slot-open"]')) return true;
+    if (target.closest('[data-player-table-mode="auto"][data-player-id]')) return true;
     if (target.closest('input,textarea,select,[contenteditable="true"]')) return true;
     if (target.closest('.modal-overlay[data-open]')) return true;
     return false;
@@ -153,139 +160,9 @@
     });
   };
 
-  // ============ Auto-day player slot gestures (long-press / swipe / tap) ============
-
+  // Жесты игрового стола общие для host/auto и работают через Pointer Events.
+  // Этот совместимый хук оставлен для старых init-путей auto-режима.
   A.bindAutoPlayerGestures = function () {
-    if (app._autoEphemeral._autoGesturesBound) return;
-    app._autoEphemeral._autoGesturesBound = true;
-    var LONG_PRESS_MS = 450;
-    var SWIPE_Y_MIN = 30;
-    var TAP_MOVE_MAX = 15;
-    var g = { active: false, pid: null, touchId: -1, x0: 0, y0: 0, timer: null, fired: false };
-
-    function pidFromEl(target) {
-      var btn =
-        target && target.closest
-          ? target.closest('[data-action="auto-day-player-slot-open"]')
-          : null;
-      if (!btn) return null;
-      var v = btn.getAttribute('data-player-id');
-      return v ? parseInt(v, 10) : null;
-    }
-
-    function reset() {
-      if (g.timer) {
-        clearTimeout(g.timer);
-        g.timer = null;
-      }
-      g.active = false;
-      g.pid = null;
-      g.touchId = -1;
-      g.fired = false;
-    }
-
-    function findTouch(list, id) {
-      for (var i = 0; i < list.length; i++) if (list[i].identifier === id) return list[i];
-      return null;
-    }
-
-    document.body.addEventListener(
-      'touchstart',
-      function (e) {
-        if (g.active) return;
-        var ds = el('auto-day-screen');
-        if (!ds || !ds.classList.contains('active')) return;
-        var pid = pidFromEl(e.target);
-        if (pid === null) return;
-        var t = e.changedTouches && e.changedTouches[0];
-        if (!t) return;
-        g.active = true;
-        g.pid = pid;
-        g.touchId = t.identifier;
-        g.x0 = t.clientX;
-        g.y0 = t.clientY;
-        g.fired = false;
-        var capturedPid = pid;
-        g.timer = setTimeout(function () {
-          g.timer = null;
-          if (!g.active || g.fired) return;
-          var changed = A.toggleAutoNominee(capturedPid, { skipRender: true });
-          if (!changed) return;
-          g.fired = true;
-          A.patchAutoPlayerSlotStatus(capturedPid);
-          if (navigator.vibrate) navigator.vibrate(40);
-        }, LONG_PRESS_MS);
-      },
-      { passive: true }
-    );
-
-    document.body.addEventListener(
-      'touchmove',
-      function (e) {
-        if (!g.active || g.fired) return;
-        var t = findTouch(e.touches, g.touchId);
-        if (!t) {
-          reset();
-          return;
-        }
-        var dy = t.clientY - g.y0;
-        var dx = t.clientX - g.x0;
-        if (Math.abs(dy) > TAP_MOVE_MAX || Math.abs(dx) > TAP_MOVE_MAX) {
-          if (g.timer) {
-            clearTimeout(g.timer);
-            g.timer = null;
-          }
-        }
-      },
-      { passive: true }
-    );
-
-    document.body.addEventListener(
-      'touchend',
-      function (e) {
-        if (!g.active) return;
-        var t = findTouch(e.changedTouches, g.touchId);
-        if (!t) {
-          var wasFired = g.fired;
-          reset();
-          if (wasFired) A.renderAutoDayPlayers();
-          return;
-        }
-        if (g.timer) {
-          clearTimeout(g.timer);
-          g.timer = null;
-        }
-        var pid = g.pid;
-        var fired = g.fired;
-        var dy = t.clientY - g.y0;
-        var dx = t.clientX - g.x0;
-        reset();
-        if (fired) {
-          app._autoLastGestureTs = Date.now();
-          A.renderAutoDayPlayers();
-          e.preventDefault();
-          return;
-        }
-        if (Math.abs(dy) >= SWIPE_Y_MIN && Math.abs(dy) > Math.abs(dx)) {
-          app._autoLastGestureTs = Date.now();
-          e.preventDefault();
-          if (dy < 0) A.addAutoFoul(pid);
-          else A.removeAutoFoul(pid);
-          if (navigator.vibrate) navigator.vibrate(25);
-          return;
-        }
-      },
-      { passive: false }
-    );
-
-    document.body.addEventListener(
-      'touchcancel',
-      function () {
-        var wasFired = g.fired;
-        reset();
-        if (wasFired) A.renderAutoDayPlayers();
-      },
-      { passive: true }
-    );
+    if (app.playerTable) app.playerTable.bindGestures();
   };
 })(window.MafiaApp);

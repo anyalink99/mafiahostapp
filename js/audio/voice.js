@@ -108,12 +108,7 @@
   }
 
   function shouldDuckForAnyVoice() {
-    var night =
-      app.getCurrentMusicSlot &&
-      app.getCurrentMusicSlot() === '2' &&
-      app.isMusicPlaying &&
-      app.isMusicPlaying();
-    return !!(night && app.timerVoiceDuckEnabled);
+    return !!(isAnyMusicPlaying() && app.timerVoiceDuckEnabled);
   }
 
   function cancelledNightActions(gen) {

@@ -74,22 +74,6 @@
     return app.playerFoulLimit;
   };
 
-  app.rolesFromDealForSeats = function () {
-    if (!app.revealedIndices || app.revealedIndices.length !== app.players.length) return null;
-    var n = app.players.length;
-    var out = [];
-    for (var j = 0; j < n; j++) {
-      var ri = app.revealedIndices[j];
-      if (ri === undefined || ri === null || !app.roles[ri]) return null;
-      out[j] = app.roles[ri];
-    }
-    return out;
-  };
-
-  app.hasFullCardDeal = function () {
-    return app.rolesFromDealForSeats() !== null;
-  };
-
   app.getPlayerRoleOverrideKey = function (playerId) {
     return String(playerId);
   };
@@ -116,30 +100,6 @@
 
   app.summaryWinnerChosen = function () {
     return app.winningTeam === 'mafia' || app.winningTeam === 'peaceful';
-  };
-
-  app.mapDealRoleToCode = function (r) {
-    if (!r) return 'peaceful';
-    if (r === 'Шериф') return 'sheriff';
-    if (r === 'Дон') return 'don';
-    if (r === 'Мафия') return 'mafia';
-    if (r === 'Мерлин') return 'merlin';
-    if (r === 'Маньяк') return 'maniac';
-    if (r === 'Доктор') return 'doctor';
-    if (r === 'Красотка') return 'beauty';
-    return 'peaceful';
-  };
-
-  app.getEffectiveSummaryRoleCode = function (playerId, seatIndex) {
-    var sid = String(playerId);
-    if (app.summaryRoleByPlayerId && app.summaryRoleByPlayerId[sid]) {
-      return app.summaryRoleByPlayerId[sid];
-    }
-    var deal = app.rolesFromDealForSeats();
-    if (deal && deal[seatIndex] != null) {
-      return app.mapDealRoleToCode(deal[seatIndex]);
-    }
-    return 'peaceful';
   };
 
   app.getFirstShotPlayerIdFromLog = function () {

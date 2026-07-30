@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node tests/test-mu-vote-roundtrip.cjs && node tests/test-vote-rules.cjs && node tests/test-urban-setup.cjs && node tests/test-urban-night.cjs",
+    "test": "node tests/test-role-api.cjs && node tests/test-auto-music.cjs && node tests/test-mu-vote-roundtrip.cjs && node tests/test-vote-rules.cjs && node tests/test-urban-setup.cjs && node tests/test-urban-night.cjs",
     "test:smoke": "node tests/smoke-browser.cjs"
   },
   "devDependencies": {

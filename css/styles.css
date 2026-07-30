@@ -292,7 +292,7 @@ body.prepare-nick-drag-active #prepare-players-list .player-slot {
 
 /* Нажатие карточки игрока — управляем классом из координатора жестов, а не :active
    (тот залипал после свайпа/удержания без перерендера). */
-#players-list .player-cell.player-slot.is-pressed {
+.player-table .player-cell.player-slot.is-pressed {
   transform: scale(0.98);
 }
 

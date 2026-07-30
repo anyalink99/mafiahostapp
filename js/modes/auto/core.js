@@ -498,7 +498,9 @@
       e.bestMoveTimer = null;
     }
     cancelSfx();
-    if (e.introMusicActive) {
+    if (A.stopAutoMusic) {
+      A.stopAutoMusic();
+    } else if (e.introMusicActive) {
       if (app.stopMusic) {
         try {
           app.stopMusic();

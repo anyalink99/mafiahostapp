@@ -110,10 +110,16 @@
   };
 
   app.pickPrepareModalRole = function (roleCode) {
-    if (manualRolesForCurrentPrepare(modalPlayerId()).indexOf(roleCode) === -1) return;
+    var playerId = modalPlayerId();
+    if (manualRolesForCurrentPrepare(playerId).indexOf(roleCode) === -1) return;
     var m = document.getElementById('modal-player-actions');
     if (!m) return;
+    if (app.rolesApi) {
+      app.rolesApi.assignPlayerRole(playerId, roleCode, { source: 'manual' });
+    }
     renderPrepareModalRoleRadios(roleCode);
+    if (app.donskayaReconcile) app.donskayaReconcile();
+    app.renderPreparePlayers();
   };
 
   app.renderPrepareModalRoleRadios = renderPrepareModalRoleRadios;

@@ -59,8 +59,10 @@
       app.bonusPointsByPlayerId = {};
     if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object')
       app.bonusNoteByPlayerId = {};
-    if (!app.summaryRoleByPlayerId || typeof app.summaryRoleByPlayerId !== 'object')
-      app.summaryRoleByPlayerId = {};
+    if (!app.summaryRoleCorrections || typeof app.summaryRoleCorrections !== 'object') {
+      app.summaryRoleCorrections = {};
+      app.summaryRoleByPlayerId = app.summaryRoleCorrections;
+    }
     if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object')
       app.bestMoveByPlayerId = {};
     if (app.summaryHostName === undefined || app.summaryHostName === null) app.summaryHostName = '';

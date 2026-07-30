@@ -71,6 +71,7 @@
   }
 
   function roleCodeForPlayer(playerId, seatIndex, deal) {
+    if (app.rolesApi) return app.rolesApi.getEffectiveRole(playerId, seatIndex);
     var key = String(playerId);
     if (own(app.summaryRoleByPlayerId, key) && app.summaryRoleByPlayerId[key]) {
       return app.summaryRoleByPlayerId[key];

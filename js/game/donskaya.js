@@ -155,7 +155,10 @@
     }
     if (donSeat === null) return;
 
-    var overrides = app.summaryRoleByPlayerId || {};
+    var overrides =
+      app.rolesApi && app.roleState && app.roleState.assignmentsByPlayerId
+        ? app.roleState.assignmentsByPlayerId
+        : app.summaryRoleByPlayerId || {};
     var mafiaSeats = [];
     Object.keys(overrides).forEach(function (pid) {
       if (overrides[pid] !== 'mafia') return;
@@ -168,11 +171,15 @@
     var result = app.donskayaAssignRoles(mafiaSeats);
     if (!result) return;
 
-    // Колода теперь содержит реальные роли — все временные оверрайды снимаем,
-    // включая «peaceful» от снятых пометок (иначе бы перебили рандомный шериф).
-    Object.keys(overrides).forEach(function (pid) {
-      delete overrides[pid];
-    });
-    if (app.saveState) app.saveState();
+    // Колода теперь содержит реальные роли — атомарно заменяем временные
+    // ручные назначения полным подтверждённым раскладом.
+    if (app.rolesApi) {
+      app.rolesApi.commitDeal({ source: 'donskaya' });
+    } else {
+      Object.keys(overrides).forEach(function (pid) {
+        delete overrides[pid];
+      });
+      if (app.saveState) app.saveState();
+    }
   };
 })(window.MafiaApp);

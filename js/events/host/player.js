@@ -1,10 +1,19 @@
 (function (app) {
   app.uiActionHandlers = app.uiActionHandlers || {};
 
+  function openModalAdapter() {
+    var mode = app.getOpenPlayerTableMode ? app.getOpenPlayerTableMode() : 'host';
+    return app.playerTable ? app.playerTable.getAdapter(mode) : null;
+  }
+
+  app.uiActionHandlers['player-table-open'] = function (el) {
+    if (app.playerTable) app.playerTable.openFromElement(el);
+  };
+
+  // Подготовка пока использует отдельный renderer, но ту же модалку.
   app.uiActionHandlers['player-slot-open'] = function (el, _event, ui) {
-    if (app._lastGestureTs && Date.now() - app._lastGestureTs < 400) return;
     var sid = ui.getIntAttr(el, 'data-player-id');
-    if (sid !== null && app.showPlayerActionsModal) app.showPlayerActionsModal(sid);
+    if (sid !== null && app.showPlayerActionsModal) app.showPlayerActionsModal(sid, 'host');
   };
 
   app.uiActionHandlers['player-modal-save'] = function () {
@@ -22,11 +31,10 @@
 
   app.uiActionHandlers['player-modal-foul-plus'] = function (_el, _event, ui) {
     ui.withModalPlayerId(function (pid) {
-      var player = app.players.find(function (x) {
-        return x.id === pid;
-      });
+      var adapter = openModalAdapter();
+      var player = adapter && adapter.getPlayer ? adapter.getPlayer(pid) : null;
       if (!player || player.eliminationReason) return;
-      app.addFoul(pid);
+      if (adapter.addFoul) adapter.addFoul(pid);
       if (player.eliminationReason) {
         if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
       } else if (app.syncPlayerModalFoulControl) {
@@ -37,50 +45,43 @@
 
   app.uiActionHandlers['player-modal-foul-minus'] = function (_el, _event, ui) {
     ui.withModalPlayerId(function (pid) {
-      var player = app.players.find(function (x) {
-        return x.id === pid;
-      });
+      var adapter = openModalAdapter();
+      var player = adapter && adapter.getPlayer ? adapter.getPlayer(pid) : null;
       if (!player || player.eliminationReason || player.fouls <= 0) return;
-      app.removeFoul(pid);
+      if (adapter.removeFoul) adapter.removeFoul(pid);
       if (app.syncPlayerModalFoulControl) app.syncPlayerModalFoulControl(pid);
     });
   };
 
   app.uiActionHandlers['player-modal-vote'] = function (_el, _event, ui) {
     ui.withModalPlayerId(function (pid) {
-      var player = app.players.find(function (x) {
-        return x.id === pid;
-      });
+      var adapter = openModalAdapter();
+      var player = adapter && adapter.getPlayer ? adapter.getPlayer(pid) : null;
       if (!player || player.eliminationReason) return;
-      var inQueue = app.nomineeQueue.indexOf(pid) !== -1;
       if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-      if (inQueue) {
-        if (app.removePlayerFromNomineeQueue) app.removePlayerFromNomineeQueue(pid);
-      } else {
-        app.addPlayerToNomineeQueue(pid);
-      }
+      if (adapter.toggleNominee) adapter.toggleNominee(pid);
     });
   };
 
   app.uiActionHandlers['player-modal-revive'] = function (_el, _event, ui) {
     ui.withModalPlayerId(function (pid) {
-      var player = app.players.find(function (x) {
-        return x.id === pid;
-      });
-      if (!player || !player.eliminationReason || !app.setPlayerEliminationState) return;
+      var adapter = openModalAdapter();
+      var player = adapter && adapter.getPlayer ? adapter.getPlayer(pid) : null;
+      if (!player || !player.eliminationReason || !adapter.setElimination) return;
       var reason = player.eliminationReason;
       if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-      app.setPlayerEliminationState(pid, reason);
+      adapter.setElimination(pid, reason);
     });
   };
 
   app.uiActionHandlers['player-modal-elim'] = function (el, _event, ui) {
     var reason = el.getAttribute('data-elim');
     ui.withModalPlayerId(function (pid) {
-      if (!reason || !app.setPlayerEliminationState) return;
-      if (reason === 'hang' && app.nomineeQueue && app.nomineeQueue.indexOf(pid) === -1) return;
+      var adapter = openModalAdapter();
+      if (!reason || !adapter || !adapter.setElimination) return;
+      if (adapter.canEliminate && !adapter.canEliminate(pid, reason)) return;
       if (app.hidePlayerActionsModal) app.hidePlayerActionsModal();
-      app.setPlayerEliminationState(pid, reason);
+      adapter.setElimination(pid, reason);
     });
   };
 

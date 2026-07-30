@@ -101,25 +101,18 @@
     app.playerRoleOverrides = {};
     app.winningTeam = null;
     app.bonusPointsByPlayerId = {};
-    app.summaryRoleByPlayerId = {};
     app.bonusNoteByPlayerId = {};
     app.bestMoveByPlayerId = {};
     app.summaryHostName = '';
     app.summarySyntheticFirstDayLine = null;
     app.summarySkipLineOverrides = {};
 
-    for (var k = 0; k < hostPlayers.length; k++) {
-      var p = hostPlayers[k];
-      var roleStr = hostRoles[k];
-      var code =
-        roleStr === 'Дон'
-          ? 'don'
-          : roleStr === 'Шериф'
-            ? 'sheriff'
-            : roleStr === 'Мафия'
-              ? 'mafia'
-              : 'peaceful';
-      app.summaryRoleByPlayerId[String(p.id)] = code;
+    if (app.rolesApi) {
+      app.rolesApi.commitDeal({
+        source: 'auto-migration',
+        save: false,
+        emit: false,
+      });
     }
 
     var baseTs = Date.now() - 1000;

@@ -1,5 +1,5 @@
 // BUILD:PRECACHE-BEGIN (автогенерация scripts/build-sw.cjs — не редактировать руками)
-var CACHE_NAME = 'mafia-host-static-9b430ba1119a';
+var CACHE_NAME = 'mafia-host-static-8203d117b807';
 var ASSETS = [
   './',
   './audio/1.mp3',
@@ -60,7 +60,6 @@ var ASSETS = [
   './js/events/auto/intro.js',
   './js/events/auto/merlin-guess.js',
   './js/events/auto/night.js',
-  './js/events/auto/player.js',
   './js/events/auto/vote.js',
   './js/events/history.js',
   './js/events/host/night-actions.js',
@@ -77,6 +76,7 @@ var ASSETS = [
   './js/game/donskaya.js',
   './js/game/kasper.js',
   './js/game/merlin.js',
+  './js/game/roles.js',
   './js/game/standard.js',
   './js/game/urban.js',
   './js/game/variants.js',
@@ -91,6 +91,7 @@ var ASSETS = [
   './js/modes/auto/last-words.js',
   './js/modes/auto/migration.js',
   './js/modes/auto/mode.js',
+  './js/modes/auto/music.js',
   './js/modes/auto/night.js',
   './js/modes/auto/reveal.js',
   './js/modes/auto/setup.js',
@@ -121,6 +122,7 @@ var ASSETS = [
   './js/ui/desktop-setup-slot.js',
   './js/ui/desktop-shell.js',
   './js/ui/desktop-vote-count.js',
+  './js/ui/player-table.js',
   './js/ui/prepare-screen.js',
   './js/vendor/jszip.min.js',
   './js/vendor/niokit/components.css',

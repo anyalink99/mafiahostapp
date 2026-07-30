@@ -8,13 +8,6 @@
 (function (app) {
   'use strict';
 
-  var h = app.h;
-
-  function playerSlotStatusEl(p) {
-    var inVoteQueue = app.nomineeQueue.indexOf(p.id) !== -1;
-    return app.playerStatusBadge(p.eliminationReason, inVoteQueue);
-  }
-
   app.getActivePlayerCount = function () {
     var c = 0;
     for (var ai = 0; ai < app.players.length; ai++) {
@@ -88,47 +81,11 @@
   // Точечно обновляет «таблетку» фолов без полного перерендера списка — так окошко
   // не дёргается по вертикали при смене числа. Анимация — только при росте (animate).
   app.patchPlayerSlotFoul = function (id, animate) {
-    var list = document.getElementById('players-list');
-    if (!list) return;
-    var btn = list.querySelector('[data-player-id="' + id + '"]');
-    if (!btn) return;
-    var p = app.players.find(function (x) {
-      return x.id === id;
-    });
-    if (!p) return;
-    var pill = btn.querySelector('.player-slot__foul-pill');
-    if (!pill) return;
-    var span = pill.querySelector('span');
-    if (span) span.textContent = 'ф: ' + p.fouls;
-    var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
-    var hot = p.fouls >= Math.max(1, foulLimit - 1);
-    pill.classList.toggle('border-mafia-blood/55', hot);
-    pill.classList.toggle('bg-mafia-blood', hot);
-    pill.classList.toggle('border-mafia-border/35', !hot);
-    pill.classList.toggle('bg-black/25', !hot);
-    if (animate) {
-      pill.classList.remove('foul-bump');
-      void pill.offsetWidth;
-      pill.classList.add('foul-bump');
-      window.setTimeout(function () {
-        pill.classList.remove('foul-bump');
-      }, 520);
-    }
+    if (app.playerTable) app.playerTable.patchFoul('host', id, animate);
   };
 
   app.patchPlayerSlotVoteIndicator = function (id) {
-    var list = document.getElementById('players-list');
-    if (!list) return;
-    var btn = list.querySelector('[data-player-id="' + id + '"]');
-    if (!btn) return;
-    var p = app.players.find(function (x) {
-      return x.id === id;
-    });
-    if (!p) return;
-    var row = btn.querySelector('.player-slot__row');
-    if (!row || !row.children[0]) return;
-    row.children[0].innerHTML = '';
-    row.children[0].appendChild(playerSlotStatusEl(p));
+    if (app.playerTable) app.playerTable.patchStatus('host', id);
   };
 
   app.renderPlayers = function () {
@@ -138,93 +95,7 @@
   };
 
   app.renderPlayersTo = function (targetId) {
-    var list = document.getElementById(targetId || 'players-list');
-    if (!list) return false;
-    app.applyPlayerGridLayout(list, app.players.length);
-    list.innerHTML = '';
-    var compact = app.players.length > 10;
-    var playOrder = app.playerSeatIndicesForTwoColumnDisplay(app.players.length);
-    for (var qi = 0; qi < playOrder.length; qi++) {
-      var p = app.players[playOrder[qi]];
-      var out = !!p.eliminationReason;
-      var nickTrim = p.nick != null ? String(p.nick).trim() : '';
-
-      list.appendChild(
-        h(
-          'button',
-          {
-            type: 'button',
-            className:
-              'player-cell player-slot flex h-full min-h-0 min-w-0 w-full flex-col justify-center rounded-lg border border-mafia-border bg-mafia-coal px-1.5 py-1 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] outline-none transition-colors transition-transform hover:border-mafia-gold/35 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-mafia-gold/45 sm:px-2 ' +
-              (compact ? 'player-slot--compact' : '') +
-              (out ? ' opacity-[0.55]' : ''),
-            'data-action': 'player-slot-open',
-            'data-player-id': String(p.id),
-            'aria-label': nickTrim
-              ? 'Игрок №' + p.id + ', псевдоним ' + nickTrim
-              : 'Игрок №' + p.id,
-          },
-          [
-            h(
-              'div',
-              {
-                className:
-                  'player-slot__row grid w-full min-h-0 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1',
-              },
-              [
-                h('div', { className: 'flex min-w-0 justify-start' }, playerSlotStatusEl(p)),
-                h(
-                  'span',
-                  {
-                    className:
-                      'font-display font-bold leading-none tracking-wide text-mafia-gold tabular-nums ' +
-                      (compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl'),
-                  },
-                  '№' + p.id
-                ),
-                h(
-                  'div',
-                  { className: 'flex min-w-0 justify-end' },
-                  h(
-                    'div',
-                    {
-                      className:
-                        'player-slot__foul-pill flex shrink-0 items-center justify-center rounded border px-2 py-1 ' +
-                        (p.fouls >= Math.max(1, (app.getFoulLimit ? app.getFoulLimit() : 4) - 1)
-                          ? 'border-mafia-blood/55 bg-mafia-blood'
-                          : 'border-mafia-border/35 bg-black/25'),
-                    },
-                    h(
-                      'span',
-                      {
-                        className:
-                          'font-sans font-semibold leading-none tabular-nums text-mafia-cream/95 ' +
-                          (compact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'),
-                      },
-                      'ф: ' + p.fouls
-                    )
-                  )
-                ),
-              ]
-            ),
-            h(
-              'div',
-              {
-                className:
-                  'player-slot-nick mt-1 w-full min-w-0 shrink-0 truncate rounded border border-mafia-border/50 bg-black/30 px-2 text-center font-sans leading-snug ' +
-                  (compact
-                    ? 'min-h-[1.25rem] py-0.5 text-xs '
-                    : 'mb-2 min-h-[1.75rem] py-1 text-sm ') +
-                  (nickTrim ? 'text-mafia-cream/95' : 'text-mafia-cream/30'),
-                role: 'presentation',
-              },
-              nickTrim || 'Псевдоним'
-            ),
-          ]
-        )
-      );
-    }
-    return true;
+    return app.playerTable ? app.playerTable.render('host', targetId || 'players-list') : false;
   };
 
   app.addFoul = function (id) {
@@ -327,6 +198,62 @@
       }
     }
   };
+
+  app.playerTable.register('host', {
+    targetId: 'players-list',
+    isActive: function () {
+      var screen = document.getElementById('game-screen');
+      return !!(screen && screen.classList.contains('active'));
+    },
+    getPlayers: function () {
+      return app.players;
+    },
+    getPlayer: function (id) {
+      return app.players.find(function (player) {
+        return player.id === id;
+      });
+    },
+    isOut: function (player) {
+      return !!player.eliminationReason;
+    },
+    isNominated: function (id) {
+      return app.nomineeQueue.indexOf(id) !== -1;
+    },
+    toggleNominee: function (id, opts) {
+      return app.nomineeQueue.indexOf(id) !== -1
+        ? app.removePlayerFromNomineeQueue(id, opts)
+        : app.addPlayerToNomineeQueue(id, opts);
+    },
+    addFoul: function (id) {
+      return app.addFoul(id);
+    },
+    removeFoul: function (id) {
+      return app.removeFoul(id);
+    },
+    openPlayer: function (id) {
+      if (app.showPlayerActionsModal) app.showPlayerActionsModal(id, 'host');
+    },
+    updateNick: function (id, nick) {
+      var player = this.getPlayer(id);
+      if (!player) return false;
+      var next = String(nick == null ? '' : nick).slice(0, 32);
+      if (player.nick === next) return false;
+      player.nick = next;
+      app.saveState();
+      return true;
+    },
+    canEliminate: function (id, reason) {
+      return reason !== 'hang' || app.nomineeQueue.indexOf(id) !== -1;
+    },
+    setElimination: function (id, reason) {
+      if (!this.canEliminate(id, reason)) return false;
+      app.setPlayerEliminationState(id, reason);
+      return true;
+    },
+    render: function () {
+      app.renderPlayers();
+    },
+  });
 
   // Игровой стол хост-режима: игроки + таймер + очередь голосования + боковые панели.
   app.registerScreenRenderer('game-screen', function () {
