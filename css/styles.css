@@ -841,6 +841,21 @@ input.mafia-checkbox:active:not(:disabled) {
   text-shadow: 0 0 1rem rgba(212, 175, 55, 0.2);
 }
 
+#pwa-update-banner {
+  bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+#pwa-offline-badge {
+  top: max(0.5rem, env(safe-area-inset-top));
+  white-space: nowrap;
+}
+
+@media (display-mode: standalone) {
+  #btn-pwa-install {
+    display: none !important;
+  }
+}
+
 .auto-count-btn,
 .prepare-toggle-btn {
   flex: 1;

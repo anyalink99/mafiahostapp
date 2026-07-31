@@ -10,7 +10,7 @@
 
   A.transitionToLastWords = function (hangedIds) {
     var s = app.autoState;
-    s.phase = 'last-words';
+    A.setPhase('last-words');
     s.lastWords = { hangedIds: hangedIds.slice(), cursor: 0, timeLeft: A.LAST_WORDS_SEC };
     s.vote = null;
     if (s.day) s.day.nominees = [];
@@ -30,7 +30,8 @@
     if (numEl) numEl.textContent = '№' + hid;
     if (nickEl) nickEl.textContent = seat && seat.nick && seat.nick.trim() ? seat.nick.trim() : '';
     if (app._autoEphemeral.lastWordsInterval) {
-      clearInterval(app._autoEphemeral.lastWordsInterval);
+      if (app.clockApi) app.clockApi.stop('auto-last-words');
+      else clearInterval(app._autoEphemeral.lastWordsInterval);
       app._autoEphemeral.lastWordsInterval = null;
     }
     if (typeof s.lastWords.timeLeft !== 'number') s.lastWords.timeLeft = A.LAST_WORDS_SEC;
@@ -71,20 +72,25 @@
     var s = app.autoState;
     if (!s.lastWords) return;
     if (app._autoEphemeral.lastWordsInterval) {
-      clearInterval(app._autoEphemeral.lastWordsInterval);
+      if (app.clockApi) app.clockApi.stop('auto-last-words');
+      else clearInterval(app._autoEphemeral.lastWordsInterval);
       app._autoEphemeral.lastWordsInterval = null;
       applyAutoLastWordsTimerButtonState(false);
       return;
     }
     applyAutoLastWordsTimerButtonState(true);
-    app._autoEphemeral.lastWordsInterval = setInterval(function () {
+    function onTick(clockState) {
       if (!s.lastWords) {
-        clearInterval(app._autoEphemeral.lastWordsInterval);
+        if (app.clockApi) app.clockApi.stop('auto-last-words');
+        else clearInterval(app._autoEphemeral.lastWordsInterval);
         app._autoEphemeral.lastWordsInterval = null;
         return;
       }
-      if (s.lastWords.timeLeft > 0) {
-        s.lastWords.timeLeft--;
+      var nextTime = app.clockApi
+        ? Math.max(0, Math.ceil(clockState.remainingMs / 1000))
+        : Math.max(0, s.lastWords.timeLeft - 1);
+      if (nextTime !== s.lastWords.timeLeft) {
+        s.lastWords.timeLeft = nextTime;
         var cd = el('auto-last-words-countdown');
         if (cd) cd.textContent = String(s.lastWords.timeLeft);
         syncAutoLastWordsTimerAppearance();
@@ -92,7 +98,8 @@
           app.playTimerVoiceCue('10');
         }
         if (s.lastWords.timeLeft <= 0) {
-          clearInterval(app._autoEphemeral.lastWordsInterval);
+          if (app.clockApi) app.clockApi.stop('auto-last-words');
+          else clearInterval(app._autoEphemeral.lastWordsInterval);
           app._autoEphemeral.lastWordsInterval = null;
           applyAutoLastWordsTimerButtonState(false);
           if (app.timerVoiceEnabled && app.playTimerVoiceCue) {
@@ -106,14 +113,24 @@
         }
         A.saveAuto();
       }
-    }, 1000);
+    }
+    if (app.clockApi) {
+      app.clockApi.startCountdown('auto-last-words', s.lastWords.timeLeft * 1000, {
+        tickMs: 200,
+        onTick: onTick,
+      });
+      app._autoEphemeral.lastWordsInterval = 'clock-api';
+    } else {
+      app._autoEphemeral.lastWordsInterval = setInterval(onTick, 1000);
+    }
   };
 
   app.resetAutoLastWordsTimer = function (sec) {
     var s = app.autoState;
     if (!s.lastWords) return;
     if (app._autoEphemeral.lastWordsInterval) {
-      clearInterval(app._autoEphemeral.lastWordsInterval);
+      if (app.clockApi) app.clockApi.stop('auto-last-words');
+      else clearInterval(app._autoEphemeral.lastWordsInterval);
       app._autoEphemeral.lastWordsInterval = null;
     }
     s.lastWords.timeLeft = sec;
@@ -126,7 +143,8 @@
 
   app.handleLastWordsFinish = function () {
     if (app._autoEphemeral.lastWordsInterval) {
-      clearInterval(app._autoEphemeral.lastWordsInterval);
+      if (app.clockApi) app.clockApi.stop('auto-last-words');
+      else clearInterval(app._autoEphemeral.lastWordsInterval);
       app._autoEphemeral.lastWordsInterval = null;
     }
     var s = app.autoState;

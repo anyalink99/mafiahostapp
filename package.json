@@ -14,8 +14,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node tests/test-role-api.cjs && node tests/test-auto-reveal.cjs && node tests/test-auto-music.cjs && node tests/test-mu-vote-roundtrip.cjs && node tests/test-vote-rules.cjs && node tests/test-urban-setup.cjs && node tests/test-urban-night.cjs",
-    "test:smoke": "node tests/smoke-browser.cjs"
+    "test": "node tests/test-architecture.cjs && node tests/test-role-api.cjs && node tests/test-auto-reveal.cjs && node tests/test-auto-music.cjs && node tests/test-mu-vote-roundtrip.cjs && node tests/test-vote-rules.cjs && node tests/test-urban-setup.cjs && node tests/test-urban-night.cjs",
+    "test:smoke": "node tests/smoke-browser.cjs",
+    "test:pwa": "node tests/test-pwa.cjs"
   },
   "devDependencies": {
     "@capacitor/android": "^8.2.0",

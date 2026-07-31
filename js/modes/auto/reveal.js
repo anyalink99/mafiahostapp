@@ -111,12 +111,13 @@
 
   function clearRevealTimers() {
     var ephemeral = app._autoEphemeral;
+    if (app.clockApi) app.clockApi.stop('auto-reveal');
     if (ephemeral.revealInterval) {
-      clearInterval(ephemeral.revealInterval);
+      if (!app.clockApi) clearInterval(ephemeral.revealInterval);
       ephemeral.revealInterval = null;
     }
     if (ephemeral.revealTimeout) {
-      clearTimeout(ephemeral.revealTimeout);
+      if (!app.clockApi) clearTimeout(ephemeral.revealTimeout);
       ephemeral.revealTimeout = null;
     }
   }
@@ -187,8 +188,18 @@
     updateRevealCountdown();
 
     var remainingMs = Math.max(0, app.autoState.reveal.showUntil - Date.now());
-    app._autoEphemeral.revealInterval = setInterval(updateRevealCountdown, 100);
-    app._autoEphemeral.revealTimeout = setTimeout(finishRevealDisplay, remainingMs);
+    if (app.clockApi) {
+      app._autoEphemeral.revealInterval = 'clock-api';
+      app._autoEphemeral.revealTimeout = 'clock-api';
+      app.clockApi.startCountdown('auto-reveal', remainingMs, {
+        tickMs: 100,
+        onTick: updateRevealCountdown,
+        onDone: finishRevealDisplay,
+      });
+    } else {
+      app._autoEphemeral.revealInterval = setInterval(updateRevealCountdown, 100);
+      app._autoEphemeral.revealTimeout = setTimeout(finishRevealDisplay, remainingMs);
+    }
   }
 
   function sizeClosedCards(container) {

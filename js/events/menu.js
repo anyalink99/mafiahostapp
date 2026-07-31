@@ -13,6 +13,19 @@
     if (app.hideAuthorLinksModal) app.hideAuthorLinksModal();
   };
 
+  app.uiActionHandlers['pwa-install'] = function () {
+    if (app.pwa) app.pwa.install();
+  };
+  app.uiActionHandlers['pwa-install-help-close'] = function () {
+    if (app.pwa) app.pwa.hideInstallHelp();
+  };
+  app.uiActionHandlers['pwa-update-apply'] = function () {
+    if (app.pwa) app.pwa.applyUpdate();
+  };
+  app.uiActionHandlers['pwa-update-dismiss'] = function () {
+    if (app.pwa) app.pwa.dismissUpdate();
+  };
+
   app.uiActionHandlers['reset-game-confirm-open'] = function () {
     if (app.showResetGameConfirmModal) app.showResetGameConfirmModal();
   };

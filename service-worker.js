@@ -1,5 +1,5 @@
 // BUILD:PRECACHE-BEGIN (автогенерация scripts/build-sw.cjs — не редактировать руками)
-var CACHE_NAME = 'mafia-host-static-8203d117b807';
+var CACHE_NAME = 'mafia-host-static-799dc289195c';
 var ASSETS = [
   './',
   './audio/1.mp3',
@@ -39,6 +39,7 @@ var ASSETS = [
   './icons/mafiauniverse.png',
   './icons/telegram.svg',
   './index.html',
+  './js/audio/audio-director.js',
   './js/audio/music-control.js',
   './js/audio/music-player.js',
   './js/audio/music-preview.js',
@@ -51,9 +52,12 @@ var ASSETS = [
   './js/audio/spotify-player.js',
   './js/audio/spotify-store.js',
   './js/audio/voice.js',
+  './js/core/clock.js',
   './js/core/dispatch.js',
+  './js/core/pwa.js',
   './js/core/screens.js',
   './js/core/state.js',
+  './js/core/storage.js',
   './js/core/utils.js',
   './js/events/auto/day.js',
   './js/events/auto/flow.js',
@@ -76,10 +80,14 @@ var ASSETS = [
   './js/game/donskaya.js',
   './js/game/kasper.js',
   './js/game/merlin.js',
+  './js/game/night-action-registry.js',
+  './js/game/phase-machine.js',
   './js/game/roles.js',
+  './js/game/session-api.js',
   './js/game/standard.js',
   './js/game/urban.js',
   './js/game/variants.js',
+  './js/game/vote-api.js',
   './js/game/vote-rules.js',
   './js/history/game-history.js',
   './js/main.js',
@@ -153,9 +161,6 @@ self.addEventListener('install', function (e) {
           );
         });
       })
-      .then(function () {
-        return self.skipWaiting();
-      })
   );
 });
 
@@ -175,7 +180,12 @@ self.addEventListener('activate', function (e) {
 
 self.addEventListener('message', function (e) {
   var data = e && e.data ? e.data : null;
-  if (!data || data.type !== 'prefetch-default-tracks') return;
+  if (!data) return;
+  if (data.type === 'SKIP_WAITING') {
+    e.waitUntil(self.skipWaiting());
+    return;
+  }
+  if (data.type !== 'prefetch-default-tracks') return;
   var tracks = Array.isArray(data.tracks) ? data.tracks : [];
   if (!tracks.length) return;
   e.waitUntil(

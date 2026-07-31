@@ -55,9 +55,23 @@
   }
 
   function clearTimerInterval() {
+    if (app.clockApi) app.clockApi.stop('host-main');
     if (app.timerInterval) {
-      clearInterval(app.timerInterval);
+      if (!app.clockApi) clearInterval(app.timerInterval);
       app.timerInterval = null;
+    }
+  }
+
+  function scheduleTimerTicks() {
+    clearTimerInterval();
+    if (app.clockApi) {
+      app.clockApi.startCountdown('host-main', app.timeLeft * 1000, {
+        tickMs: TICK_MS,
+        onTick: app.tickTimer,
+      });
+      app.timerInterval = 'clock-api';
+    } else {
+      app.timerInterval = setInterval(app.tickTimer, TICK_MS);
     }
   }
 
@@ -129,8 +143,7 @@
       app._timerCue10Fired = app.timeLeft <= 10;
       app._timerCue0Fired = false;
       applyTimerButtonState(true);
-      clearTimerInterval();
-      app.timerInterval = setInterval(app.tickTimer, TICK_MS);
+      scheduleTimerTicks();
       app.saveState();
     }
   };
@@ -156,6 +169,7 @@
       app.timerEndsAt = Date.now() + next * 1000;
       app._timerCue10Fired = next <= 10;
       app._timerCue0Fired = false;
+      scheduleTimerTicks();
     }
     renderTimerValue();
     app.syncTimerAppearance();
@@ -176,8 +190,7 @@
       app.timeLeft = rem;
       app._timerCue10Fired = rem <= 10;
       app._timerCue0Fired = false;
-      clearTimerInterval();
-      app.timerInterval = setInterval(app.tickTimer, TICK_MS);
+      scheduleTimerTicks();
       applyTimerButtonState(true);
       renderTimerValue();
       app.syncTimerAppearance();
@@ -196,9 +209,9 @@
 
   app.loadTimerDurationPrefs = function () {
     try {
-      var main = parseInt(localStorage.getItem(app.TIMER_MAIN_SEC_KEY), 10);
+      var main = app.settingsRepository.getNumber(app.TIMER_MAIN_SEC_KEY, NaN);
       if (!isNaN(main) && main > 0) app.timerMainSec = clampSec(main);
-      var short = parseInt(localStorage.getItem(app.TIMER_SHORT_SEC_KEY), 10);
+      var short = app.settingsRepository.getNumber(app.TIMER_SHORT_SEC_KEY, NaN);
       if (!isNaN(short) && short > 0) app.timerShortSec = clampSec(short);
     } catch (_e) {}
     if (typeof app.timerMainSec !== 'number' || isNaN(app.timerMainSec) || app.timerMainSec <= 0) {
@@ -215,8 +228,8 @@
 
   app.saveTimerDurationPrefs = function () {
     try {
-      localStorage.setItem(app.TIMER_MAIN_SEC_KEY, String(app.timerMainSec));
-      localStorage.setItem(app.TIMER_SHORT_SEC_KEY, String(app.timerShortSec));
+      app.settingsRepository.setNumber(app.TIMER_MAIN_SEC_KEY, app.timerMainSec);
+      app.settingsRepository.setNumber(app.TIMER_SHORT_SEC_KEY, app.timerShortSec);
     } catch (_e) {}
   };
 

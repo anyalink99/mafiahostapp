@@ -1,25 +1,31 @@
 {
   "name": "Мафия — Ведущий",
   "short_name": "Мафия",
+  "id": "./",
   "description": "Приложение ведущего для игры «Мафия»: роли, таймер, голосование, музыка.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#0c0a09",
   "theme_color": "#0c0a09",
   "lang": "ru",
+  "dir": "ltr",
+  "categories": ["games", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

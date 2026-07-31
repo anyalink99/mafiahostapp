@@ -5,8 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0c0a09">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Мафия">
     <title>Мафия — Ведущий</title>
     <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
     <link rel="icon" href="icons/icon-512.png" type="image/png" sizes="512x512">
@@ -77,6 +79,8 @@
 
 <!-- @include modals/modal-author-links.html -->
 
+<!-- @include modals/modal-pwa-install.html -->
+
 <!-- @include modals/modal-reset-game-confirm.html -->
 
 <!-- @include modals/modal-history-delete-confirm.html -->
@@ -107,12 +111,26 @@
 
 <!-- @include modals/modal-auto-vote-count.html -->
 
+<div id="pwa-offline-badge" class="hidden fixed left-1/2 top-2 z-[55] -translate-x-1/2 rounded-full border border-mafia-gold/35 bg-mafia-coal/95 px-3 py-1.5 text-xs text-mafia-cream/75 shadow-lg" role="status">
+    Офлайн — партия сохраняется на устройстве
+</div>
+
+<div id="pwa-update-banner" class="hidden fixed z-[70] left-4 right-4 bottom-4 mx-auto max-w-md rounded-lg border border-mafia-gold/50 bg-mafia-coal p-4 shadow-2xl" role="region" aria-labelledby="pwa-update-title" aria-live="polite">
+    <p id="pwa-update-title" class="font-display text-mafia-gold text-lg tracking-wider">Доступно обновление</p>
+    <p class="mt-1 text-mafia-cream/65 text-sm">Оно установится только после вашего подтверждения — текущая партия не прервётся.</p>
+    <div class="mt-3 flex gap-2">
+        <button type="button" data-action="pwa-update-apply" class="flex-1 rounded border border-mafia-gold bg-mafia-blood px-3 py-2 text-sm font-semibold uppercase tracking-wider text-mafia-gold">Обновить</button>
+        <button type="button" data-action="pwa-update-dismiss" class="rounded px-3 py-2 text-sm text-mafia-cream/55 hover:text-mafia-cream">Позже</button>
+    </div>
+</div>
+
 <audio id="bg-music" preload="none" playsinline></audio>
 <audio id="timer-voice" preload="auto" playsinline></audio>
 <audio id="sfx-voice" preload="auto" playsinline></audio>
 <audio id="music-preview" preload="none" playsinline></audio>
 
 <!-- MU-режим: мост между нашим UI в iframe и content-script расширения -->
+<script src="js/core/storage.js"></script>
 <script src="js/mu-utils.js"></script>
 <script src="js/mu-vote-reconstruct.js"></script>
 <script src="js/mu-bridge.js"></script>
@@ -122,9 +140,11 @@
 <script src="js/vendor/jszip.min.js"></script>
 
 <!-- core: state, utils, navigation, dispatch -->
+<script src="js/core/clock.js"></script>
 <script src="js/core/state.js"></script>
 <script src="js/core/utils.js"></script>
 <script src="js/core/screens.js"></script>
+<script src="js/core/pwa.js"></script>
 
 <!-- audio: music + tts -->
 <script src="js/audio/spotify-auth.js"></script>
@@ -134,6 +154,7 @@
 <script src="js/audio/music-zip.js"></script>
 <script src="js/audio/music-volume.js"></script>
 <script src="js/audio/music-player.js"></script>
+<script src="js/audio/audio-director.js"></script>
 <script src="js/audio/music-preview.js"></script>
 <script src="js/audio/music-control.js"></script>
 <script src="js/audio/music-settings-list.js"></script>
@@ -142,6 +163,7 @@
 
 <!-- game rules: variant registry + per-variant definitions -->
 <script src="js/game/vote-rules.js"></script>
+<script src="js/game/vote-api.js"></script>
 <script src="js/game/variants.js"></script>
 <script src="js/game/standard.js"></script>
 <script src="js/game/kasper.js"></script>
@@ -149,6 +171,9 @@
 <script src="js/game/donskaya.js"></script>
 <script src="js/game/urban.js"></script>
 <script src="js/game/roles.js"></script>
+<script src="js/game/session-api.js"></script>
+<script src="js/game/phase-machine.js"></script>
+<script src="js/game/night-action-registry.js"></script>
 
 <!-- shared game-table surface: renderer, gestures, mode adapters -->
 <script src="js/ui/player-table.js"></script>

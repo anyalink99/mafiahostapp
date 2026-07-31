@@ -62,8 +62,8 @@ function findChrome() {
   var errors = [];
   var browser = await chromium.launch({ executablePath: chromePath, headless: true });
   // Мобильный viewport: на lg-экранах desktop-shell сам уводит с меню на game-screen.
-  // serviceWorkers: 'block' — иначе SW активируется с clients.claim(), main.js на
-  // controllerchange перезагружает страницу, и evaluate падает посреди теста (гонка).
+  // Основной UI-smoke работает без кэш-слоя; service worker и offline отдельно
+  // проверяются в tests/test-pwa.cjs.
   var page = await browser.newPage({
     viewport: { width: 390, height: 844 },
     serviceWorkers: 'block',

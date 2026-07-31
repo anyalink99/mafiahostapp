@@ -1,16 +1,12 @@
 (function (app) {
   app.startVoteRoundFromNomineeQueue = function () {
     var q = app.nomineeQueue;
-    app.activeVoteRound = {
+    var round = app.voteApi.createRound(q, app.getActivePlayerCount(), false);
+    app.activeVoteRound = Object.assign(round, {
       phase: 'counting',
-      poolTotal: app.getActivePlayerCount(),
-      candidateIds: q.slice(),
-      votes: q.map(function () {
-        return null;
-      }),
       baseVotingOrder: q.slice(),
       tieRevote: false,
-    };
+    });
     app.saveState();
   };
 
@@ -100,21 +96,11 @@
   };
 
   app.voteAvailableForIndex = function (session, index) {
-    var used = 0;
-    for (var j = 0; j < session.votes.length; j++) {
-      if (j === index) continue;
-      var v = session.votes[j];
-      if (v !== null && v !== undefined) used += v;
-    }
-    return Math.max(0, session.poolTotal - used);
+    return app.voteApi.maxVotesFor(session, index);
   };
 
   app.isLastVoteSlotToFill = function (session, index) {
-    for (var j = 0; j < session.votes.length; j++) {
-      if (j === index) continue;
-      if (session.votes[j] === null || session.votes[j] === undefined) return false;
-    }
-    return true;
+    return app.voteApi.isLastSlot(session, index);
   };
 
   app.finalizeVoteHang = function (ids, raiseAllPickedVotes) {
@@ -185,12 +171,7 @@
     // исчерпанном пуле, лидер/ничья, и главное — циклы переголосования не
     // лимитированы: «поднятие всех» встаёт только когда голосование повторилось
     // (ничья между ВСЕМИ участниками переголосования).
-    var outcome = app.VoteRules.resolveVoteRound(
-      s.candidateIds,
-      s.votes,
-      s.poolTotal,
-      !!s.tieRevote
-    );
+    var outcome = app.voteApi.resolve(s);
     if (outcome.status === 'pending') return;
     if (outcome.status === 'hang') {
       app.finalizeVoteHang([outcome.seatId]);
@@ -305,7 +286,7 @@
       var cap = Math.min(10, rem);
       if (value < 0 || value > cap) return;
     }
-    s.votes[idx] = value;
+    app.voteApi.cast(s, idx, value);
     app.saveState();
     app.tryFinalizeVoteRound();
     app.renderVoteScreen();

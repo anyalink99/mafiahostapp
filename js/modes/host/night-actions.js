@@ -53,6 +53,22 @@
     },
   ];
   app.URBAN_NIGHT_ACTIONS = ACTIONS;
+  if (app.nightActionRegistry) {
+    for (var registryIndex = 0; registryIndex < ACTIONS.length; registryIndex++) {
+      var registryAction = ACTIONS[registryIndex];
+      for (var roleIndex = 0; roleIndex < registryAction.roles.length; roleIndex++) {
+        var role = registryAction.roles[roleIndex];
+        var existing = app.nightActionRegistry.get(role, { mode: 'host' });
+        var roleActions = existing && existing.actions ? existing.actions.slice() : [];
+        roleActions.push(registryAction);
+        app.nightActionRegistry.register(
+          role,
+          { key: role + '-actions', actions: roleActions },
+          'host'
+        );
+      }
+    }
+  }
 
   function actionByKey(key) {
     for (var i = 0; i < ACTIONS.length; i++) if (ACTIONS[i].key === key) return ACTIONS[i];

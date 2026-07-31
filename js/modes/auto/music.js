@@ -10,12 +10,12 @@
   'use strict';
 
   var A = app._auto;
-  var SLOT_BY_SCREEN = {
-    'auto-reveal-screen': '1',
-    'auto-night-intro-screen': '2',
-    'auto-night-pass-screen': '1',
-    'auto-night-action-screen': '1',
-    'auto-night-result-screen': '1',
+  var ROUTES_BY_SCREEN = {
+    'auto-reveal-screen': { key: '1' },
+    'auto-night-intro-screen': { key: '2', stage: 'main', intro: true },
+    'auto-night-pass-screen': { key: '1' },
+    'auto-night-action-screen': { key: '1' },
+    'auto-night-result-screen': { key: '1' },
   };
 
   function hasPlayableSource(slot) {
@@ -70,6 +70,7 @@
 
   A.stopAutoMusic = function () {
     var e = app._autoEphemeral;
+    if (app.audioDirector) app.audioDirector.forget('auto');
     if (!e.autoMusicActive && !e.introMusicActive) return false;
     if (app.stopMusic) {
       try {
@@ -84,25 +85,55 @@
   };
 
   A.setAutoIntroMusicStage = function (stage) {
+    if (app.audioDirector) {
+      app.audioDirector.setStage('auto', stage);
+      return;
+    }
+    applyAutoIntroMusicStage(stage);
+  };
+
+  function applyAutoIntroMusicStage(stage) {
     if (!app.musicSetSessionVolumeMul) return;
     // Договорка играет с настроенной пользователем громкостью трека.
     // После неё фон намеренно тише во время перехода/Merlin/свободной посадки.
     app.musicSetSessionVolumeMul(stage === 'ambient' ? 0.5 : null);
-  };
+  }
+
+  if (app.audioDirector) {
+    app.audioDirector.registerMode('auto', {
+      routes: ROUTES_BY_SCREEN,
+      play: function (cue) {
+        A.startAutoMusicSlot(
+          cue.key,
+          cue.intro ? { intro: true, leadInSec: A.INTRO_PRE_SEC } : null
+        );
+      },
+      stop: function () {
+        A.stopAutoMusic();
+      },
+      setStage: function (stage) {
+        applyAutoIntroMusicStage(stage);
+      },
+    });
+  }
 
   A.syncAutoMusicForScreen = function (screenId) {
-    var slot = SLOT_BY_SCREEN[screenId];
+    var cue = ROUTES_BY_SCREEN[screenId];
+    if (app.audioDirector) {
+      app.audioDirector.enter('auto', screenId);
+      return cue ? cue.key : null;
+    }
+    var slot = cue && cue.key;
     if (!slot) {
       A.stopAutoMusic();
       return null;
     }
-    var opts =
-      slot === '2'
-        ? {
-            intro: true,
-            leadInSec: A.INTRO_PRE_SEC,
-          }
-        : null;
+    var opts = cue.intro
+      ? {
+          intro: true,
+          leadInSec: A.INTRO_PRE_SEC,
+        }
+      : null;
     A.startAutoMusicSlot(slot, opts);
     return slot;
   };

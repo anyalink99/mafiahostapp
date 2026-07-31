@@ -59,12 +59,23 @@ module.exports = [
   },
   {
     // Двухсредные модули: работают и в браузере, и в node-тестах через module.exports.
-    files: ['js/mu-vote-reconstruct.js', 'js/mu-utils.js', 'js/game/vote-rules.js'],
-    languageOptions: { globals: { module: 'writable' } },
+    files: [
+      'js/mu-vote-reconstruct.js',
+      'js/mu-utils.js',
+      'js/game/vote-rules.js',
+      'js/core/storage.js',
+      'js/core/clock.js',
+      'js/game/session-api.js',
+      'js/game/vote-api.js',
+      'js/game/phase-machine.js',
+      'js/game/night-action-registry.js',
+      'js/audio/audio-director.js',
+    ],
+    languageOptions: { globals: { module: 'writable', require: 'readonly' } },
   },
   {
     // Колбэки page.evaluate выполняются в браузере.
-    files: ['tests/smoke-browser.cjs'],
+    files: ['tests/smoke-browser.cjs', 'tests/test-pwa.cjs'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
 ];

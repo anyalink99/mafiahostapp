@@ -10,28 +10,19 @@
   var h = app.h;
 
   function voteAvailableForIndex(session, index) {
-    var used = 0;
-    for (var j = 0; j < session.votes.length; j++) {
-      if (j === index) continue;
-      var v = session.votes[j];
-      if (v !== null && v !== undefined) used += v;
-    }
-    return Math.max(0, session.poolTotal - used);
+    return app.voteApi.maxVotesFor(session, index);
   }
 
   function isLastVoteSlotToFill(session, index) {
-    for (var j = 0; j < session.votes.length; j++) {
-      if (j === index) continue;
-      if (session.votes[j] === null || session.votes[j] === undefined) return false;
-    }
-    return true;
+    return app.voteApi.isLastSlot(session, index);
   }
 
   app.startAutoVote = function () {
     var s = app.autoState;
     if (!s.day || !s.day.nominees.length) return;
     if (app._autoEphemeral.dayTimerInterval) {
-      clearInterval(app._autoEphemeral.dayTimerInterval);
+      if (app.clockApi) app.clockApi.stop('auto-day');
+      else clearInterval(app._autoEphemeral.dayTimerInterval);
       app._autoEphemeral.dayTimerInterval = null;
     }
     var n = s.day.nominees.slice();
@@ -42,19 +33,15 @@
       app.arraysEqual(s.vote.baseVotingOrder, n);
     A.pushHistory();
     if (!keepExisting) {
-      s.vote = {
+      var round = app.voteApi.createRound(n, A.aliveCount(), false);
+      s.vote = Object.assign(round, {
         phase: 'counting',
-        poolTotal: A.aliveCount(),
-        candidateIds: n,
-        votes: n.map(function () {
-          return null;
-        }),
         baseVotingOrder: n.slice(),
         tieRevote: false,
         raiseCandidateIds: null,
-      };
+      });
     }
-    s.phase = 'vote';
+    A.setPhase('vote');
     A.saveAuto();
     app.navigateToScreen('auto-vote-screen');
   };
@@ -216,7 +203,7 @@
       }
     }
     A.pushHistory();
-    s.vote.votes[idx] = count;
+    app.voteApi.cast(s.vote, idx, count);
     A.saveAuto();
     app.hideAutoVoteCountModal();
     app.renderAutoVote();
@@ -230,12 +217,7 @@
     // исчерпанном пуле, лидер/ничья; циклы переголосования не лимитированы —
     // «поднятие» встаёт только когда голосование повторилось (ничья между
     // ВСЕМИ участниками переголосования).
-    var outcome = app.VoteRules.resolveVoteRound(
-      s.vote.candidateIds,
-      s.vote.votes,
-      s.vote.poolTotal,
-      !!s.vote.tieRevote
-    );
+    var outcome = app.voteApi.resolve(s.vote);
     if (outcome.status === 'pending') return;
     if (outcome.status === 'hang') {
       finalizeHang(outcome.seatId);
@@ -255,7 +237,7 @@
         s.day.nominees = tied.slice();
         s.day.timeLeft = A.REVOTE_SEC;
       }
-      s.phase = 'day';
+      A.setPhase('day');
       A.saveAuto();
       app.navigateToScreen('auto-day-screen');
       return;

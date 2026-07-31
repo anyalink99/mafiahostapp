@@ -62,6 +62,20 @@
   A.BACK_MOVE_THRESHOLD_PX = 24;
   var HISTORY_LIMIT = 120;
 
+  if (app.gameRepository) {
+    app.gameRepository.register(STORAGE_KEY, {
+      version: 1,
+      migrations: {
+        1: function (snapshot) {
+          return snapshot;
+        },
+      },
+      validate: function (snapshot) {
+        return !snapshot.seats || Array.isArray(snapshot.seats);
+      },
+    });
+  }
+
   var STATE_KEYS = [
     'phase',
     'seats',
@@ -171,25 +185,49 @@
   }
   A.makeFreshState = makeFreshState;
 
+  if (app.phaseMachine) {
+    app.phaseMachine.register('auto', {
+      transitions: {
+        setup: ['reveal'],
+        reveal: ['night-intro', 'night-pass'],
+        'night-intro': ['day', 'night-pass'],
+        'night-pass': ['night-action', 'night-result', 'day', 'gameover'],
+        'night-action': ['night-pass', 'night-result'],
+        'night-result': ['day', 'gameover', 'merlin-guess'],
+        day: ['vote', 'night-pass', 'gameover', 'merlin-guess'],
+        vote: ['day', 'last-words', 'night-pass', 'gameover', 'merlin-guess'],
+        'last-words': ['night-pass', 'gameover', 'merlin-guess'],
+        'merlin-guess': ['gameover'],
+        gameover: ['setup'],
+      },
+    });
+  }
+  A.setPhase = function (target, context) {
+    var state = app.autoState;
+    if (!state || state.phase === target) return state;
+    if (app.phaseMachine) return app.phaseMachine.transition('auto', state, target, context);
+    state.phase = target;
+    return state;
+  };
+
   app.prepareConfig = { mode: 'host', variant: 'standard' };
   app.experimentalModesEnabled = false;
 
   function loadExperimentalModes() {
     try {
-      app.experimentalModesEnabled = localStorage.getItem(EXP_MODES_KEY) === '1';
+      app.experimentalModesEnabled = app.settingsRepository.getBoolean(EXP_MODES_KEY, false);
     } catch (e) {}
   }
   A.loadExperimentalModes = loadExperimentalModes;
   function saveExperimentalModes() {
     try {
-      localStorage.setItem(EXP_MODES_KEY, app.experimentalModesEnabled ? '1' : '0');
+      app.settingsRepository.setBoolean(EXP_MODES_KEY, app.experimentalModesEnabled);
     } catch (e) {}
   }
   function loadPrepareConfig() {
     try {
-      var raw = localStorage.getItem(PREPARE_CONFIG_KEY);
-      if (!raw) return;
-      var d = JSON.parse(raw);
+      var d = app.settingsRepository.getJson(PREPARE_CONFIG_KEY, null);
+      if (!d) return;
       if (!d || typeof d !== 'object') return;
       if (d.mode === 'host' || d.mode === 'auto') app.prepareConfig.mode = d.mode;
       if (isVariantSupported(d.variant)) {
@@ -207,7 +245,7 @@
 
   function savePrepareConfig() {
     try {
-      localStorage.setItem(PREPARE_CONFIG_KEY, JSON.stringify(app.prepareConfig));
+      app.settingsRepository.setJson(PREPARE_CONFIG_KEY, app.prepareConfig);
     } catch (e) {}
   }
   A.savePrepareConfig = savePrepareConfig;
@@ -273,7 +311,7 @@
           payload[k] = s[k];
         }
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      app.gameRepository.write(STORAGE_KEY, payload);
       if (app.scheduleCurrentGameHistorySync) app.scheduleCurrentGameHistorySync();
     } catch (e) {}
   }
@@ -281,9 +319,8 @@
 
   function loadAuto() {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      var d = JSON.parse(raw);
+      var d = app.gameRepository.read(STORAGE_KEY, null);
+      if (!d) return;
       if (!d || typeof d !== 'object') return;
       var s = makeFreshState();
       s.active = !!d.active;
@@ -474,44 +511,55 @@
 
   A.clearAllAutoTimers = function () {
     var e = app._autoEphemeral;
+    if (app.clockApi) {
+      app.clockApi.stop('auto-reveal');
+      app.clockApi.stop('auto-night-turn');
+      app.clockApi.stop('auto-day');
+      app.clockApi.stop('auto-last-words');
+      app.clockApi.stop('auto-intro-pre');
+      app.clockApi.stop('auto-intro-main');
+      app.clockApi.stop('auto-intro-gap');
+      app.clockApi.stop('auto-intro-freesit');
+      app.clockApi.stop('auto-best-move');
+    }
     if (e.revealInterval) {
-      clearInterval(e.revealInterval);
+      if (!app.clockApi) clearInterval(e.revealInterval);
       e.revealInterval = null;
     }
     if (e.revealTimeout) {
-      clearTimeout(e.revealTimeout);
+      if (!app.clockApi) clearTimeout(e.revealTimeout);
       e.revealTimeout = null;
     }
     if (e.nightTurnTimer) {
-      clearInterval(e.nightTurnTimer);
+      if (!app.clockApi) clearInterval(e.nightTurnTimer);
       e.nightTurnTimer = null;
     }
     if (e.dayTimerInterval) {
-      clearInterval(e.dayTimerInterval);
+      if (!app.clockApi) clearInterval(e.dayTimerInterval);
       e.dayTimerInterval = null;
     }
     if (e.introPreInterval) {
-      clearInterval(e.introPreInterval);
+      if (!app.clockApi) clearInterval(e.introPreInterval);
       e.introPreInterval = null;
     }
     if (e.introMainInterval) {
-      clearInterval(e.introMainInterval);
+      if (!app.clockApi) clearInterval(e.introMainInterval);
       e.introMainInterval = null;
     }
     if (e.introGapInterval) {
-      clearInterval(e.introGapInterval);
+      if (!app.clockApi) clearInterval(e.introGapInterval);
       e.introGapInterval = null;
     }
     if (e.introFreesitInterval) {
-      clearInterval(e.introFreesitInterval);
+      if (!app.clockApi) clearInterval(e.introFreesitInterval);
       e.introFreesitInterval = null;
     }
     if (e.lastWordsInterval) {
-      clearInterval(e.lastWordsInterval);
+      if (!app.clockApi) clearInterval(e.lastWordsInterval);
       e.lastWordsInterval = null;
     }
     if (e.bestMoveTimer) {
-      clearInterval(e.bestMoveTimer);
+      if (!app.clockApi) clearInterval(e.bestMoveTimer);
       e.bestMoveTimer = null;
     }
     cancelSfx();

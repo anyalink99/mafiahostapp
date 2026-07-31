@@ -13,7 +13,7 @@
 
   function readBooleanPreference(key, fallback) {
     try {
-      var stored = localStorage.getItem(key);
+      var stored = app.settingsRepository.getString(key, null);
       if (stored === null) return fallback;
       return stored !== '0';
     } catch (e) {
@@ -30,7 +30,7 @@
   app.playerProtocolVisible = readBooleanPreference(PLAYER_PROTOCOL_VISIBLE_KEY, false);
   app.playerBestMoveVisible = readBooleanPreference(PLAYER_BEST_MOVE_VISIBLE_KEY, true);
   try {
-    app.playerFoulLimit = clampFoulLimit(localStorage.getItem(FOUL_LIMIT_KEY));
+    app.playerFoulLimit = clampFoulLimit(app.settingsRepository.getNumber(FOUL_LIMIT_KEY, 4));
   } catch (e) {
     app.playerFoulLimit = 4;
   }
@@ -52,7 +52,7 @@
   app.setPlayerProtocolVisible = function (visible) {
     app.playerProtocolVisible = !!visible;
     try {
-      localStorage.setItem(PLAYER_PROTOCOL_VISIBLE_KEY, app.playerProtocolVisible ? '1' : '0');
+      app.settingsRepository.setBoolean(PLAYER_PROTOCOL_VISIBLE_KEY, app.playerProtocolVisible);
     } catch (e) {}
     app.syncPlayerCardSettings();
   };
@@ -60,7 +60,7 @@
   app.setPlayerBestMoveVisible = function (visible) {
     app.playerBestMoveVisible = !!visible;
     try {
-      localStorage.setItem(PLAYER_BEST_MOVE_VISIBLE_KEY, app.playerBestMoveVisible ? '1' : '0');
+      app.settingsRepository.setBoolean(PLAYER_BEST_MOVE_VISIBLE_KEY, app.playerBestMoveVisible);
     } catch (e) {}
     app.syncPlayerCardSettings();
   };
@@ -68,7 +68,7 @@
   app.setPlayerFoulLimit = function (value) {
     app.playerFoulLimit = clampFoulLimit(value);
     try {
-      localStorage.setItem(FOUL_LIMIT_KEY, String(app.playerFoulLimit));
+      app.settingsRepository.setNumber(FOUL_LIMIT_KEY, app.playerFoulLimit);
     } catch (e) {}
     app.syncPlayerCardSettings();
     return app.playerFoulLimit;

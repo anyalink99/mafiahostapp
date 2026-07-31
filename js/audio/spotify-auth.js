@@ -35,7 +35,7 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.spotifyLoadClientId = function () {
     try {
-      _clientId = localStorage.getItem(CLIENT_ID_KEY) || '';
+      _clientId = app.settingsRepository.getString(CLIENT_ID_KEY, '');
     } catch (e) {
       _clientId = '';
     }
@@ -44,7 +44,7 @@ window.MafiaApp = window.MafiaApp || {};
   app.spotifySaveClientId = function (id) {
     _clientId = (id || '').trim();
     try {
-      localStorage.setItem(CLIENT_ID_KEY, _clientId);
+      app.settingsRepository.setString(CLIENT_ID_KEY, _clientId);
     } catch (e) {}
   };
 
@@ -54,9 +54,7 @@ window.MafiaApp = window.MafiaApp || {};
 
   function loadTokens() {
     try {
-      var raw = localStorage.getItem(TOKENS_KEY);
-      if (!raw) return null;
-      var t = JSON.parse(raw);
+      var t = app.settingsRepository.getJson(TOKENS_KEY, null);
       if (!t || !t.access_token) return null;
       return t;
     } catch (e) {
@@ -66,13 +64,13 @@ window.MafiaApp = window.MafiaApp || {};
 
   function saveTokens(tokens) {
     try {
-      localStorage.setItem(TOKENS_KEY, JSON.stringify(tokens));
+      app.settingsRepository.setJson(TOKENS_KEY, tokens);
     } catch (e) {}
   }
 
   function clearTokens() {
     try {
-      localStorage.removeItem(TOKENS_KEY);
+      app.settingsRepository.remove(TOKENS_KEY);
     } catch (e) {}
   }
 
@@ -197,7 +195,7 @@ window.MafiaApp = window.MafiaApp || {};
 
     var cid = '';
     try {
-      cid = localStorage.getItem(CLIENT_ID_KEY) || '';
+      cid = app.settingsRepository.getString(CLIENT_ID_KEY, '');
     } catch (e) {}
     if (!cid) {
       try {

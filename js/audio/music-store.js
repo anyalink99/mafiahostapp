@@ -22,9 +22,8 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.loadMusicMeta = function () {
     try {
-      var raw = localStorage.getItem(app.MUSIC_META_KEY);
-      if (!raw) return defaultMeta();
-      var data = JSON.parse(raw);
+      var data = app.settingsRepository.getJson(app.MUSIC_META_KEY, null);
+      if (!data) return defaultMeta();
       if (!data || typeof data !== 'object') return defaultMeta();
       if (!data.slots || typeof data.slots !== 'object') data.slots = defaultMeta().slots;
       if (!Array.isArray(data.slots['1'])) data.slots['1'] = [];
@@ -38,7 +37,7 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.saveMusicMeta = function (meta) {
     try {
-      localStorage.setItem(app.MUSIC_META_KEY, JSON.stringify(meta));
+      app.settingsRepository.setJson(app.MUSIC_META_KEY, meta);
     } catch (e) {}
   };
 
@@ -47,7 +46,7 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.loadMusicIntroPrefs = function () {
     try {
-      var l = parseInt(localStorage.getItem(app.MUSIC_INTRO_LEADIN_KEY), 10);
+      var l = app.settingsRepository.getNumber(app.MUSIC_INTRO_LEADIN_KEY, NaN);
       if (!isNaN(l)) {
         if (l < 0) l = 0;
         if (l > app.MUSIC_INTRO_LEADIN_MAX) l = app.MUSIC_INTRO_LEADIN_MAX;
@@ -58,7 +57,7 @@ window.MafiaApp = window.MafiaApp || {};
       app.musicIntroLeadInSec = 10;
     }
     try {
-      var f = parseInt(localStorage.getItem(app.MUSIC_INTRO_FADE_KEY), 10);
+      var f = app.settingsRepository.getNumber(app.MUSIC_INTRO_FADE_KEY, NaN);
       if (!isNaN(f)) {
         if (f < 0) f = 0;
         if (f > 100) f = 100;
@@ -72,8 +71,8 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.saveMusicIntroPrefs = function () {
     try {
-      localStorage.setItem(app.MUSIC_INTRO_LEADIN_KEY, String(app.musicIntroLeadInSec));
-      localStorage.setItem(app.MUSIC_INTRO_FADE_KEY, String(app.musicIntroFadePercent));
+      app.settingsRepository.setNumber(app.MUSIC_INTRO_LEADIN_KEY, app.musicIntroLeadInSec);
+      app.settingsRepository.setNumber(app.MUSIC_INTRO_FADE_KEY, app.musicIntroFadePercent);
     } catch (e) {}
   };
 

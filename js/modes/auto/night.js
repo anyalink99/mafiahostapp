@@ -32,7 +32,7 @@
       A.checkWinAndContinue();
       return;
     }
-    s.phase = 'night-pass';
+    A.setPhase('night-pass');
     s.nightNum = nightNum;
     var cfg = A.variantConfig(s.variant);
     var kasperNight = !!cfg.firstNightKillsKasper && nightNum === 1;
@@ -99,25 +99,28 @@
     A.pushHistory();
     var s = app.autoState;
     if (!s.night) return;
-    s.phase = 'night-action';
+    A.setPhase('night-action');
     s.night.turnStartedAt = Date.now();
     A.saveAuto();
     app.navigateToScreen('auto-night-action-screen');
   };
 
   function stopNightTurnStopwatch() {
+    if (app.clockApi) app.clockApi.stop('auto-night-turn');
     if (app._autoEphemeral.nightTurnTimer) {
-      clearInterval(app._autoEphemeral.nightTurnTimer);
+      if (!app.clockApi) clearInterval(app._autoEphemeral.nightTurnTimer);
       app._autoEphemeral.nightTurnTimer = null;
     }
   }
 
-  function updateNightTurnStopwatch() {
+  function updateNightTurnStopwatch(clockState) {
     var s = app.autoState;
     var timer = el('auto-night-action-timer');
     if (!timer || !s || s.phase !== 'night-action' || !s.night) return;
     var startedAt = Number(s.night.turnStartedAt) || Date.now();
-    var elapsedMs = Math.max(0, Date.now() - startedAt);
+    var elapsedMs = clockState
+      ? Math.max(0, clockState.elapsedMs + (Date.now() - startedAt - clockState.elapsedMs))
+      : Math.max(0, Date.now() - startedAt);
     var elapsedSeconds = Math.floor(elapsedMs / 100) / 10;
     timer.textContent = elapsedSeconds.toFixed(1) + ' с';
     timer.classList.toggle(
@@ -135,7 +138,15 @@
       A.saveAuto();
     }
     updateNightTurnStopwatch();
-    app._autoEphemeral.nightTurnTimer = setInterval(updateNightTurnStopwatch, 100);
+    if (app.clockApi) {
+      app.clockApi.startStopwatch('auto-night-turn', {
+        tickMs: 100,
+        onTick: updateNightTurnStopwatch,
+      });
+      app._autoEphemeral.nightTurnTimer = 'clock-api';
+    } else {
+      app._autoEphemeral.nightTurnTimer = setInterval(updateNightTurnStopwatch, 100);
+    }
   }
 
   app.renderAutoNightAction = function () {
@@ -164,12 +175,11 @@
   };
 
   function renderNightActionSections(seat) {
-    var role = seat.role;
-    if (role === 'mafia') return [renderMafiaSection(seat, false)];
-    if (role === 'don') return [renderMafiaSection(seat, true), renderDonCheckSection(seat)];
-    if (role === 'sheriff') return [renderSheriffSection(seat)];
-    if (role === 'merlin') return [renderMerlinSection(seat)];
-    return [renderPeacefulSection()];
+    return app.nightActionRegistry.run(seat.role, {
+      mode: 'auto',
+      seat: seat,
+      state: app.autoState,
+    });
   }
 
   function sectionEl(extraClass, children) {
@@ -349,6 +359,62 @@
     ]);
   }
 
+  app.nightActionRegistry.register(
+    '*',
+    {
+      key: 'peaceful-wait',
+      targetPolicy: 'none',
+      render: function () {
+        return [renderPeacefulSection()];
+      },
+    },
+    'auto'
+  );
+  app.nightActionRegistry.register(
+    'mafia',
+    {
+      key: 'mafia-shot',
+      targetPolicy: 'living-other',
+      render: function (context) {
+        return [renderMafiaSection(context.seat, false)];
+      },
+    },
+    'auto'
+  );
+  app.nightActionRegistry.register(
+    'don',
+    {
+      key: 'don-turn',
+      targetPolicy: 'living-other',
+      render: function (context) {
+        return [renderMafiaSection(context.seat, true), renderDonCheckSection(context.seat)];
+      },
+    },
+    'auto'
+  );
+  app.nightActionRegistry.register(
+    'sheriff',
+    {
+      key: 'sheriff-check',
+      targetPolicy: 'living-other',
+      render: function (context) {
+        return [renderSheriffSection(context.seat)];
+      },
+    },
+    'auto'
+  );
+  app.nightActionRegistry.register(
+    'merlin',
+    {
+      key: 'merlin-intel',
+      targetPolicy: 'none',
+      render: function (context) {
+        return [renderMerlinSection(context.seat)];
+      },
+    },
+    'auto'
+  );
+
   app.handleNightTurnDone = function () {
     var s = app.autoState;
     if (!s.night) return;
@@ -359,7 +425,7 @@
     if (s.night.cursor >= s.night.turnOrder.length) {
       transitionToNightResult();
     } else {
-      s.phase = 'night-pass';
+      A.setPhase('night-pass');
       A.saveAuto();
       app.navigateToScreen('auto-night-pass-screen');
     }
@@ -447,7 +513,7 @@
         if (v.phantom) v.phantom = false;
       }
     }
-    s.phase = 'night-result';
+    A.setPhase('night-result');
     A.navAfter('auto-night-result-screen');
     setTimeout(playNightResultAudio, 50);
   }
@@ -489,21 +555,37 @@
     var cd = el('auto-night-result-bestmove-countdown');
     if (cd) cd.textContent = String(n);
     if (app._autoEphemeral.bestMoveTimer) {
-      clearInterval(app._autoEphemeral.bestMoveTimer);
+      if (app.clockApi) app.clockApi.stop('auto-best-move');
+      else clearInterval(app._autoEphemeral.bestMoveTimer);
       app._autoEphemeral.bestMoveTimer = null;
     }
-    app._autoEphemeral.bestMoveTimer = setInterval(function () {
-      n--;
+    function tickBestMove(clockState) {
+      n = app.clockApi ? Math.max(0, Math.ceil(clockState.remainingMs / 1000)) : n - 1;
       var c = el('auto-night-result-bestmove-countdown');
       if (c) c.textContent = String(Math.max(0, n));
-      if (n <= 0) {
+      if (!app.clockApi && n <= 0) {
         clearInterval(app._autoEphemeral.bestMoveTimer);
         app._autoEphemeral.bestMoveTimer = null;
         var bm2 = el('auto-night-result-bestmove');
         if (bm2) bm2.classList.add('hidden');
         if (typeof onDone === 'function') onDone();
       }
-    }, 1000);
+    }
+    if (app.clockApi) {
+      app.clockApi.startCountdown('auto-best-move', 10000, {
+        tickMs: 250,
+        onTick: tickBestMove,
+        onDone: function () {
+          app._autoEphemeral.bestMoveTimer = null;
+          var bm2 = el('auto-night-result-bestmove');
+          if (bm2) bm2.classList.add('hidden');
+          if (typeof onDone === 'function') onDone();
+        },
+      });
+      app._autoEphemeral.bestMoveTimer = 'clock-api';
+    } else {
+      app._autoEphemeral.bestMoveTimer = setInterval(tickBestMove, 1000);
+    }
   }
 
   app.renderAutoNightResult = function () {

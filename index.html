@@ -5,8 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0c0a09">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Мафия">
     <title>Мафия — Ведущий</title>
     <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
     <link rel="icon" href="icons/icon-512.png" type="image/png" sizes="512x512">
@@ -123,6 +125,9 @@
             </button>
             <button type="button" id="btn-settings" data-goto="settings-screen" class="w-full py-3 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-border text-mafia-gold/90 font-medium text-sm tracking-wide uppercase transition-all duration-200 rounded-sm cursor-pointer">
                 Настройки
+            </button>
+            <button type="button" id="btn-pwa-install" data-action="pwa-install" class="hidden w-full py-3 px-6 bg-mafia-card hover:bg-mafia-border border border-mafia-gold/45 text-mafia-gold font-medium text-sm tracking-wide uppercase transition-all duration-200 rounded-sm cursor-pointer">
+                <span id="btn-pwa-install-label">Установить приложение</span>
             </button>
             <button type="button" id="btn-reset-game" data-action="reset-game-confirm-open" class="w-full py-3 px-5 text-mafia-cream/50 hover:text-mafia-cream/80 text-sm uppercase tracking-wider cursor-pointer transition-transform active:scale-95">
                 Сброс игры
@@ -882,6 +887,19 @@
     </div>
 </div>
 
+<div id="modal-pwa-install" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-pwa-install-title">
+    <div class="absolute inset-0" data-action="pwa-install-help-close" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-sm w-full shadow-xl">
+        <button type="button" class="modal-panel__close-x" data-action="pwa-install-help-close" aria-label="Закрыть">×</button>
+        <h2 id="modal-pwa-install-title" class="font-display text-mafia-gold text-xl text-center tracking-widest mb-3">Установить «Мафию»</h2>
+        <div class="rounded border border-mafia-gold/25 bg-mafia-card px-4 py-4 text-mafia-cream/75 text-sm leading-relaxed">
+            <p>Откройте эту страницу в Safari, нажмите кнопку <strong class="text-mafia-gold">«Поделиться»</strong>, затем выберите <strong class="text-mafia-gold">«На экран Домой»</strong>.</p>
+            <p class="mt-3 text-mafia-cream/55">После установки приложение открывается без панели браузера и продолжает работать без интернета.</p>
+        </div>
+        <button type="button" data-action="pwa-install-help-close" class="w-full mt-4 py-2 text-mafia-cream/60 hover:text-mafia-cream text-sm uppercase tracking-wider cursor-pointer">Понятно</button>
+    </div>
+</div>
+
 <div id="modal-reset-game-confirm" class="modal-overlay fixed inset-0 z-[60] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-labelledby="modal-reset-game-title">
     <div class="absolute inset-0" data-action="reset-game-confirm-cancel" aria-hidden="true"></div>
     <div class="modal-panel relative z-10 bg-mafia-coal border-2 border-mafia-gold/40 rounded-lg px-5 pt-6 pb-4 max-w-sm w-full shadow-xl">
@@ -1175,12 +1193,26 @@
     </div>
 </div>
 
+<div id="pwa-offline-badge" class="hidden fixed left-1/2 top-2 z-[55] -translate-x-1/2 rounded-full border border-mafia-gold/35 bg-mafia-coal/95 px-3 py-1.5 text-xs text-mafia-cream/75 shadow-lg" role="status">
+    Офлайн — партия сохраняется на устройстве
+</div>
+
+<div id="pwa-update-banner" class="hidden fixed z-[70] left-4 right-4 bottom-4 mx-auto max-w-md rounded-lg border border-mafia-gold/50 bg-mafia-coal p-4 shadow-2xl" role="region" aria-labelledby="pwa-update-title" aria-live="polite">
+    <p id="pwa-update-title" class="font-display text-mafia-gold text-lg tracking-wider">Доступно обновление</p>
+    <p class="mt-1 text-mafia-cream/65 text-sm">Оно установится только после вашего подтверждения — текущая партия не прервётся.</p>
+    <div class="mt-3 flex gap-2">
+        <button type="button" data-action="pwa-update-apply" class="flex-1 rounded border border-mafia-gold bg-mafia-blood px-3 py-2 text-sm font-semibold uppercase tracking-wider text-mafia-gold">Обновить</button>
+        <button type="button" data-action="pwa-update-dismiss" class="rounded px-3 py-2 text-sm text-mafia-cream/55 hover:text-mafia-cream">Позже</button>
+    </div>
+</div>
+
 <audio id="bg-music" preload="none" playsinline></audio>
 <audio id="timer-voice" preload="auto" playsinline></audio>
 <audio id="sfx-voice" preload="auto" playsinline></audio>
 <audio id="music-preview" preload="none" playsinline></audio>
 
 <!-- MU-режим: мост между нашим UI в iframe и content-script расширения -->
+<script src="js/core/storage.js"></script>
 <script src="js/mu-utils.js"></script>
 <script src="js/mu-vote-reconstruct.js"></script>
 <script src="js/mu-bridge.js"></script>
@@ -1190,9 +1222,11 @@
 <script src="js/vendor/jszip.min.js"></script>
 
 <!-- core: state, utils, navigation, dispatch -->
+<script src="js/core/clock.js"></script>
 <script src="js/core/state.js"></script>
 <script src="js/core/utils.js"></script>
 <script src="js/core/screens.js"></script>
+<script src="js/core/pwa.js"></script>
 
 <!-- audio: music + tts -->
 <script src="js/audio/spotify-auth.js"></script>
@@ -1202,6 +1236,7 @@
 <script src="js/audio/music-zip.js"></script>
 <script src="js/audio/music-volume.js"></script>
 <script src="js/audio/music-player.js"></script>
+<script src="js/audio/audio-director.js"></script>
 <script src="js/audio/music-preview.js"></script>
 <script src="js/audio/music-control.js"></script>
 <script src="js/audio/music-settings-list.js"></script>
@@ -1210,6 +1245,7 @@
 
 <!-- game rules: variant registry + per-variant definitions -->
 <script src="js/game/vote-rules.js"></script>
+<script src="js/game/vote-api.js"></script>
 <script src="js/game/variants.js"></script>
 <script src="js/game/standard.js"></script>
 <script src="js/game/kasper.js"></script>
@@ -1217,6 +1253,9 @@
 <script src="js/game/donskaya.js"></script>
 <script src="js/game/urban.js"></script>
 <script src="js/game/roles.js"></script>
+<script src="js/game/session-api.js"></script>
+<script src="js/game/phase-machine.js"></script>
+<script src="js/game/night-action-registry.js"></script>
 
 <!-- shared game-table surface: renderer, gestures, mode adapters -->
 <script src="js/ui/player-table.js"></script>

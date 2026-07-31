@@ -46,7 +46,7 @@
     var dealt = A.dealRolesForVariant(variant);
     var fresh = A.makeFreshState();
     fresh.active = true;
-    fresh.phase = 'reveal';
+    fresh.phase = 'setup';
     var realRoleCount = variant === 'kasper' ? dealt.length - 1 : dealt.length;
     fresh.reveal = {
       version: 2,
@@ -74,6 +74,7 @@
     // но phantom=true → исключаем из раздачи, ночных ходов, выставлений, фолов, модалок.
     if (variant === 'kasper' && fresh.seats[9]) fresh.seats[9].phantom = true;
     app.autoState = fresh;
+    A.setPhase('reveal');
     A.saveAuto();
     app.navigateToScreen('auto-reveal-screen');
   };

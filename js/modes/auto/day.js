@@ -10,7 +10,7 @@
 
   A.transitionToDay = function (dayNum) {
     var s = app.autoState;
-    s.phase = 'day';
+    A.setPhase('day');
     s.day = { dayNum: dayNum, timeLeft: A.DEFAULT_DAY_SEC, nominees: [] };
     A.navAfter('auto-day-screen');
   };
@@ -67,20 +67,25 @@
     var s = app.autoState;
     if (!s.day) return;
     if (app._autoEphemeral.dayTimerInterval) {
-      clearInterval(app._autoEphemeral.dayTimerInterval);
+      if (app.clockApi) app.clockApi.stop('auto-day');
+      else clearInterval(app._autoEphemeral.dayTimerInterval);
       app._autoEphemeral.dayTimerInterval = null;
       applyAutoDayTimerButtonState(false);
       return;
     }
     applyAutoDayTimerButtonState(true);
-    app._autoEphemeral.dayTimerInterval = setInterval(function () {
+    function onTick(clockState) {
       if (!s.day) {
-        clearInterval(app._autoEphemeral.dayTimerInterval);
+        if (app.clockApi) app.clockApi.stop('auto-day');
+        else clearInterval(app._autoEphemeral.dayTimerInterval);
         app._autoEphemeral.dayTimerInterval = null;
         return;
       }
-      if (s.day.timeLeft > 0) {
-        s.day.timeLeft--;
+      var nextTime = app.clockApi
+        ? Math.max(0, Math.ceil(clockState.remainingMs / 1000))
+        : Math.max(0, s.day.timeLeft - 1);
+      if (nextTime !== s.day.timeLeft) {
+        s.day.timeLeft = nextTime;
         var t = el('auto-day-timer');
         if (t) t.textContent = String(s.day.timeLeft);
         syncAutoDayTimerAppearance();
@@ -88,7 +93,8 @@
           app.playTimerVoiceCue('10');
         }
         if (s.day.timeLeft <= 0) {
-          clearInterval(app._autoEphemeral.dayTimerInterval);
+          if (app.clockApi) app.clockApi.stop('auto-day');
+          else clearInterval(app._autoEphemeral.dayTimerInterval);
           app._autoEphemeral.dayTimerInterval = null;
           applyAutoDayTimerButtonState(false);
           if (app.timerVoiceEnabled && app.playTimerVoiceCue) {
@@ -102,14 +108,24 @@
         }
         A.saveAuto();
       }
-    }, 1000);
+    }
+    if (app.clockApi) {
+      app.clockApi.startCountdown('auto-day', s.day.timeLeft * 1000, {
+        tickMs: 200,
+        onTick: onTick,
+      });
+      app._autoEphemeral.dayTimerInterval = 'clock-api';
+    } else {
+      app._autoEphemeral.dayTimerInterval = setInterval(onTick, 1000);
+    }
   };
 
   app.resetAutoDayTimer = function (sec) {
     var s = app.autoState;
     if (!s.day) return;
     if (app._autoEphemeral.dayTimerInterval) {
-      clearInterval(app._autoEphemeral.dayTimerInterval);
+      if (app.clockApi) app.clockApi.stop('auto-day');
+      else clearInterval(app._autoEphemeral.dayTimerInterval);
       app._autoEphemeral.dayTimerInterval = null;
     }
     s.day.timeLeft = sec;
@@ -252,8 +268,8 @@
   A.setAutoElim = function (seatId, reason) {
     var s = app.autoState;
     var seat = A.seatById(seatId);
-    if (!seat) return;
-    if (A.isPhantomSeat(seat)) return;
+    if (!seat) return false;
+    if (A.isPhantomSeat(seat)) return false;
     A.pushHistory();
     if (seat.eliminationReason === reason) {
       seat.eliminationReason = null;
@@ -274,13 +290,15 @@
     A.saveAuto();
     renderAutoDayPlayers();
     refreshAutoDayNominees();
+    return true;
   };
 
   app.skipAutoVote = function () {
     var s = app.autoState;
     if (!s.day) return;
     if (app._autoEphemeral.dayTimerInterval) {
-      clearInterval(app._autoEphemeral.dayTimerInterval);
+      if (app.clockApi) app.clockApi.stop('auto-day');
+      else clearInterval(app._autoEphemeral.dayTimerInterval);
       app._autoEphemeral.dayTimerInterval = null;
     }
     A.pushHistory();
@@ -297,6 +315,51 @@
     var pid = parseInt(pidStr, 10);
     if (!isNaN(pid)) cb(pid);
   };
+
+  if (app.gameSessionApi) {
+    app.gameSessionApi.registerMode('auto', {
+      snapshot: function () {
+        return {
+          players: app.autoState.seats,
+          nominees: app.autoState.day ? app.autoState.day.nominees : [],
+          vote: app.autoState.vote,
+        };
+      },
+      addFoul: function (command) {
+        return addAutoFoul(command.playerId);
+      },
+      removeFoul: function (command) {
+        return removeAutoFoul(command.playerId);
+      },
+      addNominee: function (command) {
+        return addAutoNominee(command.playerId, command.options);
+      },
+      removeNominee: function (command) {
+        return removeAutoNominee(command.playerId, command.options);
+      },
+      toggleNominee: function (command) {
+        return toggleAutoNominee(command.playerId, command.options);
+      },
+      updateNickname: function (command) {
+        var seat = A.seatById(command.playerId);
+        if (!seat) return false;
+        var next = String(command.nickname == null ? '' : command.nickname).slice(0, 32);
+        if ((seat.nick || '') === next) return false;
+        A.mutate(function () {
+          seat.nick = next;
+        });
+        return true;
+      },
+      setElimination: function (command) {
+        if (
+          command.reason === 'hang' &&
+          (!app.autoState.day || app.autoState.day.nominees.indexOf(command.playerId) === -1)
+        )
+          return false;
+        return A.setAutoElim(command.playerId, command.reason);
+      },
+    });
+  }
 
   app.playerTable.register('auto', {
     targetId: 'auto-day-players-list',
@@ -323,26 +386,19 @@
       return !!(app.autoState.day && app.autoState.day.nominees.indexOf(id) !== -1);
     },
     toggleNominee: function (id, opts) {
-      return toggleAutoNominee(id, opts);
+      return app.playerApi.toggleNominee('auto', id, opts);
     },
     addFoul: function (id) {
-      return addAutoFoul(id);
+      return app.playerApi.addFoul('auto', id);
     },
     removeFoul: function (id) {
-      return removeAutoFoul(id);
+      return app.playerApi.removeFoul('auto', id);
     },
     openPlayer: function (id) {
       if (app.showPlayerActionsModal) app.showPlayerActionsModal(id, 'auto');
     },
     updateNick: function (id, nick) {
-      var seat = A.seatById(id);
-      if (!seat) return false;
-      var next = String(nick == null ? '' : nick).slice(0, 32);
-      if ((seat.nick || '') === next) return false;
-      A.mutate(function () {
-        seat.nick = next;
-      });
-      return true;
+      return app.playerApi.updateNickname('auto', id, nick);
     },
     canEliminate: function (id, reason) {
       return (
@@ -351,8 +407,7 @@
     },
     setElimination: function (id, reason) {
       if (!this.canEliminate(id, reason)) return false;
-      A.setAutoElim(id, reason);
-      return true;
+      return app.playerApi.setElimination('auto', id, reason);
     },
     render: function () {
       renderAutoDayPlayers();

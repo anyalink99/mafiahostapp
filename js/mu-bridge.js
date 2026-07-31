@@ -33,7 +33,7 @@
   var MU_LOOKUP_KEY = 'muLookupEnabled';
   app.muLookupEnabled = true;
   try {
-    app.muLookupEnabled = localStorage.getItem(MU_LOOKUP_KEY) !== '0';
+    app.muLookupEnabled = app.settingsRepository.getBoolean(MU_LOOKUP_KEY, true);
   } catch (e) {}
 
   function workerEnabled() {
@@ -229,7 +229,7 @@
     setLookupEnabled: function (enabled) {
       app.muLookupEnabled = !!enabled;
       try {
-        localStorage.setItem(MU_LOOKUP_KEY, app.muLookupEnabled ? '1' : '0');
+        app.settingsRepository.setBoolean(MU_LOOKUP_KEY, app.muLookupEnabled);
       } catch (e) {}
       if (app.syncMuLookupCheckbox) app.syncMuLookupCheckbox();
     },

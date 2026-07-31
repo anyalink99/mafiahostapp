@@ -121,7 +121,7 @@
 
   app.loadTimerVoicePref = function () {
     try {
-      var v = localStorage.getItem(app.TIMER_VOICE_KEY);
+      var v = app.settingsRepository.getString(app.TIMER_VOICE_KEY, null);
       app.timerVoiceEnabled = v === '1';
     } catch (e) {
       app.timerVoiceEnabled = false;
@@ -138,7 +138,7 @@
     var gotAny = false;
 
     try {
-      var v1 = parseFloat(localStorage.getItem(app.VOICE_VOL_NO_MUSIC_KEY));
+      var v1 = app.settingsRepository.getNumber(app.VOICE_VOL_NO_MUSIC_KEY, NaN);
       if (!isNaN(v1)) {
         app.voiceVolumeNoMusic = clamp01(v1);
         gotAny = true;
@@ -146,7 +146,7 @@
     } catch (e) {}
 
     try {
-      var v2 = parseFloat(localStorage.getItem(app.VOICE_VOL_WITH_MUSIC_KEY));
+      var v2 = app.settingsRepository.getNumber(app.VOICE_VOL_WITH_MUSIC_KEY, NaN);
       if (!isNaN(v2)) {
         app.voiceVolumeWithMusic = clamp01(v2);
         gotAny = true;
@@ -166,14 +166,17 @@
 
   app.saveVoiceVolumePrefs = function () {
     try {
-      localStorage.setItem(app.VOICE_VOL_NO_MUSIC_KEY, String(clamp01(app.voiceVolumeNoMusic)));
-      localStorage.setItem(app.VOICE_VOL_WITH_MUSIC_KEY, String(clamp01(app.voiceVolumeWithMusic)));
+      app.settingsRepository.setNumber(app.VOICE_VOL_NO_MUSIC_KEY, clamp01(app.voiceVolumeNoMusic));
+      app.settingsRepository.setNumber(
+        app.VOICE_VOL_WITH_MUSIC_KEY,
+        clamp01(app.voiceVolumeWithMusic)
+      );
     } catch (e) {}
   };
 
   app.loadVoiceRatePref = function () {
     try {
-      var v = parseFloat(localStorage.getItem(app.VOICE_RATE_KEY));
+      var v = app.settingsRepository.getNumber(app.VOICE_RATE_KEY, NaN);
       if (!isNaN(v)) {
         app.voiceRate = clampVoiceRate(v);
         return;
@@ -185,19 +188,19 @@
 
   app.saveVoiceRatePref = function () {
     try {
-      localStorage.setItem(app.VOICE_RATE_KEY, String(clampVoiceRate(app.voiceRate)));
+      app.settingsRepository.setNumber(app.VOICE_RATE_KEY, clampVoiceRate(app.voiceRate));
     } catch (e) {}
   };
 
   app.loadTimerVoiceDuckPrefs = function () {
     try {
-      var d = localStorage.getItem(app.TIMER_VOICE_DUCK_KEY);
+      var d = app.settingsRepository.getString(app.TIMER_VOICE_DUCK_KEY, null);
       app.timerVoiceDuckEnabled = d !== '0';
     } catch (e) {
       app.timerVoiceDuckEnabled = true;
     }
     try {
-      var m = parseFloat(localStorage.getItem(app.TIMER_VOICE_DUCK_MUL_KEY));
+      var m = app.settingsRepository.getNumber(app.TIMER_VOICE_DUCK_MUL_KEY, NaN);
       if (!isNaN(m)) {
         if (m < 0.05) m = 0.05;
         if (m > 1) m = 1;
@@ -212,7 +215,7 @@
 
   app.loadTimerVoiceVolumePref = function () {
     try {
-      var v = parseFloat(localStorage.getItem(app.TIMER_VOICE_VOL_KEY));
+      var v = app.settingsRepository.getNumber(app.TIMER_VOICE_VOL_KEY, NaN);
       if (!isNaN(v)) {
         if (v < 0) v = 0;
         if (v > 1) v = 1;
@@ -226,13 +229,13 @@
 
   app.saveTimerVoiceVolumePref = function () {
     try {
-      localStorage.setItem(app.TIMER_VOICE_VOL_KEY, String(app.timerVoiceVolume));
+      app.settingsRepository.setNumber(app.TIMER_VOICE_VOL_KEY, app.timerVoiceVolume);
     } catch (e) {}
   };
 
   app.loadNightActionsWaitPref = function () {
     try {
-      var v = parseInt(localStorage.getItem(app.NIGHT_ACTIONS_WAIT_SEC_KEY), 10);
+      var v = app.settingsRepository.getNumber(app.NIGHT_ACTIONS_WAIT_SEC_KEY, NaN);
       if (!isNaN(v)) {
         if (v < 0) v = 0;
         if (v > 20) v = 20;
@@ -247,20 +250,20 @@
 
   app.saveNightActionsWaitPref = function () {
     try {
-      localStorage.setItem(app.NIGHT_ACTIONS_WAIT_SEC_KEY, String(app.nightActionsWaitSec));
+      app.settingsRepository.setNumber(app.NIGHT_ACTIONS_WAIT_SEC_KEY, app.nightActionsWaitSec);
     } catch (e) {}
   };
 
   app.saveTimerVoicePref = function () {
     try {
-      localStorage.setItem(app.TIMER_VOICE_KEY, app.timerVoiceEnabled ? '1' : '0');
+      app.settingsRepository.setBoolean(app.TIMER_VOICE_KEY, app.timerVoiceEnabled);
     } catch (e) {}
   };
 
   app.saveTimerVoiceDuckPrefs = function () {
     try {
-      localStorage.setItem(app.TIMER_VOICE_DUCK_KEY, app.timerVoiceDuckEnabled ? '1' : '0');
-      localStorage.setItem(app.TIMER_VOICE_DUCK_MUL_KEY, String(app.timerVoiceDuckMul));
+      app.settingsRepository.setBoolean(app.TIMER_VOICE_DUCK_KEY, app.timerVoiceDuckEnabled);
+      app.settingsRepository.setNumber(app.TIMER_VOICE_DUCK_MUL_KEY, app.timerVoiceDuckMul);
     } catch (e) {}
   };
 

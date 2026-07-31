@@ -12,7 +12,7 @@
 
   function endGame(team) {
     var s = app.autoState;
-    s.phase = 'gameover';
+    A.setPhase('gameover');
     s.result = team;
     A.clearAllAutoTimers();
     A.saveAuto();
@@ -44,8 +44,7 @@
   };
 
   function transitionToMerlinGuess() {
-    var s = app.autoState;
-    s.phase = 'merlin-guess';
+    A.setPhase('merlin-guess');
     A.navAfter('auto-merlin-guess-screen');
   }
 

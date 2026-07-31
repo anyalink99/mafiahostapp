@@ -2,6 +2,19 @@ window.MafiaApp = window.MafiaApp || {};
 
 (function (app) {
   app.STORAGE_KEY = 'mafia_host_state';
+  if (app.gameRepository) {
+    app.gameRepository.register(app.STORAGE_KEY, {
+      version: 1,
+      migrations: {
+        1: function (snapshot) {
+          return snapshot;
+        },
+      },
+      validate: function (snapshot) {
+        return !snapshot.players || Array.isArray(snapshot.players);
+      },
+    });
+  }
 
   function definePlayerModelAliases(player) {
     if (!player || typeof player !== 'object') return player;
@@ -144,16 +157,15 @@ window.MafiaApp = window.MafiaApp || {};
         gameSideNotes: app.gameSideNotes,
         gameSideNotesCollapsed: app.gameSideNotesCollapsed,
       };
-      localStorage.setItem(app.STORAGE_KEY, JSON.stringify(payload));
+      app.gameRepository.write(app.STORAGE_KEY, payload);
       if (app.scheduleCurrentGameHistorySync) app.scheduleCurrentGameHistorySync();
     } catch (e) {}
   };
 
   app.loadState = function () {
     try {
-      const raw = localStorage.getItem(app.STORAGE_KEY);
-      if (!raw) return false;
-      const data = JSON.parse(raw);
+      const data = app.gameRepository.read(app.STORAGE_KEY, null);
+      if (!data) return false;
       if (data.roles && Array.isArray(data.roles)) app.roles = data.roles;
       if (data.players && Array.isArray(data.players)) {
         app.players = ensurePlayersSchema(data.players);
@@ -376,7 +388,8 @@ window.MafiaApp = window.MafiaApp || {};
     app.summarySkipLineOverrides = {};
     app.gameSideNotes = '';
     app.gameSideNotesCollapsed = false;
-    if (app.timerInterval) clearInterval(app.timerInterval);
+    if (app.clockApi) app.clockApi.stop('host-main');
+    else if (app.timerInterval) clearInterval(app.timerInterval);
     app.timerInterval = null;
     app.saveState();
     // После сброса возвращаем пользователя в начало флоу подготовки.
@@ -396,7 +409,7 @@ window.MafiaApp = window.MafiaApp || {};
 
   app.hasSavedState = function () {
     try {
-      return localStorage.getItem(app.STORAGE_KEY) !== null;
+      return app.gameRepository.has(app.STORAGE_KEY);
     } catch (e) {
       return false;
     }

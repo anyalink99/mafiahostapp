@@ -14,7 +14,7 @@
 
   A.transitionToNightIntro = function () {
     var s = app.autoState;
-    s.phase = 'night-intro';
+    A.setPhase('night-intro');
     s.nightNum = 0;
     A.navAfter('auto-night-intro-screen');
   };
@@ -29,20 +29,26 @@
 
   function clearIntroTimers() {
     var e = app._autoEphemeral;
+    if (app.clockApi) {
+      app.clockApi.stop('auto-intro-pre');
+      app.clockApi.stop('auto-intro-main');
+      app.clockApi.stop('auto-intro-gap');
+      app.clockApi.stop('auto-intro-freesit');
+    }
     if (e.introPreInterval) {
-      clearInterval(e.introPreInterval);
+      if (!app.clockApi) clearInterval(e.introPreInterval);
       e.introPreInterval = null;
     }
     if (e.introMainInterval) {
-      clearInterval(e.introMainInterval);
+      if (!app.clockApi) clearInterval(e.introMainInterval);
       e.introMainInterval = null;
     }
     if (e.introGapInterval) {
-      clearInterval(e.introGapInterval);
+      if (!app.clockApi) clearInterval(e.introGapInterval);
       e.introGapInterval = null;
     }
     if (e.introFreesitInterval) {
-      clearInterval(e.introFreesitInterval);
+      if (!app.clockApi) clearInterval(e.introFreesitInterval);
       e.introFreesitInterval = null;
     }
   }
@@ -82,17 +88,33 @@
     var preEl = el('auto-intro-pre-countdown');
     if (preEl) preEl.textContent = String(A.INTRO_PRE_SEC);
     startNightIntroMusic();
-    var preLeft = A.INTRO_PRE_SEC;
-    app._autoEphemeral.introPreInterval = setInterval(function () {
-      preLeft--;
-      var p = el('auto-intro-pre-countdown');
-      if (p) p.textContent = String(Math.max(0, preLeft));
-      if (preLeft <= 0) {
-        clearInterval(app._autoEphemeral.introPreInterval);
-        app._autoEphemeral.introPreInterval = null;
-        startIntroBriefing();
-      }
-    }, 1000);
+    if (app.clockApi) {
+      app.clockApi.startCountdown('auto-intro-pre', A.INTRO_PRE_SEC * 1000, {
+        tickMs: 250,
+        onTick: function (clockState) {
+          var preLeft = Math.max(0, Math.ceil(clockState.remainingMs / 1000));
+          var p = el('auto-intro-pre-countdown');
+          if (p) p.textContent = String(preLeft);
+        },
+        onDone: function () {
+          app._autoEphemeral.introPreInterval = null;
+          startIntroBriefing();
+        },
+      });
+      app._autoEphemeral.introPreInterval = 'clock-api';
+    } else {
+      var preLeft = A.INTRO_PRE_SEC;
+      app._autoEphemeral.introPreInterval = setInterval(function () {
+        preLeft--;
+        var p = el('auto-intro-pre-countdown');
+        if (p) p.textContent = String(Math.max(0, preLeft));
+        if (preLeft <= 0) {
+          clearInterval(app._autoEphemeral.introPreInterval);
+          app._autoEphemeral.introPreInterval = null;
+          startIntroBriefing();
+        }
+      }, 1000);
+    }
   };
 
   function startIntroBriefing() {
@@ -108,20 +130,35 @@
     }
     app._autoEphemeral.introMainEnd = Date.now() + A.INTRO_MAIN_SEC * 1000;
     app._autoEphemeral.intro10Played = false;
-    app._autoEphemeral.introMainInterval = setInterval(function () {
-      var left = Math.max(0, Math.ceil((app._autoEphemeral.introMainEnd - Date.now()) / 1000));
+    function tickMain(clockState) {
+      var left = clockState
+        ? Math.max(0, Math.ceil(clockState.remainingMs / 1000))
+        : Math.max(0, Math.ceil((app._autoEphemeral.introMainEnd - Date.now()) / 1000));
       var m = el('auto-intro-main-countdown');
       if (m) m.textContent = String(left);
       if (left === 10 && !app._autoEphemeral.intro10Played) {
         app._autoEphemeral.intro10Played = true;
         A.playSfx('mafia-10-seconds-acquaintance.mp3');
       }
-      if (left <= 0) {
+      if (!app.clockApi && left <= 0) {
         clearInterval(app._autoEphemeral.introMainInterval);
         app._autoEphemeral.introMainInterval = null;
         startIntroGap();
       }
-    }, 250);
+    }
+    if (app.clockApi) {
+      app.clockApi.startCountdown('auto-intro-main', A.INTRO_MAIN_SEC * 1000, {
+        tickMs: 250,
+        onTick: tickMain,
+        onDone: function () {
+          app._autoEphemeral.introMainInterval = null;
+          startIntroGap();
+        },
+      });
+      app._autoEphemeral.introMainInterval = 'clock-api';
+    } else {
+      app._autoEphemeral.introMainInterval = setInterval(tickMain, 250);
+    }
   }
 
   function startIntroGap() {
@@ -132,17 +169,34 @@
     var endTs = Date.now() + INTRO_GAP_SEC * 1000;
     var c = el('auto-intro-gap-countdown');
     if (c) c.textContent = String(INTRO_GAP_SEC);
-    app._autoEphemeral.introGapInterval = setInterval(function () {
-      var left = Math.max(0, Math.ceil((endTs - Date.now()) / 1000));
+    function tickGap(clockState) {
+      var left = clockState
+        ? Math.max(0, Math.ceil(clockState.remainingMs / 1000))
+        : Math.max(0, Math.ceil((endTs - Date.now()) / 1000));
       var cd = el('auto-intro-gap-countdown');
       if (cd) cd.textContent = String(left);
-      if (left <= 0) {
+      if (!app.clockApi && left <= 0) {
         clearInterval(app._autoEphemeral.introGapInterval);
         app._autoEphemeral.introGapInterval = null;
         if (A.getVariant().introWakesMerlin) startMerlinReveal();
         else startFreeSeating();
       }
-    }, 250);
+    }
+    function finishGap() {
+      app._autoEphemeral.introGapInterval = null;
+      if (A.getVariant().introWakesMerlin) startMerlinReveal();
+      else startFreeSeating();
+    }
+    if (app.clockApi) {
+      app.clockApi.startCountdown('auto-intro-gap', INTRO_GAP_SEC * 1000, {
+        tickMs: 250,
+        onTick: tickGap,
+        onDone: finishGap,
+      });
+      app._autoEphemeral.introGapInterval = 'clock-api';
+    } else {
+      app._autoEphemeral.introGapInterval = setInterval(tickGap, 250);
+    }
   }
 
   function findSeatByRole(role) {
@@ -228,16 +282,31 @@
     var endTs = Date.now() + FREESIT_SEC * 1000;
     var c = el('auto-intro-freesit-countdown');
     if (c) c.textContent = String(FREESIT_SEC);
-    app._autoEphemeral.introFreesitInterval = setInterval(function () {
-      var left = Math.max(0, Math.ceil((endTs - Date.now()) / 1000));
+    function tickFreesit(clockState) {
+      var left = clockState
+        ? Math.max(0, Math.ceil(clockState.remainingMs / 1000))
+        : Math.max(0, Math.ceil((endTs - Date.now()) / 1000));
       var cd = el('auto-intro-freesit-countdown');
       if (cd) cd.textContent = String(left);
-      if (left <= 0) {
+      if (!app.clockApi && left <= 0) {
         clearInterval(app._autoEphemeral.introFreesitInterval);
         app._autoEphemeral.introFreesitInterval = null;
         finishFreeSeating();
       }
-    }, 250);
+    }
+    if (app.clockApi) {
+      app.clockApi.startCountdown('auto-intro-freesit', FREESIT_SEC * 1000, {
+        tickMs: 250,
+        onTick: tickFreesit,
+        onDone: function () {
+          app._autoEphemeral.introFreesitInterval = null;
+          finishFreeSeating();
+        },
+      });
+      app._autoEphemeral.introFreesitInterval = 'clock-api';
+    } else {
+      app._autoEphemeral.introFreesitInterval = setInterval(tickFreesit, 250);
+    }
   }
 
   function finishFreeSeating() {
@@ -254,7 +323,8 @@
   app.handleIntroFinish = function () {
     A.pushHistory();
     if (app._autoEphemeral.introMainInterval) {
-      clearInterval(app._autoEphemeral.introMainInterval);
+      if (app.clockApi) app.clockApi.stop('auto-intro-main');
+      else clearInterval(app._autoEphemeral.introMainInterval);
       app._autoEphemeral.introMainInterval = null;
     }
     startIntroGap();
@@ -263,7 +333,8 @@
   app.handleFreesitFinish = function () {
     A.pushHistory();
     if (app._autoEphemeral.introFreesitInterval) {
-      clearInterval(app._autoEphemeral.introFreesitInterval);
+      if (app.clockApi) app.clockApi.stop('auto-intro-freesit');
+      else clearInterval(app._autoEphemeral.introFreesitInterval);
       app._autoEphemeral.introFreesitInterval = null;
     }
     finishFreeSeating();

@@ -21,6 +21,7 @@ jobs:
       # Смоук в реальном Chrome (предустановлен на ubuntu-runner'ах);
       # если Chrome не найден, тест сам выходит со skip.
       - run: npm run test:smoke
+      - run: npm run test:pwa
       # Сборка должна проходить и не оставлять диффа в генерируемых файлах
       # (css/tailwind.css и прекэш service-worker.js коммитятся).
       - run: npm run build:extension

@@ -24,19 +24,10 @@
     return value == null ? value : JSON.parse(JSON.stringify(value));
   }
 
-  function parseJson(raw, fallback) {
-    if (!raw) return fallback;
-    try {
-      return JSON.parse(raw);
-    } catch (e) {
-      return fallback;
-    }
-  }
-
   function readEntries() {
     var parsed;
     try {
-      parsed = parseJson(localStorage.getItem(HISTORY_KEY), []);
+      parsed = app.storageApi.getJson(HISTORY_KEY, []);
     } catch (e) {
       return [];
     }
@@ -61,18 +52,15 @@
     var next = entries.slice(0, MAX_ENTRIES);
     while (next.length) {
       try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-        return next;
-      } catch (e) {
-        // localStorage обычно ограничен 5 МБ. Сохраняем свежие партии,
-        // постепенно освобождая самые старые записи.
-        if (next.length === 1) return null;
-        next.pop();
-      }
+        if (app.storageApi.setJson(HISTORY_KEY, next)) return next;
+      } catch (e) {}
+      // localStorage обычно ограничен 5 МБ. Сохраняем свежие партии,
+      // постепенно освобождая самые старые записи.
+      if (next.length === 1) return null;
+      next.pop();
     }
     try {
-      localStorage.setItem(HISTORY_KEY, '[]');
-      return [];
+      return app.storageApi.setJson(HISTORY_KEY, []) ? [] : null;
     } catch (e) {
       return null;
     }
@@ -80,7 +68,7 @@
 
   function currentLink() {
     try {
-      var link = parseJson(localStorage.getItem(CURRENT_KEY), null);
+      var link = app.storageApi.getJson(CURRENT_KEY, null);
       if (!link || typeof link.id !== 'string') return null;
       return link;
     } catch (e) {
@@ -90,7 +78,7 @@
 
   function setCurrentLink(id, mode) {
     try {
-      localStorage.setItem(CURRENT_KEY, JSON.stringify({ id: id, mode: mode }));
+      app.storageApi.setJson(CURRENT_KEY, { id: id, mode: mode });
     } catch (e) {}
   }
 
@@ -100,7 +88,7 @@
       syncTimer = null;
     }
     try {
-      localStorage.removeItem(CURRENT_KEY);
+      app.storageApi.remove(CURRENT_KEY);
     } catch (e) {}
     syncMenuCount();
   };
@@ -177,7 +165,7 @@
   function buildHostEntry(existing, now) {
     var raw;
     try {
-      raw = parseJson(localStorage.getItem(app.STORAGE_KEY), null);
+      raw = app.gameRepository.read(app.STORAGE_KEY, null);
     } catch (e) {
       raw = null;
     }
@@ -221,7 +209,7 @@
   function buildAutoEntry(existing, now) {
     var raw;
     try {
-      raw = parseJson(localStorage.getItem(AUTO_STATE_KEY), null);
+      raw = app.gameRepository.read(AUTO_STATE_KEY, null);
     } catch (e) {
       raw = null;
     }
@@ -602,23 +590,24 @@
 
     try {
       if (entry.mode === 'auto') {
-        localStorage.setItem(AUTO_STATE_KEY, JSON.stringify(entry.snapshot.autoState));
+        app.gameRepository.write(AUTO_STATE_KEY, entry.snapshot.autoState);
       } else {
-        localStorage.setItem(app.STORAGE_KEY, JSON.stringify(entry.snapshot.hostState));
+        app.gameRepository.write(app.STORAGE_KEY, entry.snapshot.hostState);
       }
       var prepare = clone(entry.snapshot.prepareConfig || {});
       prepare.mode = entry.mode;
       if (!prepare.variant) prepare.variant = (entry.meta && entry.meta.variant) || 'standard';
-      localStorage.setItem(PREPARE_KEY, JSON.stringify(prepare));
-      localStorage.setItem(
+      app.settingsRepository.setJson(PREPARE_KEY, prepare);
+      app.settingsRepository.setBoolean(
         EXPERIMENTS_KEY,
-        entry.snapshot.experimentalModesEnabled || prepare.variant !== 'standard' ? '1' : '0'
+        entry.snapshot.experimentalModesEnabled || prepare.variant !== 'standard'
       );
       setCurrentLink(entry.id, entry.mode);
-      localStorage.setItem(
-        RESTORE_KEY,
-        JSON.stringify({ id: entry.id, mode: entry.mode, route: route || 'continue' })
-      );
+      app.storageApi.setJson(RESTORE_KEY, {
+        id: entry.id,
+        mode: entry.mode,
+        route: route || 'continue',
+      });
       window.location.reload();
       return true;
     } catch (e) {
@@ -630,8 +619,8 @@
   app.consumeGameHistoryRestore = function () {
     var intent;
     try {
-      intent = parseJson(localStorage.getItem(RESTORE_KEY), null);
-      localStorage.removeItem(RESTORE_KEY);
+      intent = app.storageApi.getJson(RESTORE_KEY, null);
+      app.storageApi.remove(RESTORE_KEY);
     } catch (e) {
       return false;
     }

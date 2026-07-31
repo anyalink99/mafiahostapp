@@ -43,7 +43,7 @@
     var p = app.players.find(function (x) {
       return x.id === id;
     });
-    if (!p) return;
+    if (!p) return false;
     if (p.eliminationReason === reason) {
       p.eliminationReason = null;
       if (reason === 'disqual') {
@@ -76,6 +76,7 @@
       app.renderVoteScreen();
     }
     app.saveState();
+    return true;
   };
 
   // Точечно обновляет «таблетку» фолов без полного перерендера списка — так окошко
@@ -102,9 +103,9 @@
     const p = app.players.find(function (x) {
       return x.id === id;
     });
-    if (!p || p.eliminationReason) return;
+    if (!p || p.eliminationReason) return false;
     var foulLimit = app.getFoulLimit ? app.getFoulLimit() : 4;
-    if (p.fouls >= foulLimit) return;
+    if (p.fouls >= foulLimit) return false;
     p.fouls++;
     var disqualified = false;
     if (p.fouls >= foulLimit) {
@@ -131,16 +132,18 @@
       app.renderVoteScreen();
     }
     app.saveState();
+    return true;
   };
 
   app.removeFoul = function (id) {
     var p = app.players.find(function (x) {
       return x.id === id;
     });
-    if (!p || p.eliminationReason || p.fouls <= 0) return;
+    if (!p || p.eliminationReason || p.fouls <= 0) return false;
     p.fouls--;
     app.patchPlayerSlotFoul(id, false);
     app.saveState();
+    return true;
   };
 
   app.addPlayerToNomineeQueue = function (id, opts) {
@@ -199,6 +202,51 @@
     }
   };
 
+  if (app.gameSessionApi) {
+    app.gameSessionApi.registerMode('host', {
+      snapshot: function () {
+        return {
+          players: app.players,
+          nominees: app.nomineeQueue,
+          vote: app.activeVoteRound,
+        };
+      },
+      addFoul: function (command) {
+        return app.addFoul(command.playerId);
+      },
+      removeFoul: function (command) {
+        return app.removeFoul(command.playerId);
+      },
+      addNominee: function (command) {
+        return app.addPlayerToNomineeQueue(command.playerId, command.options);
+      },
+      removeNominee: function (command) {
+        return app.removePlayerFromNomineeQueue(command.playerId, command.options);
+      },
+      toggleNominee: function (command) {
+        return app.nomineeQueue.indexOf(command.playerId) !== -1
+          ? app.removePlayerFromNomineeQueue(command.playerId, command.options)
+          : app.addPlayerToNomineeQueue(command.playerId, command.options);
+      },
+      updateNickname: function (command) {
+        var player = app.players.find(function (item) {
+          return item.id === command.playerId;
+        });
+        if (!player) return false;
+        var next = String(command.nickname == null ? '' : command.nickname).slice(0, 32);
+        if (player.nick === next) return false;
+        player.nick = next;
+        app.saveState();
+        return true;
+      },
+      setElimination: function (command) {
+        if (command.reason === 'hang' && app.nomineeQueue.indexOf(command.playerId) === -1)
+          return false;
+        return app.setPlayerEliminationState(command.playerId, command.reason);
+      },
+    });
+  }
+
   app.playerTable.register('host', {
     targetId: 'players-list',
     isActive: function () {
@@ -220,35 +268,26 @@
       return app.nomineeQueue.indexOf(id) !== -1;
     },
     toggleNominee: function (id, opts) {
-      return app.nomineeQueue.indexOf(id) !== -1
-        ? app.removePlayerFromNomineeQueue(id, opts)
-        : app.addPlayerToNomineeQueue(id, opts);
+      return app.playerApi.toggleNominee('host', id, opts);
     },
     addFoul: function (id) {
-      return app.addFoul(id);
+      return app.playerApi.addFoul('host', id);
     },
     removeFoul: function (id) {
-      return app.removeFoul(id);
+      return app.playerApi.removeFoul('host', id);
     },
     openPlayer: function (id) {
       if (app.showPlayerActionsModal) app.showPlayerActionsModal(id, 'host');
     },
     updateNick: function (id, nick) {
-      var player = this.getPlayer(id);
-      if (!player) return false;
-      var next = String(nick == null ? '' : nick).slice(0, 32);
-      if (player.nick === next) return false;
-      player.nick = next;
-      app.saveState();
-      return true;
+      return app.playerApi.updateNickname('host', id, nick);
     },
     canEliminate: function (id, reason) {
       return reason !== 'hang' || app.nomineeQueue.indexOf(id) !== -1;
     },
     setElimination: function (id, reason) {
       if (!this.canEliminate(id, reason)) return false;
-      app.setPlayerEliminationState(id, reason);
-      return true;
+      return app.playerApi.setElimination('host', id, reason);
     },
     render: function () {
       app.renderPlayers();
