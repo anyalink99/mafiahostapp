@@ -222,7 +222,7 @@
     var bonusRaw = storeValue(app.bonusPointsByPlayerId, id);
     var bonus = app.parseBonusFloat ? app.parseBonusFloat(bonusRaw) : Number(bonusRaw) || 0;
     var won = playerWon(roleCode, winner);
-    var basePoints = won === null ? null : won ? 1 : 0;
+    var basePoints = won === null ? null : won ? app.getScoringProfile().winPoints : 0;
     return {
       id: id,
       nick: cleanText(player && player.nick),
@@ -245,8 +245,9 @@
       bestMove: app.formatBestMoveForExport
         ? app.formatBestMoveForExport(storeValue(app.bestMoveByPlayerId, id))
         : cleanText(storeValue(app.bestMoveByPlayerId, id)),
-      protocol: numGroup(app.protocolByPlayerId, id),
-      opinion: numGroup(app.opinionByPlayerId, id),
+      protocol: app.getScoringProfile().protocol
+        ? numGroup(app.protocolByPlayerId, id)
+        : { sheriff: '', mafia: '', peaceful: '' },
       note: cleanText(storeValue(app.bonusNoteByPlayerId, id)),
     };
   }
@@ -276,6 +277,8 @@
       exportedAt: Date.now(),
       mode: 'host',
       variant: variant,
+      scoringSystem: app.getScoringProfile().id,
+      scoringLabel: app.getScoringProfile().label,
       host: cleanText(app.summaryHostName),
       winner: winner,
       winnerLabel: winner ? TEAM_LABELS[winner] : '',

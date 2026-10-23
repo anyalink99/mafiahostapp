@@ -147,6 +147,17 @@ function assert(value, message) {
   assert(offlineState.controlled, 'офлайн-страница не контролируется service worker');
   assert(offlineState.badge, 'не показан офлайн-статус');
   assert(offlineState.title === 'Мафия — Ведущий', 'офлайн загрузился неверный документ');
+  var offlineGuide = await page.evaluate(function () {
+    var app = window.MafiaApp;
+    app.setScoringSystem('msl');
+    app.navigateToScreen('summary-screen');
+    app.uiActionHandlers['scoring-guide-open']();
+    return (
+      document.getElementById('modal-scoring-guide').hasAttribute('data-open') &&
+      document.getElementById('scoring-guide-content').textContent.includes('МСЛ')
+    );
+  });
+  assert(offlineGuide, 'руководство МСЛ недоступно после офлайн-перезапуска');
   assert(!pageErrors.length, 'ошибки страницы: ' + pageErrors.join('; '));
 
   await browser.close();

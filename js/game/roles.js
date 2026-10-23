@@ -198,6 +198,7 @@
       state.revision++;
       app.summaryRoleCorrections = {};
       app.summaryRoleByPlayerId = app.summaryRoleCorrections;
+      app.playerRoleOverrides = {};
       persist(opts, 'deal-started');
       return true;
     },
@@ -226,10 +227,19 @@
     assignPlayerRole: function (playerId, roleCode, opts) {
       opts = opts || {};
       var code = normalizeCode(roleCode);
-      if (!code || playerId == null) return false;
+      if (
+        !code ||
+        !Array.isArray(app.players) ||
+        !app.players.some(function (player) {
+          return String(player.id) === String(playerId);
+        })
+      )
+        return false;
       var state = ensureState();
       var key = String(playerId);
-      if (state.assignmentsByPlayerId[key] === code) return true;
+      var cleared = opts.clearSummaryCorrection === true && own(app.summaryRoleCorrections, key);
+      if (cleared) delete app.summaryRoleCorrections[key];
+      if (state.assignmentsByPlayerId[key] === code && !cleared) return true;
       state.assignmentsByPlayerId[key] = code;
       state.source = opts.source || 'manual';
       state.revision++;
@@ -286,6 +296,11 @@
       var state = ensureState();
       var key = String(playerId);
       if (own(state.assignmentsByPlayerId, key)) return state.assignmentsByPlayerId[key];
+      if (seatIndex == null && Array.isArray(app.players)) {
+        seatIndex = app.players.findIndex(function (player) {
+          return String(player.id) === key;
+        });
+      }
       var deal = dealRolesForSeats();
       if (deal && deal[seatIndex] != null) return roleCodeFromDeckRole(deal[seatIndex]);
       if (

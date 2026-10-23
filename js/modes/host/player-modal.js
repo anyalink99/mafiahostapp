@@ -1,7 +1,7 @@
 /**
  * Хост-режим — модалка игрока (modal-player-actions): псевдоним, фол,
  * выставление, статусы выбытия; в режиме подготовки — выбор роли;
- * на мобилке — поля «лучший ход / протокол / мнение / примечание».
+ * на мобилке — поля «лучший ход / протокол / примечание».
  */
 (function (app) {
   'use strict';
@@ -65,6 +65,7 @@
   };
 
   app.showPlayerActionsModal = function (id, requestedMode) {
+    if (app.beforePlayerPanelOpen) app.beforePlayerPanelOpen(id);
     var m = document.getElementById('modal-player-actions');
     if (!m) return;
     var gameScreen = document.getElementById('game-screen');
@@ -161,7 +162,7 @@
   app.syncAutoPlayerModalFoulControl = app.syncPlayerModalFoulControl;
 
   /**
-   * На ПК (видна левая панель) поля «лучший ход / протокол / мнение / примечание»
+   * На ПК (видна левая панель) поля «лучший ход / протокол / примечание»
    * живут только в модалке итогов из левой панели, а в модалке игрового стола скрыты
    * (lg:hidden) и не читаются/не пишутся. На мобилке левой панели нет — поля здесь.
    */
@@ -174,8 +175,6 @@
   function populatePlayerExtras(id) {
     if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object')
       app.protocolByPlayerId = {};
-    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object')
-      app.opinionByPlayerId = {};
     if (!app.bestMoveByPlayerId || typeof app.bestMoveByPlayerId !== 'object')
       app.bestMoveByPlayerId = {};
     if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object')
@@ -188,15 +187,11 @@
       app.syncBestMoveField('modal-player-bestmove', app.bestMoveByPlayerId[key], showBm);
     var protocolSection = document.getElementById('modal-player-protocol-section');
     if (protocolSection)
-      protocolSection.style.display = app.playerProtocolVisible === false ? 'none' : 'flex';
+      protocolSection.style.display = app.getScoringProfile().protocol ? 'flex' : 'none';
     if (app.fillNumGroupFields && app.getPlayerNumGroup) {
       app.fillNumGroupFields(
         'modal-player-protocol-',
         app.getPlayerNumGroup(app.protocolByPlayerId, id)
-      );
-      app.fillNumGroupFields(
-        'modal-player-opinion-',
-        app.getPlayerNumGroup(app.opinionByPlayerId, id)
       );
     }
     var noteTa = document.getElementById('modal-player-note');

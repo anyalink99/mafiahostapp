@@ -7,6 +7,12 @@
         <!-- Колонка 1: ведущий, победитель, гармошка игроков -->
         <div class="flex-shrink-0 lg:flex-1 min-w-0 min-h-0 flex flex-col gap-4 lg:overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0">
             <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5 flex-shrink-0">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span id="summary-scoring-label" class="text-sm text-mafia-cream/75"></span>
+                    <button type="button" data-action="scoring-guide-open" class="rounded border border-mafia-gold/45 bg-mafia-blood/25 px-3 py-2 text-xs font-semibold text-mafia-gold hover:bg-mafia-blood/40">Руководство по допам</button>
+                </div>
+            </section>
+            <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5 flex-shrink-0">
                 <div class="flex min-w-0 flex-nowrap items-center gap-3 sm:gap-4">
                     <label for="summary-host-name" class="font-display text-mafia-gold text-base tracking-widest shrink-0 leading-none">Ведущий:</label>
                     <input type="text" id="summary-host-name" maxlength="120" autocomplete="off" spellcheck="false" enterkeyhint="done" class="min-w-0 flex-1 rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none transition-colors placeholder:text-mafia-cream/35 focus:border-mafia-gold/45">

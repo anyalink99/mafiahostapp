@@ -82,10 +82,11 @@
     if (app.applySummaryPlayerModal) app.applySummaryPlayerModal();
   };
   app.uiActionHandlers['summary-bonus-delta'] = function (el, _event, ui) {
-    if (!ui.isScreenActive('summary-screen')) return;
-    var dAttr = el.getAttribute('data-delta');
-    var d = dAttr !== null ? parseFloat(dAttr) : NaN;
-    if (!isNaN(d) && app.applySummaryBonusDelta) app.applySummaryBonusDelta(d);
+    if (!ui.isScreenActive('summary-screen') && !ui.isScreenActive('game-screen')) return;
+    var direction = Number(el.getAttribute('data-direction'));
+    if ((direction === 1 || direction === -1) && app.applySummaryBonusDelta) {
+      app.applySummaryBonusDelta(direction);
+    }
   };
 
   app.uiActionHandlers['summary-log-open'] = function (el, _event, ui) {

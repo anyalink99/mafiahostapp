@@ -1,13 +1,12 @@
 /**
  * Итоги — данные игроков: роль из раздачи карт и оверрайды, «лучший ход»,
- * допы (бонусные баллы), группы «шериф/мафия/мирный» (протокол, мнение)
+ * допы (бонусные баллы), группы «шериф/мафия/мирный» (протокол)
  * и сохранение этих полей из модалок (общих для итогов и игрового стола).
  */
 (function (app) {
   'use strict';
 
   var parseBonusFloat = app.parseBonusFloat;
-  var PLAYER_PROTOCOL_VISIBLE_KEY = 'mafia_player_protocol_visible';
   var PLAYER_BEST_MOVE_VISIBLE_KEY = 'mafia_player_best_move_visible';
   var FOUL_LIMIT_KEY = 'mafia_player_foul_limit';
 
@@ -27,7 +26,6 @@
     return Math.max(1, Math.min(10, parsed));
   }
 
-  app.playerProtocolVisible = readBooleanPreference(PLAYER_PROTOCOL_VISIBLE_KEY, false);
   app.playerBestMoveVisible = readBooleanPreference(PLAYER_BEST_MOVE_VISIBLE_KEY, true);
   try {
     app.playerFoulLimit = clampFoulLimit(app.settingsRepository.getNumber(FOUL_LIMIT_KEY, 4));
@@ -41,20 +39,12 @@
   };
 
   app.syncPlayerCardSettings = function () {
-    var protocol = document.getElementById('setting-player-protocol-visible');
+    var scoring = document.getElementById('setting-scoring-system');
     var bestMove = document.getElementById('setting-player-bestmove-visible');
     var foulLimit = document.getElementById('setting-player-foul-limit');
-    if (protocol) protocol.checked = app.playerProtocolVisible !== false;
+    if (scoring) scoring.value = app.getScoringProfile().id;
     if (bestMove) bestMove.checked = app.playerBestMoveVisible !== false;
     if (foulLimit) foulLimit.value = String(app.getFoulLimit());
-  };
-
-  app.setPlayerProtocolVisible = function (visible) {
-    app.playerProtocolVisible = !!visible;
-    try {
-      app.settingsRepository.setBoolean(PLAYER_PROTOCOL_VISIBLE_KEY, app.playerProtocolVisible);
-    } catch (e) {}
-    app.syncPlayerCardSettings();
   };
 
   app.setPlayerBestMoveVisible = function (visible) {
@@ -186,9 +176,12 @@
 
   function validBestMoveNumbers(parts, expectedCount) {
     if (parts.length !== expectedCount) return false;
+    var seen = {};
     for (var i = 0; i < parts.length; i++) {
-      var number = parseInt(String(parts[i]).trim(), 10);
-      if (isNaN(number) || number < 1 || number > app.players.length) return false;
+      var number = Number(String(parts[i]).trim());
+      if (!Number.isInteger(number) || number < 1 || number > app.players.length || seen[number])
+        return false;
+      seen[number] = true;
     }
     return true;
   }
@@ -215,7 +208,7 @@
   };
 
   app.isBestMoveTripleComplete = function (stored) {
-    return validBestMoveNumbers(app.parseBestMoveTriple(stored), 3);
+    return validBestMoveNumbers(app.parseBestMoveNumbers(stored), 3);
   };
 
   app.countCompleteBestMoves = function () {
@@ -294,16 +287,15 @@
     return out;
   };
 
-  app.applySummaryBonusDelta = function (delta) {
+  app.applySummaryBonusDelta = function (direction) {
     var inp = document.getElementById('modal-summary-bonus');
     if (!inp || inp.disabled) return;
-    var v = parseBonusFloat(inp.value) + delta;
-    v = Math.round(v * 10) / 10;
+    var v = app.stepBonus(inp.value, direction);
     inp.value = v % 1 === 0 ? String(Math.round(v)) : String(v).replace('.', ',');
   };
 
   /**
-   * Сохраняет общие игровые данные игрока (лучший ход, протокол, мнение, примечание)
+   * Сохраняет общие игровые данные игрока (лучший ход, протокол, примечание)
    * из полей модалки с заданным префиксом id. Используется и модалкой итогов
    * (`modal-summary-`), и модалкой игрового стола (`modal-player-`) — данные общие.
    */
@@ -312,8 +304,6 @@
       app.bestMoveByPlayerId = {};
     if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object')
       app.protocolByPlayerId = {};
-    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object')
-      app.opinionByPlayerId = {};
     if (!app.bonusNoteByPlayerId || typeof app.bonusNoteByPlayerId !== 'object')
       app.bonusNoteByPlayerId = {};
     var key = String(pid);
@@ -321,16 +311,16 @@
     if (bestMove && app.showSummaryBestMoveField(pid)) {
       app.bestMoveByPlayerId[key] = app.normalizeNumberListText(bestMove.value);
     }
-    app.setPlayerNumGroup(
-      app.protocolByPlayerId,
-      pid,
-      app.readNumGroupFields(idPrefix + 'protocol-')
-    );
-    app.setPlayerNumGroup(
-      app.opinionByPlayerId,
-      pid,
-      app.readNumGroupFields(idPrefix + 'opinion-')
-    );
+    if (
+      app.getScoringProfile().protocol &&
+      document.getElementById(idPrefix + 'protocol-peaceful')
+    ) {
+      app.setPlayerNumGroup(
+        app.protocolByPlayerId,
+        pid,
+        app.readNumGroupFields(idPrefix + 'protocol-')
+      );
+    }
     var noteTa = document.getElementById(idPrefix + 'note');
     if (noteTa) app.bonusNoteByPlayerId[key] = noteTa.value;
   };

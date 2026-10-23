@@ -58,8 +58,6 @@
     if (player.bestMove) lines.push('  Лучший ход: ' + player.bestMove);
     var protocol = formatNumGroup(player.protocol);
     if (protocol) lines.push('  Протокол: ' + protocol);
-    var opinion = formatNumGroup(player.opinion);
-    if (opinion) lines.push('  Мнение: ' + opinion);
     if (player.note) lines.push('  Заметка: ' + player.note.replace(/\r?\n/g, '\n  '));
     return lines;
   }
@@ -85,6 +83,7 @@
     var lines = [
       'МАФИЯ — ПРОТОКОЛ ИГРЫ',
       'Вариант: ' + display(model.variant.label),
+      'Оценивание: ' + display(model.scoringLabel),
       'Ведущий: ' + display(model.host),
       'Победа: ' + display(model.winnerLabel),
       'Игроков: ' + model.playerCount,
@@ -136,6 +135,7 @@
       ['Поле', 'Значение'],
       ['Вариант', model.variant.label],
       ['Код варианта', model.variant.key],
+      ['Система оценивания', model.scoringLabel],
       ['Ведущий', model.host],
       ['Победа', model.winnerLabel],
       ['Количество игроков', model.playerCount],
@@ -157,7 +157,6 @@
         'Итого',
         'Лучший ход',
         'Протокол',
-        'Мнение',
         'Заметка',
       ],
     ];
@@ -178,7 +177,6 @@
         player.basePoints === null && !player.bonus ? '' : formatPoints(player.totalPoints),
         player.bestMove,
         formatNumGroup(player.protocol),
-        formatNumGroup(player.opinion),
         player.note,
       ]);
     });

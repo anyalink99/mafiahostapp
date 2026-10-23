@@ -54,6 +54,7 @@
   }
 
   app.renderSummary = function () {
+    if (app.syncScoringUi) app.syncScoringUi();
     if (!Array.isArray(app.gameLog)) app.gameLog = [];
     if (!app.bonusPointsByPlayerId || typeof app.bonusPointsByPlayerId !== 'object')
       app.bonusPointsByPlayerId = {};

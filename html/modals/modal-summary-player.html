@@ -13,28 +13,25 @@
                 <span class="font-display text-mafia-gold/90">Доп. баллы</span>
                 <div class="flex gap-1.5 items-stretch">
                     <input type="text" id="modal-summary-bonus" inputmode="decimal" autocomplete="off" class="min-w-0 flex-1 py-2 px-2 rounded border border-mafia-border bg-mafia-card text-mafia-cream text-sm tabular-nums">
-                    <button type="button" data-action="summary-bonus-delta" data-delta="0.1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">+0,1</button>
-                    <button type="button" data-action="summary-bonus-delta" data-delta="-0.1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">−0,1</button>
+                    <button type="button" data-action="summary-bonus-delta" data-direction="1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">+0,1</button>
+                    <button type="button" data-action="summary-bonus-delta" data-direction="-1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">−0,1</button>
                 </div>
             </div>
+            <p id="summary-bonus-step-hint" class="text-xs text-mafia-cream/55"></p>
             <div id="modal-summary-bestmove-wrap" class="flex flex-col gap-1 text-xs text-mafia-cream/70">
                 <span class="font-display text-mafia-gold/90">Лучший ход</span>
                 <input type="text" id="modal-summary-bestmove" data-numlist data-bestmove-list inputmode="numeric" autocomplete="off" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
             </div>
             <div id="modal-summary-protocol-section" class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
-                <div class="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-1.5">
+                <div class="grid grid-cols-[3.5rem_1fr] items-center gap-1.5">
                     <span></span>
                     <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Протокол</span>
-                    <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Мнение</span>
                     <span class="text-[11px] text-mafia-cream/75">Мирный</span>
                     <input type="text" id="modal-summary-protocol-peaceful" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: мирный" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-summary-opinion-peaceful" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: мирный" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                     <span class="text-[11px] text-mafia-cream/75">Мафия</span>
                     <input type="text" id="modal-summary-protocol-mafia" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: мафия" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-summary-opinion-mafia" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: мафия" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                     <span class="text-[11px] text-mafia-cream/75">Шериф</span>
                     <input type="text" id="modal-summary-protocol-sheriff" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: шериф" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-summary-opinion-sheriff" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: шериф" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                 </div>
             </div>
             <label id="modal-summary-bonus-note-section" class="flex flex-col gap-1 text-xs text-mafia-cream/70">

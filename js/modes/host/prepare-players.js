@@ -115,7 +115,16 @@
     var m = document.getElementById('modal-player-actions');
     if (!m) return;
     if (app.rolesApi) {
-      app.rolesApi.assignPlayerRole(playerId, roleCode, { source: 'manual' });
+      var summary = document.getElementById('summary-screen');
+      if (summary && summary.classList.contains('active')) {
+        if (!app.summaryWinnerChosen()) return;
+        app.rolesApi.setSummaryCorrection(playerId, roleCode);
+      } else {
+        app.rolesApi.assignPlayerRole(playerId, roleCode, {
+          source: 'manual',
+          clearSummaryCorrection: true,
+        });
+      }
     }
     renderPrepareModalRoleRadios(roleCode);
     if (app.donskayaReconcile) app.donskayaReconcile();

@@ -143,6 +143,7 @@ window.MafiaApp = window.MafiaApp || {};
         playerRoleOverrides: app.playerRoleOverrides,
         roleState: app.rolesApi ? app.rolesApi.serialize() : app.roleState,
         winningTeam: app.winningTeam,
+        scoringSystem: app.scoringSystem || 'fsm',
         bonusPointsByPlayerId: app.bonusPointsByPlayerId,
         summaryRoleCorrections: app.summaryRoleCorrections,
         summaryRoleByPlayerId: app.summaryRoleCorrections,
@@ -166,6 +167,8 @@ window.MafiaApp = window.MafiaApp || {};
     try {
       const data = app.gameRepository.read(app.STORAGE_KEY, null);
       if (!data) return false;
+      // Old games used the FSM scale, regardless of the current default setting.
+      app.scoringSystem = data.scoringSystem === 'msl' ? 'msl' : 'fsm';
       if (data.roles && Array.isArray(data.roles)) app.roles = data.roles;
       if (data.players && Array.isArray(data.players)) {
         app.players = ensurePlayersSchema(data.players);
@@ -366,6 +369,7 @@ window.MafiaApp = window.MafiaApp || {};
     app.gameLog = [];
     app.playerRoleOverrides = {};
     app.winningTeam = null;
+    app.scoringSystem = app.getDefaultScoringSystem ? app.getDefaultScoringSystem() : 'fsm';
     app.bonusPointsByPlayerId = {};
     if (app.rolesApi) {
       app.rolesApi.reset({ clearDeal: false, save: false, emit: false });

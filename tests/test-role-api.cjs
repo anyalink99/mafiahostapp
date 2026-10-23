@@ -141,3 +141,31 @@ test('явные исправления завершённой игры мигр
 });
 
 console.log('Все тесты role-api прошли');
+
+test('явная ручная правка снимает устаревшую коррекцию даже при той же роли', function () {
+  var app = loadApi();
+  app.rolesApi.assignPlayerRole(1, 'mafia');
+  app.rolesApi.setSummaryCorrection(1, 'don');
+  app.rolesApi.assignPlayerRole(1, 'mafia', { clearSummaryCorrection: true });
+  assert.strictEqual(app.rolesApi.getEffectiveRole(1, 0), 'mafia');
+  assert.strictEqual(Object.keys(app.summaryRoleCorrections).length, 0);
+});
+
+test('несуществующему игроку нельзя назначить роль', function () {
+  var app = loadApi();
+  assert.strictEqual(app.rolesApi.assignPlayerRole(null, 'mafia'), false);
+  assert.strictEqual(app.rolesApi.assignPlayerRole(11, 'don'), false);
+  assert.strictEqual(app.rolesApi.assignPlayerRole(1.5, 'sheriff'), false);
+  assert.strictEqual(Object.keys(app.roleState.assignmentsByPlayerId).length, 0);
+});
+
+test('новая раздача очищает старые ручные оверрайды', function () {
+  var app = loadApi();
+  app.playerRoleOverrides = { 1: 'don' };
+  app.rolesApi.beginDeal(
+    Array.from({ length: 10 }, function () {
+      return 'Мирный';
+    })
+  );
+  assert.strictEqual(app.rolesApi.getAssignedRole(1), 'peaceful');
+});

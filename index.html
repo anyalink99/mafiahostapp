@@ -234,12 +234,13 @@
                         <span class="mt-0.5 block text-xs leading-relaxed text-mafia-cream/50">Только у первого убитого игрока</span>
                     </span>
                 </label>
-                <label class="flex items-start gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
-                    <input type="checkbox" id="setting-player-protocol-visible" class="mafia-checkbox mt-0.5">
-                    <span>
-                        <span class="block">Показывать протокол и мнение</span>
-                        <span class="mt-0.5 block text-xs leading-relaxed text-mafia-cream/50">В игровой карточке и при подведении итогов</span>
-                    </span>
+                <label class="flex flex-col gap-2 text-sm text-mafia-cream/90">
+                    <span>Система оценивания</span>
+                    <select id="setting-scoring-system" class="w-full rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none focus:border-mafia-gold/45">
+                        <option value="fsm">ФСМ · шаг 0,1</option>
+                        <option value="msl">МСЛ · шаг 0,25</option>
+                    </select>
+                    <span class="text-xs leading-relaxed text-mafia-cream/50">Определяет шаг допов и баллы за победу. Протокол доступен в ФСМ. Выбор сохраняется с партией; введённые допы не пересчитываются.</span>
                 </label>
                 <label class="flex items-center justify-between gap-3 border-t border-mafia-border/60 pt-4 text-sm text-mafia-cream/90">
                     <span>Фолов до удаления</span>
@@ -530,6 +531,12 @@
         <!-- Колонка 1: ведущий, победитель, гармошка игроков -->
         <div class="flex-shrink-0 lg:flex-1 min-w-0 min-h-0 flex flex-col gap-4 lg:overflow-hidden w-full max-w-2xl mx-auto lg:max-w-none lg:mx-0">
             <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5 flex-shrink-0">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span id="summary-scoring-label" class="text-sm text-mafia-cream/75"></span>
+                    <button type="button" data-action="scoring-guide-open" class="rounded border border-mafia-gold/45 bg-mafia-blood/25 px-3 py-2 text-xs font-semibold text-mafia-gold hover:bg-mafia-blood/40">Руководство по допам</button>
+                </div>
+            </section>
+            <section class="bg-mafia-coal border border-mafia-border rounded-lg px-4 py-3 sm:px-5 sm:py-3.5 flex-shrink-0">
                 <div class="flex min-w-0 flex-nowrap items-center gap-3 sm:gap-4">
                     <label for="summary-host-name" class="font-display text-mafia-gold text-base tracking-widest shrink-0 leading-none">Ведущий:</label>
                     <input type="text" id="summary-host-name" maxlength="120" autocomplete="off" spellcheck="false" enterkeyhint="done" class="min-w-0 flex-1 rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none transition-colors placeholder:text-mafia-cream/35 focus:border-mafia-gold/45">
@@ -571,6 +578,16 @@
                 <p id="summary-history-empty" class="text-sm text-mafia-cream/50">Пока нет записей: голосования и выбывания появятся здесь автоматически.</p>
             </section>
         </div>
+    </div>
+</div>
+
+<div id="modal-scoring-guide" class="modal-overlay fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-black/70" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="scoring-guide-title">
+    <div class="absolute inset-0" data-action="scoring-guide-close" aria-hidden="true"></div>
+    <div class="modal-panel relative z-10 w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-lg border-2 border-mafia-gold/40 bg-mafia-coal p-5 sm:p-6 shadow-xl">
+        <button type="button" class="modal-panel__close-x" data-action="scoring-guide-close" aria-label="Закрыть руководство">×</button>
+        <h2 id="scoring-guide-title" class="font-display text-mafia-gold text-2xl font-bold pr-8">Руководство по допам</h2>
+        <div id="scoring-guide-content" class="mt-4 space-y-5"></div>
+        <button type="button" data-action="scoring-guide-close" class="mt-5 w-full rounded border border-mafia-gold/45 bg-mafia-blood/25 px-3 py-2 text-sm text-mafia-gold">Понятно</button>
     </div>
 </div>
 
@@ -650,19 +667,15 @@
                 <input type="text" id="modal-player-bestmove" data-numlist data-bestmove-list inputmode="numeric" autocomplete="off" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
             </div>
             <div id="modal-player-protocol-section" class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
-                <div class="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-1.5">
+                <div class="grid grid-cols-[3.5rem_1fr] items-center gap-1.5">
                     <span></span>
                     <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Протокол</span>
-                    <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Мнение</span>
                     <span class="text-[11px] text-mafia-cream/75">Мирный</span>
                     <input type="text" id="modal-player-protocol-peaceful" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: мирный" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-player-opinion-peaceful" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: мирный" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                     <span class="text-[11px] text-mafia-cream/75">Мафия</span>
                     <input type="text" id="modal-player-protocol-mafia" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: мафия" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-player-opinion-mafia" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: мафия" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                     <span class="text-[11px] text-mafia-cream/75">Шериф</span>
                     <input type="text" id="modal-player-protocol-sheriff" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: шериф" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-player-opinion-sheriff" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: шериф" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                 </div>
             </div>
             <label class="flex flex-col gap-1 text-xs text-mafia-cream/70">
@@ -689,28 +702,25 @@
                 <span class="font-display text-mafia-gold/90">Доп. баллы</span>
                 <div class="flex gap-1.5 items-stretch">
                     <input type="text" id="modal-summary-bonus" inputmode="decimal" autocomplete="off" class="min-w-0 flex-1 py-2 px-2 rounded border border-mafia-border bg-mafia-card text-mafia-cream text-sm tabular-nums">
-                    <button type="button" data-action="summary-bonus-delta" data-delta="0.1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">+0,1</button>
-                    <button type="button" data-action="summary-bonus-delta" data-delta="-0.1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">−0,1</button>
+                    <button type="button" data-action="summary-bonus-delta" data-direction="1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">+0,1</button>
+                    <button type="button" data-action="summary-bonus-delta" data-direction="-1" class="shrink-0 rounded border border-mafia-border bg-mafia-card px-2 py-2 text-xs font-medium tabular-nums text-mafia-cream/90 hover:bg-mafia-border disabled:cursor-not-allowed disabled:opacity-40">−0,1</button>
                 </div>
             </div>
+            <p id="summary-bonus-step-hint" class="text-xs text-mafia-cream/55"></p>
             <div id="modal-summary-bestmove-wrap" class="flex flex-col gap-1 text-xs text-mafia-cream/70">
                 <span class="font-display text-mafia-gold/90">Лучший ход</span>
                 <input type="text" id="modal-summary-bestmove" data-numlist data-bestmove-list inputmode="numeric" autocomplete="off" aria-label="Лучший ход" class="w-full py-2 px-2.5 rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
             </div>
             <div id="modal-summary-protocol-section" class="flex flex-col gap-1.5 text-xs text-mafia-cream/70">
-                <div class="grid grid-cols-[3.5rem_1fr_1fr] items-center gap-1.5">
+                <div class="grid grid-cols-[3.5rem_1fr] items-center gap-1.5">
                     <span></span>
                     <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Протокол</span>
-                    <span class="text-center text-[11px] uppercase tracking-wider text-mafia-gold/75">Мнение</span>
                     <span class="text-[11px] text-mafia-cream/75">Мирный</span>
                     <input type="text" id="modal-summary-protocol-peaceful" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: мирный" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-summary-opinion-peaceful" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: мирный" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                     <span class="text-[11px] text-mafia-cream/75">Мафия</span>
                     <input type="text" id="modal-summary-protocol-mafia" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: мафия" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-summary-opinion-mafia" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: мафия" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                     <span class="text-[11px] text-mafia-cream/75">Шериф</span>
                     <input type="text" id="modal-summary-protocol-sheriff" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Протокол: шериф" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
-                    <input type="text" id="modal-summary-opinion-sheriff" data-numlist inputmode="numeric" autocomplete="off" placeholder="№" aria-label="Мнение: шериф" class="w-full py-1.5 px-2 text-center rounded border border-mafia-border bg-mafia-card text-sm tabular-nums text-mafia-cream">
                 </div>
             </div>
             <label id="modal-summary-bonus-note-section" class="flex flex-col gap-1 text-xs text-mafia-cream/70">
@@ -1253,6 +1263,7 @@
 <script src="js/game/donskaya.js"></script>
 <script src="js/game/urban.js"></script>
 <script src="js/game/roles.js"></script>
+<script src="js/game/scoring.js"></script>
 <script src="js/game/session-api.js"></script>
 <script src="js/game/phase-machine.js"></script>
 <script src="js/game/night-action-registry.js"></script>
@@ -1295,6 +1306,7 @@
 <!-- post-game -->
 <script src="js/summary/log.js"></script>
 <script src="js/summary/player-data.js"></script>
+<script src="js/summary/scoring-guide.js"></script>
 <script src="js/summary/modals.js"></script>
 <script src="js/summary/summary.js"></script>
 <script src="js/summary/export-model.js"></script>

@@ -80,8 +80,6 @@
   }
 
   function hasFullDeal() {
-    if (!Array.isArray(app.revealedIndices) || app.revealedIndices.length !== app.players.length)
-      return false;
     var entries = dealtEntries();
     return entries.length === app.players.length;
   }

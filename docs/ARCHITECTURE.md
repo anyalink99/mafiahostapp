@@ -8,6 +8,7 @@
 | -------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------- |
 | Storage / Settings         | `js/core/storage.js`               | Все обращения прикладного кода к `localStorage`, включая музыку, голос, Spotify, MU и историю |
 | GameRepository             | `js/core/storage.js`               | Версионированные host/auto snapshots, восстановление истории, последовательные миграции       |
+| Scoring profiles           | `js/game/scoring.js`               | Система партии, шаг допов, стоимость победы, доступность протокола и справочник               |
 | ClockApi                   | `js/core/clock.js`                 | Host-таймер, день, последние слова, показ роли, ночной секундомер, intro и лучший ход         |
 | GameSessionApi / PlayerApi | `js/game/session-api.js`           | Фолы, выставления, выбывание и псевдонимы через адаптеры host/auto                            |
 | VoteApi                    | `js/game/vote-api.js`              | Создание раунда, лимит пула, ввод голоса и исход в обоих режимах                              |
@@ -55,7 +56,7 @@ Platform adapters (Storage, Clock, Audio, PWA, MU, Capacitor)
 
 ```js
 settings.getNumber('mafia_host_timer_main_sec', 60);
-settings.setBoolean('mafia_player_protocol_visible', false);
+settings.setString('mafia_scoring_system', 'fsm');
 settings.subscribe('mafia_host_music', renderAudioSettings);
 ```
 

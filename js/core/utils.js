@@ -121,8 +121,8 @@
   app.parseBonusFloat = function (raw) {
     if (raw === undefined || raw === null || raw === '') return 0;
     var parsed = parseFloat(String(raw).replace(',', '.'));
-    if (isNaN(parsed)) return 0;
-    return Math.round(parsed * 10) / 10;
+    if (!Number.isFinite(parsed)) return 0;
+    return Math.round(parsed * 100) / 100;
   };
 
   app.roleLabelRu = function (roleCode) {
@@ -234,7 +234,7 @@
   /**
    * Нормализует ввод списка номеров: оставляет только цифры, любые разделители
    * (пробел/запятая/точка с запятой) превращает в «, ». Используется для полей
-   * лучшего хода, протокола и мнения — пробел автоматически ставит запятую.
+   * лучшего хода, протокола — пробел автоматически ставит запятую.
    */
   app.normalizeNumberListText = function (raw) {
     if (raw === undefined || raw === null) return '';

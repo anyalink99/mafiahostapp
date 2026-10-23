@@ -75,7 +75,7 @@ module.exports = [
   },
   {
     // Колбэки page.evaluate выполняются в браузере.
-    files: ['tests/smoke-browser.cjs', 'tests/test-pwa.cjs'],
+    files: ['tests/smoke-browser.cjs', 'tests/test-pwa.cjs', 'tests/test-scoring-browser.cjs'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
 ];

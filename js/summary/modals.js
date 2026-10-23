@@ -222,6 +222,7 @@
   };
 
   app.showSummaryPlayerModal = function (playerId) {
+    if (app.beforePlayerPanelOpen) app.beforePlayerPanelOpen(playerId);
     var m = document.getElementById('modal-summary-player');
     if (!m || !app.modalSetOpen) return;
     var p = app.players.find(function (x) {
@@ -251,8 +252,6 @@
       app.bestMoveByPlayerId = {};
     if (!app.protocolByPlayerId || typeof app.protocolByPlayerId !== 'object')
       app.protocolByPlayerId = {};
-    if (!app.opinionByPlayerId || typeof app.opinionByPlayerId !== 'object')
-      app.opinionByPlayerId = {};
     var bmWrap = document.getElementById('modal-summary-bestmove-wrap');
     var showBm = app.showSummaryBestMoveField(playerId);
     if (bmWrap) bmWrap.style.display = showBm ? 'flex' : 'none';
@@ -260,21 +259,18 @@
       app.syncBestMoveField('modal-summary-bestmove', app.bestMoveByPlayerId[bk], showBm);
     var protocolSection = document.getElementById('modal-summary-protocol-section');
     if (protocolSection)
-      protocolSection.style.display = app.playerProtocolVisible === false ? 'none' : 'flex';
+      protocolSection.style.display = app.getScoringProfile().protocol ? 'flex' : 'none';
     app.fillNumGroupFields(
       'modal-summary-protocol-',
       app.getPlayerNumGroup(app.protocolByPlayerId, playerId)
     );
-    app.fillNumGroupFields(
-      'modal-summary-opinion-',
-      app.getPlayerNumGroup(app.opinionByPlayerId, playerId)
-    );
+    if (app.syncScoringUi) app.syncScoringUi();
     var braw = app.bonusPointsByPlayerId[bk];
     var bnum = parseBonusFloat(braw);
     if (bonusInp) {
       bonusInp.value = bnum % 1 === 0 ? String(Math.round(bnum)) : String(bnum).replace('.', ',');
     }
-    var deltaBtns = m.querySelectorAll('[data-action="summary-bonus-delta"]');
+    var deltaBtns = document.querySelectorAll('[data-action="summary-bonus-delta"]');
     for (var db = 0; db < deltaBtns.length; db++) {
       deltaBtns[db].disabled = !unlocked;
     }
@@ -282,7 +278,7 @@
       noteTa.value = app.bonusNoteByPlayerId[bk] != null ? String(app.bonusNoteByPlayerId[bk]) : '';
     var bonusSection = document.getElementById('modal-summary-bonus-section');
     if (bonusSection) bonusSection.style.display = unlocked ? '' : 'none';
-    // Примечание, лучший ход, протокол и мнение доступны всегда (в т.ч. во время игры).
+    // Примечание, лучший ход и протокол доступны и во время игры.
     // За победителем заперты только допы и роль.
     var roleSection = document.getElementById('modal-summary-role-section');
     if (roleSection) roleSection.style.display = unlocked ? '' : 'none';

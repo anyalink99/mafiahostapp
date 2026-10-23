@@ -68,6 +68,7 @@
 
   // Прочитать ID игрока из dataset любой из перехватываемых модалок, если она открыта.
   function getCurrentOpenPlayerId() {
+    if (currentPlayerId != null) return currentPlayerId;
     for (var i = 0; i < MODAL_IDS.length; i++) {
       var m = document.getElementById(MODAL_IDS[i]);
       if (m && m.hasAttribute('data-open') && m.dataset.playerId) {
@@ -106,6 +107,15 @@
   // Гард для рекурсии при закрытии: closeUnified вызывает hide*/apply*
   // функции, которые тоже идут через modalSetOpen → возвращаются сюда же.
   var inUnifiedCloseCall = false;
+  var currentPlayerId = null;
+
+  // Flush the previous player's inputs before a show* function replaces them.
+  app.beforePlayerPanelOpen = function (playerId) {
+    if (inCrossPopulateCall || inUnifiedCloseCall) return;
+    if (currentPlayerId != null) {
+      saveCurrentPlayerInputs(currentPlayerId);
+    }
+  };
 
   // ────────────────────────────────────────────────────────────
   // Построение DOM unified-панели
@@ -408,12 +418,9 @@
     var target = findSlot();
     if (!target) return false;
 
-    // Если панель уже открыта для ДРУГОГО игрока — сохраняем его правки до
-    // того как crossPopulate перепишет dataset.playerId на нового. Иначе
-    // правки старого приписались бы новому или потерялись.
-    var prevPid = getCurrentOpenPlayerId();
-    if (prevPid != null && prevPid !== playerId) saveCurrentPlayerInputs(prevPid);
-
+    // The previous inputs were flushed by beforePlayerPanelOpen, before show*
+    // populated the incoming player. Track identity independently of modal datasets.
+    currentPlayerId = playerId;
     crossPopulate(playerId, sourceModalId);
     unhideContentFor(playerId);
 
@@ -517,6 +524,7 @@
     closeAllSlots();
     collapseAll();
     markAllModalsClosed();
+    currentPlayerId = null;
   }
 
   function isModalMarkedOpen(id) {
@@ -534,13 +542,8 @@
     var roleCode = getSelectedRoleFromRow(sourceRowId);
     if (!roleCode) return;
 
-    if (app.rolesApi) {
-      if (sourceRowId === 'modal-summary-role-icons') {
-        app.rolesApi.setSummaryCorrection(pid, roleCode);
-      } else {
-        app.rolesApi.assignPlayerRole(pid, roleCode, { source: 'manual' });
-      }
-    }
+    // The action handler has already saved the role in the appropriate layer.
+    // This listener only mirrors and renders, never writes a second assignment.
 
     // Пересинк обеих radio-групп: они должны показывать одно и то же.
     if (app.getEffectiveSummaryRoleCode) {

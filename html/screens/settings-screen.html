@@ -93,12 +93,13 @@
                         <span class="mt-0.5 block text-xs leading-relaxed text-mafia-cream/50">Только у первого убитого игрока</span>
                     </span>
                 </label>
-                <label class="flex items-start gap-3 cursor-pointer text-sm text-mafia-cream/90 select-none">
-                    <input type="checkbox" id="setting-player-protocol-visible" class="mafia-checkbox mt-0.5">
-                    <span>
-                        <span class="block">Показывать протокол и мнение</span>
-                        <span class="mt-0.5 block text-xs leading-relaxed text-mafia-cream/50">В игровой карточке и при подведении итогов</span>
-                    </span>
+                <label class="flex flex-col gap-2 text-sm text-mafia-cream/90">
+                    <span>Система оценивания</span>
+                    <select id="setting-scoring-system" class="w-full rounded border border-mafia-border bg-mafia-card px-3 py-2 text-sm text-mafia-cream outline-none focus:border-mafia-gold/45">
+                        <option value="fsm">ФСМ · шаг 0,1</option>
+                        <option value="msl">МСЛ · шаг 0,25</option>
+                    </select>
+                    <span class="text-xs leading-relaxed text-mafia-cream/50">Определяет шаг допов и баллы за победу. Протокол доступен в ФСМ. Выбор сохраняется с партией; введённые допы не пересчитываются.</span>
                 </label>
                 <label class="flex items-center justify-between gap-3 border-t border-mafia-border/60 pt-4 text-sm text-mafia-cream/90">
                     <span>Фолов до удаления</span>

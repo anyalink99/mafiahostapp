@@ -28,18 +28,28 @@
 
   function getDealtRoles() {
     var out = [];
-    if (!app.revealedIndices) return out;
-    var fullDeal = app.revealedIndices.length === app.players.length;
-    for (var j = 0; j < app.revealedIndices.length; j++) {
-      var ri = app.revealedIndices[j];
-      if (ri == null || !app.roles || !app.roles[ri]) continue;
-      var role = app.roles[ri];
+    var assignments = (app.roleState && app.roleState.assignmentsByPlayerId) || {};
+    var manual =
+      app.roleState &&
+      (app.roleState.source === 'manual' || app.roleState.source === 'legacy-manual');
+    var overrides = app.playerRoleOverrides || {};
+    var fullDeal = app.hasFullCardDeal && app.hasFullCardDeal();
+    for (var j = 0; j < app.players.length; j++) {
+      var playerId = app.players[j].id;
+      var ri = app.revealedIndices && app.revealedIndices[j];
+      var role = ri != null && app.roles ? app.roles[ri] : null;
+      var assigned =
+        Object.prototype.hasOwnProperty.call(assignments, String(playerId)) ||
+        Object.prototype.hasOwnProperty.call(overrides, String(playerId));
+      if (!role && !assigned && !manual) continue;
       var code = app.mapDealRoleToCode ? app.mapDealRoleToCode(role) : null;
-      if (fullDeal && app.getEffectiveSummaryRoleCode) {
-        code = app.getEffectiveSummaryRoleCode(j + 1, j);
-        role = app.roleLabelRu ? app.roleLabelRu(code) : role;
+      if ((assigned || fullDeal || manual) && app.rolesApi) {
+        code = app.rolesApi.getAssignedRole(playerId, j);
+        if (role !== app.DONSKAYA_BLANK_ROLE || code !== 'peaceful') {
+          role = app.roleLabelRu(code);
+        }
       }
-      out.push({ seatId: j + 1, role: role, code: code });
+      out.push({ seatId: playerId, role: role, code: code });
     }
     return out;
   }
@@ -86,7 +96,7 @@
     var dealt = getDealtRoles();
     if (!dealt.length) {
       resultEl.innerHTML =
-        '<p class="text-mafia-cream/70 text-center">Сначала разложите карты на экране подготовки.</p>';
+        '<p class="text-mafia-cream/70 text-center">Раздайте карты или задайте роли вручную на экране подготовки.</p>';
       return;
     }
     var BLANK = app.DONSKAYA_BLANK_ROLE || 'Без роли';

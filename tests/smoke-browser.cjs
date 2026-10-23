@@ -61,10 +61,17 @@ function findChrome() {
   var port = server.address().port;
   var errors = [];
   var browser = await chromium.launch({ executablePath: chromePath, headless: true });
+  async function newSmokePage(options) {
+    var next = await browser.newPage(options);
+    await next.route(/https:\/\/fonts\.(googleapis|gstatic)\.com\//, function (route) {
+      return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    });
+    return next;
+  }
   // Мобильный viewport: на lg-экранах desktop-shell сам уводит с меню на game-screen.
   // Основной UI-smoke работает без кэш-слоя; service worker и offline отдельно
   // проверяются в tests/test-pwa.cjs.
-  var page = await browser.newPage({
+  var page = await newSmokePage({
     viewport: { width: 390, height: 844 },
     serviceWorkers: 'block',
   });
@@ -107,7 +114,7 @@ function findChrome() {
 
   // Deep-link любого экспериментального варианта включает эксперименты,
   // выбирает host-вариант и сразу открывает экран подготовки.
-  var linkPage = await browser.newPage({
+  var linkPage = await newSmokePage({
     viewport: { width: 390, height: 844 },
     serviceWorkers: 'block',
   });
@@ -184,7 +191,7 @@ function findChrome() {
   // Regression: editing a nickname before the card deal must not create a hidden
   // "peaceful" override. A completed deal is committed as one canonical role map
   // and survives reload without being shadowed by summary corrections.
-  var rolePage = await browser.newPage({
+  var rolePage = await newSmokePage({
     viewport: { width: 390, height: 844 },
     serviceWorkers: 'block',
   });
@@ -259,7 +266,7 @@ function findChrome() {
 
   // Локальная история: создание и фоновое обновление снимка, восстановление,
   // экспорт, удаление и автоматическое сохранение завершённой auto-партии.
-  var historyPage = await browser.newPage({
+  var historyPage = await newSmokePage({
     viewport: { width: 390, height: 844 },
     serviceWorkers: 'block',
   });
@@ -835,13 +842,13 @@ function findChrome() {
     app.navigateToScreen('settings-screen');
     app.setSettingsTab('general');
     var bestMove = document.getElementById('setting-player-bestmove-visible');
-    var protocol = document.getElementById('setting-player-protocol-visible');
+    var scoring = document.getElementById('setting-scoring-system');
     var foulLimit = document.getElementById('setting-player-foul-limit');
-    var protocolDefault = app.playerProtocolVisible;
+    var protocolDefault = app.getScoringProfile().protocol;
     bestMove.click();
-    protocol.click();
-    var protocolAfterEnable = app.playerProtocolVisible;
-    protocol.click();
+    scoring.value = 'msl';
+    scoring.dispatchEvent(new Event('change', { bubbles: true }));
+    var protocolAfterEnable = app.getScoringProfile().protocol;
     foulLimit.value = '3';
     foulLimit.dispatchEvent(new Event('input', { bubbles: true }));
     var cardSection = foulLimit.closest('section');
@@ -857,7 +864,7 @@ function findChrome() {
       protocolDefault,
       protocolAfterEnable,
       app.playerBestMoveVisible,
-      app.playerProtocolVisible,
+      app.getScoringProfile().protocol,
       app.getFoulLimit(),
       voiceBelow,
       app.players[0].fouls,
@@ -867,7 +874,7 @@ function findChrome() {
     app.setPlayerFoulLimit(4);
     return result;
   });
-  if (playerCardSettings !== 'false:true:false:false:3:true:3:disqual') {
+  if (playerCardSettings !== 'true:false:false:false:3:true:3:disqual') {
     errors.push('настройки карточки игрока: неверное состояние ' + playerCardSettings);
   }
 
@@ -899,7 +906,7 @@ function findChrome() {
     var hiddenProtocol = document.getElementById('modal-player-protocol-section').style.display;
     app.hidePlayerActionsModal();
     app.setPlayerBestMoveVisible(true);
-    app.setPlayerProtocolVisible(true);
+    app.setScoringSystem('fsm');
     app.showPlayerActionsModal(1);
     var bestMoveInput = document.getElementById('modal-player-bestmove');
     var bestMoveInputLimit = bestMoveInput.getAttribute('data-bestmove-limit');
@@ -1548,7 +1555,7 @@ function findChrome() {
 
   // ── Десктоп-контекст (lg+): desktop-shell/player-panel/setup-slot работают
   // через официальные API ядра (перехватчики модалок, nav-гварды, события). ──
-  var dpage = await browser.newPage({
+  var dpage = await newSmokePage({
     viewport: { width: 1366, height: 900 },
     serviceWorkers: 'block',
   });

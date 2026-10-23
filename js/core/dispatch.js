@@ -7,7 +7,7 @@
  */
 (function (app) {
   /**
-   * Живое форматирование полей-списков номеров (лучший ход, протокол, мнение):
+   * Живое форматирование полей-списков номеров (лучший ход, протокол):
    * оставляет только цифры, разделители превращает в «, ». Пробел/запятая в конце
    * при вводе (не при удалении) добавляют «, », чтобы следующий номер шёл через запятую.
    */
@@ -443,8 +443,8 @@
         if (app.setPlayerBestMoveVisible) app.setPlayerBestMoveVisible(!!el.checked);
         return;
       }
-      if (el.id === 'setting-player-protocol-visible') {
-        if (app.setPlayerProtocolVisible) app.setPlayerProtocolVisible(!!el.checked);
+      if (el.id === 'setting-scoring-system') {
+        if (app.setScoringSystem) app.setScoringSystem(el.value);
         return;
       }
       if (el.id === 'setting-mu-lookup') {
